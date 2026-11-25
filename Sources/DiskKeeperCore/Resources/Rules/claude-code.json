@@ -6,7 +6,8 @@
     "docs": "https://docs.claude.com/en/docs/claude-code/settings"
   },
   "protect": [
-    "${CLAUDE_CONFIG_DIR:-~/.claude}/settings*.json",
+    "${CLAUDE_CONFIG_DIR:-~/.claude}/.claude.json*",
+    "${CLAUDE_CONFIG_DIR:-~/.claude}/settings*.json*",
     "${CLAUDE_CONFIG_DIR:-~/.claude}/.credentials.json",
     "${CLAUDE_CONFIG_DIR:-~/.claude}/CLAUDE.md",
     "${CLAUDE_CONFIG_DIR:-~/.claude}/keybindings.json",
@@ -19,7 +20,8 @@
     "${CLAUDE_CONFIG_DIR:-~/.claude}/plugins/config*",
     "${CLAUDE_CONFIG_DIR:-~/.claude}/plugins/*.json",
     "${CLAUDE_CONFIG_DIR:-~/.claude}/projects/*/memory/**",
-    "${CLAUDE_CONFIG_DIR:-~/.claude}/history.jsonl"
+    "${CLAUDE_CONFIG_DIR:-~/.claude}/history.jsonl",
+    "${CLAUDE_CONFIG_DIR:-~/.claude}/sessions/**"
   ],
   "rules": [
     {
@@ -151,16 +153,22 @@
         "kind": "children",
         "type": "file"
       },
-      "tier": "safe",
+      "tier": "review",
       "tierWhen": [
         {
           "if": {
             "newerThanDays": 1
           },
           "tier": "keep"
+        },
+        {
+          "if": {
+            "olderThanDays": 7
+          },
+          "tier": "safe"
         }
       ],
-      "explanation": "Shell environment snapshots taken at session start; recreated for each new session."
+      "explanation": "Shell environment snapshots taken at session start; recreated for each new session. A Claude Code session that is still open and started earlier loses its shell setup (aliases, PATH) until you restart it."
     },
     {
       "id": "claude-code.session-env",
@@ -173,16 +181,22 @@
         "kind": "children",
         "type": "any"
       },
-      "tier": "safe",
+      "tier": "review",
       "tierWhen": [
         {
           "if": {
             "newerThanDays": 1
           },
           "tier": "keep"
+        },
+        {
+          "if": {
+            "olderThanDays": 7
+          },
+          "tier": "safe"
         }
       ],
-      "explanation": "Per-session environment files; recreated for each session."
+      "explanation": "Per-session environment files; recreated for each new session. A Claude Code session that is still open and started earlier loses its environment setup until you restart it."
     },
     {
       "id": "claude-code.file-history",
@@ -265,7 +279,8 @@
       ],
       "match": {
         "kind": "children",
-        "type": "any"
+        "type": "any",
+        "glob": ".claude.json.backup.*"
       },
       "tier": "review",
       "tierWhen": [
@@ -302,7 +317,7 @@
         "kind": "self"
       },
       "tier": "review",
-      "explanation": "Installed plugin files. Claude Code re-downloads them, but plugins are unavailable until it does."
+      "explanation": "Installed plugin files cached by Claude Code. Plugins are unavailable until they are reinstalled with /plugin, which may be needed after deleting this."
     },
     {
       "id": "claude-code.xdg-cache",

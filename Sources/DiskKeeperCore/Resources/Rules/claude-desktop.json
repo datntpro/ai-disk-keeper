@@ -34,7 +34,7 @@
         "glob": "*.bundle"
       },
       "tier": "review",
-      "explanation": "Linux VM image used by Claude's agent / Cowork mode (about 11 GB on disk). Claude downloads it again (over 1 GB) the next time you use that mode, and files saved inside the VM's session disk are lost. Quit Claude first.",
+      "explanation": "Linux VM image used by Claude's agent / Cowork mode (several GB on disk). Claude downloads it again (over 1 GB) the next time you use that mode, and files saved inside the VM's session disk are lost. Quit Claude first.",
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.anthropic.claudefordesktop"
@@ -60,7 +60,7 @@
           "tier": "keep"
         }
       ],
-      "explanation": "A copy of Claude Code bundled by the desktop app (one folder per version). Claude re-downloads the version it needs; older versions are not used.",
+      "explanation": "A copy of Claude Code bundled by the desktop app (one folder per version). Claude re-downloads the version it needs (about 350 MB) the next time it starts a Claude Code session; folders for older versions are not used.",
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.anthropic.claudefordesktop"
@@ -86,7 +86,7 @@
           "tier": "keep"
         }
       ],
-      "explanation": "Claude Code build for the agent VM (one folder per version). Re-downloaded when needed.",
+      "explanation": "Claude Code build for the agent VM (one folder per version). Claude re-downloads the version it needs (about 350 MB) the next time it starts a Claude Code session; folders for older versions are not used.",
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.anthropic.claudefordesktop"

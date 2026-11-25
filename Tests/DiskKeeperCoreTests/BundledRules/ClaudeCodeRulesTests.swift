@@ -92,7 +92,7 @@ final class ClaudeCodeRulesTests: XCTestCase {
     // MARK: per-session dirs
 
     func testPerSessionDirsKeepWhenFresh() async throws {
-        let names = ["todos", "shell-snapshots", "session-env", "paste-cache", "debug"]
+        let names = ["todos", "paste-cache", "debug"]
         for n in names {
             try fixture.file(".claude/\(n)/fresh.json", modified: now.addingTimeInterval(-3600))
             try fixture.file(".claude/\(n)/old.json", modified: days(3))
@@ -104,20 +104,42 @@ final class ClaudeCodeRulesTests: XCTestCase {
         }
     }
 
+    func testShellSnapshotsAndSessionEnvAreReviewUntilAWeek() async throws {
+        for n in ["shell-snapshots", "session-env"] {
+            try fixture.file(".claude/\(n)/fresh", modified: now.addingTimeInterval(-3600))
+            try fixture.file(".claude/\(n)/three", modified: days(3))
+            try fixture.file(".claude/\(n)/seven", modified: days(7))
+            try fixture.file(".claude/\(n)/ten", modified: days(10))
+        }
+        let r = try await run()
+        for n in ["shell-snapshots", "session-env"] {
+            XCTAssertEqual(r.tier(fixture.abs(".claude/\(n)/fresh")), .keep, n)
+            XCTAssertEqual(r.tier(fixture.abs(".claude/\(n)/three")), .review, n)
+            XCTAssertEqual(r.tier(fixture.abs(".claude/\(n)/seven")), .review, n)
+            XCTAssertEqual(r.tier(fixture.abs(".claude/\(n)/ten")), .safe, n)
+        }
+        let rule = try XCTUnwrap(RuleHarness.loadAllBundled(fixture: fixture).allRules
+            .first { $0.rule.id == "claude-code.shell-snapshots" })
+        XCTAssertTrue(rule.rule.explanation.contains("still open"))
+    }
+
     func testFileHistoryAndBackupsTiers() async throws {
         for (n, d) in [("a", 2.0), ("b", 10.0), ("c", 40.0)] {
             let dir = ".claude/file-history/\(n)"
             try fixture.file(dir + "/f", modified: days(d))
             try fixture.dir(dir, modified: days(d))
         }
-        try fixture.file(".claude/backups/new.json", modified: days(2))
-        try fixture.file(".claude/backups/old.json", modified: days(40))
+        // Real backups are dot-prefixed files.
+        try fixture.file(".claude/backups/.claude.json.backup.1", modified: days(2))
+        try fixture.file(".claude/backups/.claude.json.backup.2", modified: days(40))
+        try fixture.file(".claude/backups/notes.txt", modified: days(40))
         let r = try await run()
         XCTAssertEqual(r.tier(fixture.abs(".claude/file-history/a")), .keep)
         XCTAssertEqual(r.tier(fixture.abs(".claude/file-history/b")), .review)
         XCTAssertEqual(r.tier(fixture.abs(".claude/file-history/c")), .safe)
-        XCTAssertEqual(r.tier(fixture.abs(".claude/backups/new.json")), .keep)
-        XCTAssertEqual(r.tier(fixture.abs(".claude/backups/old.json")), .review)
+        XCTAssertEqual(r.tier(fixture.abs(".claude/backups/.claude.json.backup.1")), .keep)
+        XCTAssertEqual(r.tier(fixture.abs(".claude/backups/.claude.json.backup.2")), .review)
+        XCTAssertNil(r.item(fixture.abs(".claude/backups/notes.txt")))
     }
 
     func testCacheAndMcpLogsSafe() async throws {
@@ -192,9 +214,45 @@ final class ClaudeCodeRulesTests: XCTestCase {
         let g = try ScanGuard(environment: env, protectPatterns: loaded.protectPatterns)
         for p in ["settings.json", ".credentials.json", "skills/x", "plans/p.md", "projects/p/memory/m.md",
                   "history.jsonl", "CLAUDE.md", "agents/a.md", "commands/c.md", "hooks/h.sh", "keybindings.json",
-                  "output-styles/o.md", "plugins/config.json", "plugins/installed_plugins.json"] {
+                  "output-styles/o.md", "plugins/config.json", "plugins/installed_plugins.json",
+                  ".claude.json", ".claude.json.backup.1", "settings.json.bak", "settings.local.json",
+                  "sessions/s.json"] {
             if case .allowed = g.check(alt + "/" + p) { XCTFail("\(p) must be protected") }
         }
+    }
+
+    func testConfigDirInsideProtectedProfileDropsOnlyThosePaths() async throws {
+        // Like T07's orca.json: a protect template covering Orca's claude-profiles tree.
+        let profile = "Library/Application Support/orca/claude-profiles/p1/home"
+        let alt = fixture.abs(profile)
+        try fixture.file(profile + "/projects/p/a.jsonl", modified: days(40))
+        try fixture.file(profile + "/cache/c", modified: days(40))
+        try fixture.file("Library/Caches/claude-cli-nodejs/p/mcp.log", modified: now)
+        try fixture.file(".cache/claude/staging/x", modified: days(3))
+        let env = PathEnvironment(home: fixture.home, temporaryDirectory: fixture.tempDir,
+                                  variables: ["CLAUDE_CONFIG_DIR": alt])
+        let source = try XCTUnwrap(CoreResources.rulesDirectoryURL).appendingPathComponent("claude-code.json")
+        let dir = try TemporaryDirectory()
+        try dir.file("claude-code.json", contents: try Data(contentsOf: source))
+        try dir.file("orca.json", contents: Data(#"""
+            {"schemaVersion":1,"tool":{"id":"orca","name":"Orca"},
+             "protect":["$APP_SUPPORT/orca/claude-profiles/**"],
+             "rules":[{"id":"orca.logs","title":"Logs","category":"systemJunk","paths":["$APP_SUPPORT/orca/logs"],
+                       "match":{"kind":"self"},"tier":"safe","explanation":"Logs."}]}
+            """#.utf8))
+        let loaded = RuleLoader(environment: env, bundledRulesDirectory: dir.url, userRulesDirectory: nil,
+                                guardFactory: ScanGuard.loaderFactory(environment: env)).load()
+        XCTAssertEqual(loaded.errors, [], "the file must still load")
+        XCTAssertFalse(loaded.warnings.isEmpty)
+        XCTAssertTrue(loaded.warnings.allSatisfy { $0.kind == .protectedPathTarget && $0.message.contains("claude-profiles") })
+        let guardian = try ScanGuard(environment: env, protectPatterns: loaded.protectPatterns)
+        let ctx = ScanContext(environment: env, pathGuard: guardian, now: now, userID: getuid())
+        let box = Collector()
+        let sink = ScanSink(item: { await box.add($0) }, warning: { await box.add($0) }, progress: { _ in })
+        try await RuleScanner(rules: loaded.allRules).scan(context: ctx, sink: sink)
+        let paths = Set(await box.items.map(\.path))
+        XCTAssertEqual(paths, [fixture.abs("Library/Caches/claude-cli-nodejs"), fixture.abs(".cache/claude")])
+        XCTAssertFalse(paths.contains { $0.contains("claude-profiles") })
     }
 
     // MARK: denylist
