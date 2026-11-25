@@ -55,4 +55,24 @@ final class PathKeyTests: XCTestCase {
         XCTAssertTrue(GlobMatcher.matches(pattern: "[\\]]", component: "]"))
         XCTAssertFalse(GlobMatcher.matches(pattern: "[\\]]", component: "a"))
     }
+
+    func testGlobMatchesWholeCharacters() {
+        func m(_ p: String, _ c: String) -> Bool {
+            GlobMatcher.matches(pattern: PathCanonicalizer.fold(p), component: PathCanonicalizer.fold(c))
+        }
+        for e in ["\u{E9}", "e\u{301}"] {
+            XCTAssertTrue(m("caf?", "caf" + e), e)
+            XCTAssertTrue(m("caf[\u{E9}x]", "caf" + e), e)
+            XCTAssertTrue(m("caf[e\u{301}x]", "caf" + e), e)
+            XCTAssertFalse(m("caf??", "caf" + e), e)
+            XCTAssertTrue(m("caf[!x]", "caf" + e), e)
+            XCTAssertTrue(m("caf*", "caf" + e), e)
+        }
+        XCTAssertTrue(m("a?b", "a\u{1F600}b"))
+        XCTAssertFalse(m("a??b", "a\u{1F600}b"))
+        XCTAssertTrue(m("a?b", "a\u{1F468}\u{200D}\u{1F469}b"), "ZWJ sequence is one character")
+        XCTAssertTrue(m("x?", "xa\u{308}"), "base + combining mark is one character")
+        XCTAssertFalse(m("x??", "xa\u{308}"))
+        XCTAssertTrue(m("[\u{1F600}-\u{1F64F}]", "\u{1F601}"))
+    }
 }

@@ -20,23 +20,23 @@ enum PathCanonicalizer {
     }
 
     static func fold(_ s: String) -> String {
-        s.folding(options: [.caseInsensitive], locale: nil).decomposedStringWithCanonicalMapping
+        s.folding(options: [.caseInsensitive], locale: nil).precomposedStringWithCanonicalMapping
     }
 }
 
-/// Component-level glob matcher over Unicode scalars. Inputs are expected to be folded already.
+/// Component-level glob matcher over Characters (grapheme clusters), so `?` and `[..]` match one user-perceived character. Inputs are expected to be folded already.
 /// Supports `*`, `?`, `[abc]`, `[a-z]`, `[!x]` and `\` escapes. A malformed `[` is a literal.
 /// `*` matches a leading dot (no FNM_PERIOD semantics).
 enum GlobMatcher {
     private enum Token {
-        case literal(Unicode.Scalar)
+        case literal(Character)
         case any
         case star
-        case set(negated: Bool, ranges: [ClosedRange<UInt32>])
+        case set(negated: Bool, ranges: [ClosedRange<Character>])
     }
 
     private static func tokenize(_ pattern: String) -> [Token] {
-        let s = Array(pattern.unicodeScalars)
+        let s = Array(pattern)
         var out: [Token] = []
         var i = 0
         while i < s.count {
@@ -60,11 +60,11 @@ enum GlobMatcher {
         return out
     }
 
-    private static func parseSet(_ s: [Unicode.Scalar], from start: Int) -> (Token, Int)? {
+    private static func parseSet(_ s: [Character], from start: Int) -> (Token, Int)? {
         var i = start + 1
         var negated = false
         if i < s.count, s[i] == "!" || s[i] == "^" { negated = true; i += 1 }
-        var ranges: [ClosedRange<UInt32>] = []
+        var ranges: [ClosedRange<Character>] = []
         var first = true
         while i < s.count {
             var c = s[i]
@@ -75,10 +75,10 @@ enum GlobMatcher {
             if c == "\\", i + 1 < s.count { i += 1; c = s[i] }
             if i + 2 < s.count, s[i + 1] == "-", s[i + 2] != "]" {
                 let hi = s[i + 2]
-                if hi.value >= c.value { ranges.append(c.value...hi.value) }
+                if hi >= c { ranges.append(c...hi) }
                 i += 3
             } else {
-                ranges.append(c.value...c.value)
+                ranges.append(c...c)
                 i += 1
             }
         }
@@ -87,7 +87,7 @@ enum GlobMatcher {
 
     static func matches(pattern: String, component: String) -> Bool {
         let toks = tokenize(pattern)
-        let s = Array(component.unicodeScalars)
+        let s = Array(component)
         var t = 0, i = 0
         var starT = -1, starI = 0
         while i < s.count {
@@ -102,7 +102,7 @@ enum GlobMatcher {
                 case .literal(let l) where l == s[i]:
                     t += 1; i += 1
                     continue
-                case .set(let neg, let ranges) where ranges.contains(where: { $0.contains(s[i].value) }) != neg:
+                case .set(let neg, let ranges) where ranges.contains(where: { $0.contains(s[i]) }) != neg:
                     t += 1; i += 1
                     continue
                 default:

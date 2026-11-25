@@ -335,4 +335,17 @@ final class ProtectedPathsTests: XCTestCase {
         let w = PathDenial(path: "/x", reason: .protectedPath, matchedPattern: "~/p")
         XCTAssertTrue(w.message.contains("~/p"))
     }
+
+    func testProtectPatternsMatchWholeCharactersRegardlessOfNormalization() throws {
+        let p = try policy(extra: ["/Users/tester/caf?", "/Users/tester/[\u{E9}x]dir", "/Users/tester/em?ji"])
+        for e in ["\u{E9}", "e\u{301}"] {
+            XCTAssertEqual(reason(p, "/Users/tester/caf\(e)/f"), .protectedPath, e)
+            XCTAssertEqual(reason(p, "/Users/tester/\(e)dir"), .protectedPath, e)
+            XCTAssertNil(reason(p, "/Users/tester/caf\(e)\(e)"), e)
+        }
+        XCTAssertEqual(reason(p, "/Users/tester/em\u{1F600}ji"), .protectedPath)
+        XCTAssertEqual(reason(p, "/Users/tester/em\u{1F468}\u{200D}\u{1F469}ji"), .protectedPath)
+        XCTAssertNil(reason(p, "/Users/tester/em\u{1F600}\u{1F600}ji"))
+        XCTAssertEqual(reason(p, "/Users/tester/CAFE\u{301}"), .protectedPath)
+    }
 }

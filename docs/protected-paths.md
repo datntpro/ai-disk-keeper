@@ -11,7 +11,7 @@ table is hard-coded and cannot be overridden; rules may only **add** anchored pa
 - The pure core `evaluate(raw:resolution:)` does no syscalls. `SystemPathResolver` uses only
   `realpath`/`lstat` (read-only). Nothing is cached: re-check right before acting.
 - Comparison runs on a canonical key: `/tmp`, `/var`, `/etc` → `/private/...`;
-  `/System/Volumes/Data/X` → `/X`; case-folded; Unicode NFD; split into components.
+  `/System/Volumes/Data/X` → `/X`; case-folded; Unicode NFC; split into components.
 - Allowed roots: home, `$TMPDIR`, `/private/tmp`. Everything else is `outsideAllowedRoots` or
   `systemLocation`. Roots are injected; this module never reads the real home.
 - Reasons are either **hard** or **container**. `protectedLocation` and `containsProtectedPath` mean the
