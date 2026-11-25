@@ -29,6 +29,25 @@ swift run AIDiskKeeper # launch the (scaffold) app
 
 You can also open `Package.swift` in Xcode.
 
+### Package the app
+
+```sh
+./scripts/make-app.sh                 # → dist/AI Disk Keeper.app (host arch, ad-hoc signed)
+./scripts/make-app.sh --universal --zip
+open "dist/AI Disk Keeper.app"
+```
+
+Flags: `--config release|debug`, `--universal` (arm64 + x86_64, needs full Xcode), `--output DIR`,
+`--zip`, `--no-sign`, `--skip-verify`. Env overrides: `BUNDLE_ID` (default
+`io.github.datntpro.aidiskkeeper`), `VERSION`, `BUILD_NUMBER`.
+
+The result is **ad-hoc signed, not notarized** (Developer ID signing and notarization come later).
+A zip downloaded from CI is quarantined by macOS: open it via System Settings → Privacy & Security →
+"Open Anyway", or run `xattr -dr com.apple.quarantine "AI Disk Keeper.app"`.
+CI builds the app on every PR; the zip is uploaded as an artifact only on `main`
+(Actions run → Artifacts).
+`AIDiskKeeper --verify-resources` prints where the bundled resources resolve (used by the script).
+
 ## Layout
 
 ```
@@ -36,6 +55,8 @@ Package.swift
 Sources/DiskKeeperCore/   # scan engine, scanner rules, safety policy, cleanup engine (no UI)
 Sources/AIDiskKeeper/     # SwiftUI app (window + menu bar)
 Tests/DiskKeeperCoreTests/
+scripts/                  # make-app.sh (.app packaging), placeholder icon generator
+Packaging/                # Info.plist template
 docs/PLAN.md
 ```
 
