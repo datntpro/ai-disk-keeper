@@ -36,11 +36,17 @@ public final class SettingsModel {
     public init(store: SettingsStore, environment: PathEnvironment, availableTools: [ToolChoice] = [],
                 probe: @escaping @Sendable () -> FullDiskAccessStatus) {
         var (loaded, warning) = store.load()
+        // Core's message is English-only; show a localized one for the same event.
+        if warning != nil {
+            warning?.message = loc("settings.warning.corrupt",
+                                   "Your previous settings were unreadable and were backed up. Default settings are in use.")
+        }
         let bad = loaded.dropInvalidProjectRoots(environment: environment)
         if !bad.isEmpty {
             warning = warning ?? ScanWarning(
                 kind: .other, path: store.fileURL.path,
-                message: "Ignored project folders outside your home folder: \(bad.joined(separator: ", ")).")
+                message: loc("settings.warning.badRoots", "Ignored project folders outside your home folder: \(bad.joined(separator: ", ")).")
+            )
         }
         self.store = store
         self.environment = environment
@@ -89,14 +95,14 @@ public final class SettingsModel {
             try store.save(copy)
             lastError = nil
         } catch {
-            lastError = "Couldn't save settings: \(error.localizedDescription)"
+            lastError = loc("settings.error.save", "Couldn't save settings: \(error.localizedDescription)")
         }
     }
 
     static func describe(_ e: SettingsError) -> String {
         switch e {
-        case .notAbsolute(let p): "“\(p)” isn't an absolute folder path."
-        case .outsideHome(let p): "Project folders must be inside your home folder: “\(p)”."
+        case .notAbsolute(let p): loc("settings.error.notAbsolute", "“\(p)” isn't an absolute folder path.")
+        case .outsideHome(let p): loc("settings.error.outsideHome", "Project folders must be inside your home folder: “\(p)”.")
         }
     }
 }

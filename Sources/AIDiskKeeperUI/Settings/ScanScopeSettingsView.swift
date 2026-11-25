@@ -8,16 +8,16 @@ struct ScanScopeSettingsView: View {
 
     var body: some View {
         Form {
-            list("Excluded folders", paths: model.settings.excludedPaths, kind: "excluded folder",
-                 help: "Anything inside these folders, and any item that contains them, is never shown or cleaned.",
+            list(loc("settings.scope.excluded.title", "Excluded folders"), paths: model.settings.excludedPaths, kind: loc("settings.scope.excluded.kind", "excluded folder"),
+                 help: loc("settings.scope.excluded.help", "Anything inside these folders, and any item that contains them, is never shown or cleaned."),
                  add: { importing = .excluded }, remove: model.removeExcludedPath)
-            list("Project folders", paths: model.settings.projectRoots, kind: "project folder",
-                 help: "Where AI Disk Keeper looks for projects and worktrees (used by worktree and build-artifact scanning).",
+            list(loc("settings.scope.projects.title", "Project folders"), paths: model.settings.projectRoots, kind: loc("settings.scope.projects.kind", "project folder"),
+                 help: loc("settings.scope.projects.help", "Where AI Disk Keeper looks for projects and worktrees (used by worktree and build-artifact scanning)."),
                  add: { importing = .project }, remove: model.removeProjectRoot)
             HStack {
-                Button("Reset to defaults") { model.resetScopeToDefaults() }
+                Button(loc("settings.scope.reset", "Reset to defaults")) { model.resetScopeToDefaults() }
                 Spacer()
-                Text("Changes apply to the next scan.").font(.caption).foregroundStyle(.secondary)
+                Text(loc("settings.changesApplyNextScan", "Changes apply to the next scan.")).font(.caption).foregroundStyle(.secondary)
             }
         }
         .padding(20)
@@ -39,12 +39,12 @@ struct ScanScopeSettingsView: View {
                     Spacer()
                     Button { remove(path) } label: { Image(systemName: "minus.circle") }
                         .buttonStyle(.borderless)
-                        .accessibilityLabel("Remove \(kind) \(path)")
+                        .accessibilityLabel(loc("settings.scope.remove.a11y", "Remove \(kind) \(path)"))
                 }
             }
             .frame(minHeight: 70)
             HStack {
-                Button(action: add) { Image(systemName: "plus") }.accessibilityLabel("Add \(kind)")
+                Button(action: add) { Image(systemName: "plus") }.accessibilityLabel(loc("settings.scope.add.a11y", "Add \(kind)"))
                 Text(help).font(.caption).foregroundStyle(.secondary)
             }
         } header: { Text(title).font(.headline) }

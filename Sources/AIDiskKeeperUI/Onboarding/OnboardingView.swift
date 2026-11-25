@@ -17,22 +17,22 @@ public struct OnboardingView: View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Text("AI Disk Keeper only looks until you say so.")
+                    Text(loc("onboarding.title", "AI Disk Keeper only looks until you say so."))
                         .font(.title2.bold()).focusable().focused($titleFocused)
                         .accessibilityAddTraits(.isHeader)
                     VStack(alignment: .leading, spacing: 6) {
-                        bullet("Scanning is read-only.")
-                        bullet("Nothing is cleaned until you review a cleanup plan and confirm it.")
-                        bullet("Cleaned items go to the Trash, and every action is logged.")
+                        bullet(loc("onboarding.readOnly", "Scanning is read-only."))
+                        bullet(loc("onboarding.confirmFirst", "Nothing is cleaned until you review a cleanup plan and confirm it."))
+                        bullet(loc("onboarding.trashAndLog", "Cleaned items go to the Trash, and every action is logged."))
                     }
-                    section("What it scans") {
+                    section(loc("onboarding.scans.title", "What it scans")) {
                         if !model.availableTools.isEmpty {
-                            Text("Data from these AI tools: " + model.availableTools.map(\.name).joined(separator: ", ") + ".")
+                            Text(loc("onboarding.scans.tools", "Data from these AI tools: \(model.availableTools.map(\.name).joined(separator: ", "))."))
                         }
-                        Text("Caches, logs, session history, and temp files in your home folder.")
-                        Text("Never touched: credentials, settings and config, SSH and cloud keys, .env files, and anything outside your home folder.")
+                        Text(loc("onboarding.scans.what", "Caches, logs, session history, and temp files in your home folder."))
+                        Text(loc("onboarding.scans.never", "Never touched: credentials, settings and config, SSH and cloud keys, .env files, and anything outside your home folder."))
                             .fontWeight(.medium)
-                        SettingsLink { Text("Scan settings…") }
+                        SettingsLink { Text(loc("onboarding.scanSettings", "Scan settings…")) }
                     }
                     FullDiskAccessCard(status: model.fdaStatus, recheck: model.refreshFullDiskAccess)
                 }
@@ -42,9 +42,9 @@ public struct OnboardingView: View {
             Divider()
             HStack {
                 Spacer()
-                Button("Not now") { onboarding.finish(startScan: false); dismiss() }
+                Button(loc("onboarding.notNow", "Not now")) { onboarding.finish(startScan: false); dismiss() }
                     .keyboardShortcut(.cancelAction)
-                Button("Start first scan") { onboarding.finish(startScan: true); dismiss() }
+                Button(loc("onboarding.startScan", "Start first scan")) { onboarding.finish(startScan: true); dismiss() }
                     .keyboardShortcut(.defaultAction)
             }
             .padding(16)
