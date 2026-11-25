@@ -277,7 +277,7 @@ A rejected file produces a `RuleLoadError` carrying the file, the JSON path and 
 | `invalidRuleID` | rule id 'other.r' must start with 'mytool.' |
 | `duplicateRuleID` | rule id 'x.y' is already defined (bundled rules win over user rules) |
 | `pathOutsideAllowedRoots` | /etc/x is outside the home directory, the temporary directory and /private/tmp |
-| `protectedPathTarget` | `<path>`: the protected-path guard refuses it |
+| `protectedPathTarget` | `<path>`: the protected-path guard refuses it. Reported as a **warning** (`RuleLoadResult.warnings`), not an error: only that path is dropped and the rest of the file loads |
 | `invalidProtectPattern` | a protect pattern such as `~/**` or `/private/tmp` that would protect a whole root |
 | `guardUnavailable` | the protected-path guard couldn't be built; **no rules are loaded** (fails closed) |
 
@@ -287,7 +287,7 @@ A rejected file produces a `RuleLoadError` carrying the file, the JSON path and 
 - Protection is fail-safe: the `protect` patterns of a file that is structurally valid are kept even when the
   file's rules are later rejected (for example for targeting a protected path).
 - Rules can't target anything outside the home directory, `$TMPDIR` and `/private/tmp`.
-- A rule path that the protected-path guard refuses rejects the whole file. For `children`/`find` rules a
+- A rule path that the protected-path guard refuses is dropped with a warning (fail closed for that path; the other paths and rules of the file still load, and the scanner checks the guard again for every item). For `children`/`find` rules a
   container that is only an *ancestor* of protected data (for example `~/.claude/projects`) is allowed, and each
   resulting item is checked again by the scanner.
 - Rule files never execute anything by themselves; `toolCommand` names a CLI that is resolved and run by the
