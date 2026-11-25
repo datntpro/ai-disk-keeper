@@ -3,16 +3,16 @@ import XCTest
 
 final class ToolIDTests: XCTestCase {
     func testEncodesAsBareString() throws {
-        XCTAssertEqual(try jsonString(ToolID.claudeCode), "\"claude-code\"")
+        XCTAssertEqual(try ModelFixtures.jsonString(ToolID.claudeCode), "\"claude-code\"")
     }
 
     func testDecodesUnknownToolID() throws {
-        XCTAssertEqual(try decodeJSON(ToolID.self, "\"my-new-tool\"").rawValue, "my-new-tool")
+        XCTAssertEqual(try ModelFixtures.decodeJSON(ToolID.self, "\"my-new-tool\"").rawValue, "my-new-tool")
     }
 
     func testDecodingEmptyOrInvalidThrows() {
         for bad in ["", "Claude Code", "-x", "a--b"] {
-            XCTAssertThrowsError(try decodeJSON(ToolID.self, "\"\(bad)\""), bad)
+            XCTAssertThrowsError(try ModelFixtures.decodeJSON(ToolID.self, "\"\(bad)\""), bad)
         }
     }
 

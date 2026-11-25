@@ -13,7 +13,7 @@ final class RiskTierTests: XCTestCase {
     }
 
     func testDecodingUnknownTierThrows() {
-        XCTAssertThrowsError(try decodeJSON(RiskTier.self, "\"dangerous\""))
+        XCTAssertThrowsError(try ModelFixtures.decodeJSON(RiskTier.self, "\"dangerous\""))
     }
 
     func testEscalatedNeverLowers() {

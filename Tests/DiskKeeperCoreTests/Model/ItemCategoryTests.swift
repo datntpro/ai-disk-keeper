@@ -8,7 +8,7 @@ final class ItemCategoryTests: XCTestCase {
     }
 
     func testDecodingUnknownCategoryThrows() {
-        XCTAssertThrowsError(try decodeJSON(ItemCategory.self, "\"nope\""))
+        XCTAssertThrowsError(try ModelFixtures.decodeJSON(ItemCategory.self, "\"nope\""))
     }
 
     func testDisplayNamesNonEmpty() {

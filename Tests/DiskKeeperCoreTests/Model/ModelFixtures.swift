@@ -29,16 +29,16 @@ enum ModelFixtures {
                  cleanupMethod: .toolCommand(command: "docker", arguments: ["system", "prune"]),
                  requiresAppQuit: "com.example.app", flags: Set(ItemFlag.allCases))
     }
-}
 
-func roundTrip<T: Codable>(_ value: T) throws -> T {
-    try DiskKeeperJSON.makeDecoder().decode(T.self, from: DiskKeeperJSON.makeEncoder().encode(value))
-}
+    static func roundTrip<T: Codable>(_ value: T) throws -> T {
+        try DiskKeeperJSON.makeDecoder().decode(T.self, from: DiskKeeperJSON.makeEncoder().encode(value))
+    }
 
-func jsonString<T: Encodable>(_ value: T) throws -> String {
-    String(decoding: try DiskKeeperJSON.makeEncoder().encode(value), as: UTF8.self)
-}
+    static func jsonString<T: Encodable>(_ value: T) throws -> String {
+        String(decoding: try DiskKeeperJSON.makeEncoder().encode(value), as: UTF8.self)
+    }
 
-func decodeJSON<T: Decodable>(_ type: T.Type, _ json: String) throws -> T {
-    try DiskKeeperJSON.makeDecoder().decode(type, from: Data(json.utf8))
+    static func decodeJSON<T: Decodable>(_ type: T.Type, _ json: String) throws -> T {
+        try DiskKeeperJSON.makeDecoder().decode(type, from: Data(json.utf8))
+    }
 }

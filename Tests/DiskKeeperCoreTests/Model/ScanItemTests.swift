@@ -7,7 +7,7 @@ final class ScanItemTests: XCTestCase {
     func testRoundTripFullyPopulated() throws {
         let item = ModelFixtures.fullItem()
         XCTAssertEqual(item.flags.count, 6)
-        XCTAssertEqual(try roundTrip(item), item)
+        XCTAssertEqual(try ModelFixtures.roundTrip(item), item)
     }
 
     func testRoundTripMinimalOmitsOptionalKeys() throws {
@@ -20,7 +20,7 @@ final class ScanItemTests: XCTestCase {
         XCTAssertNil(obj["lastModified"])
         XCTAssertNil(obj["requiresAppQuit"])
         XCTAssertEqual(obj["flags"] as? [String], [])
-        XCTAssertEqual(try roundTrip(copy), copy)
+        XCTAssertEqual(try ModelFixtures.roundTrip(copy), copy)
     }
 
     private let pinned = """
@@ -35,7 +35,7 @@ final class ScanItemTests: XCTestCase {
     """
 
     func testDecodesPinnedJSONFixture() throws {
-        let i = try decodeJSON(ScanItem.self, pinned)
+        let i = try ModelFixtures.decodeJSON(ScanItem.self, pinned)
         XCTAssertEqual(i.id, "claude-code.projects|/Users/me/.claude/projects/-Users-me-app")
         XCTAssertEqual(i.path, "/Users/me/.claude/projects/-Users-me-app")
         XCTAssertEqual(i.displayName, "app")
@@ -81,26 +81,26 @@ final class ScanItemTests: XCTestCase {
 
     func testDecodingRelativePathThrows() {
         let json = pinned.replacingOccurrences(of: "\"path\":\"/Users", with: "\"path\":\"Users")
-        XCTAssertThrowsError(try decodeJSON(ScanItem.self, json))
+        XCTAssertThrowsError(try ModelFixtures.decodeJSON(ScanItem.self, json))
     }
 
     func testDecodingNegativeSizeThrows() {
         for (from, to) in [("\"sizeAllocated\":4096", "\"sizeAllocated\":-1"),
                            ("\"sizeLogical\":1200", "\"sizeLogical\":-1"),
                            ("\"fileCount\":12", "\"fileCount\":-1")] {
-            XCTAssertThrowsError(try decodeJSON(ScanItem.self, pinned.replacingOccurrences(of: from, with: to)), to)
+            XCTAssertThrowsError(try ModelFixtures.decodeJSON(ScanItem.self, pinned.replacingOccurrences(of: from, with: to)), to)
         }
     }
 
     func testDecodingMissingIDThrows() {
         let json = pinned.replacingOccurrences(
             of: "\"id\":\"claude-code.projects|/Users/me/.claude/projects/-Users-me-app\"", with: "\"xid\":1")
-        XCTAssertThrowsError(try decodeJSON(ScanItem.self, json))
+        XCTAssertThrowsError(try ModelFixtures.decodeJSON(ScanItem.self, json))
     }
 
     func testUnknownFlagIsDroppedOnDecode() throws {
         let json = pinned.replacingOccurrences(of: "[\"sizeIncomplete\"]", with: "[\"inUse\",\"fromTheFuture\"]")
-        XCTAssertEqual(try decodeJSON(ScanItem.self, json).flags, [.inUse])
+        XCTAssertEqual(try ModelFixtures.decodeJSON(ScanItem.self, json).flags, [.inUse])
     }
 
     func testFlagsEncodedSorted() throws {
@@ -124,6 +124,23 @@ final class ScanItemTests: XCTestCase {
         let model = ModelFixtures.item(tier: .safe, category: .modelWeights)
         XCTAssertTrue(model.isSelectable)
         XCTAssertFalse(model.isBulkSelectable)
+    }
+
+    func testEncodedKeySetIsPinned() throws {
+        let data = try DiskKeeperJSON.makeEncoder().encode(ModelFixtures.fullItem())
+        let obj = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(Set(obj.keys), [
+            "category", "cleanup", "displayName", "explanation", "fileCount", "flags", "id",
+            "lastModified", "path", "project", "requiresAppQuit", "ruleID", "sizeAllocated",
+            "sizeLogical", "tier", "tool",
+        ])
+        XCTAssertTrue(obj["path"] is String)
+    }
+
+    func testDecodingMissingCleanupThrows() {
+        let json = pinned.replacingOccurrences(of: "\"cleanup\":{\"kind\":\"trash\"},", with: "")
+        XCTAssertFalse(json.contains("cleanup"))
+        XCTAssertThrowsError(try ModelFixtures.decodeJSON(ScanItem.self, json))
     }
 
     func testModelTypesAreSendable() {

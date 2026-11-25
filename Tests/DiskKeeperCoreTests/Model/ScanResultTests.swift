@@ -124,10 +124,10 @@ final class ScanResultTests: XCTestCase {
         XCTAssertEqual(r.items[0].sizeAllocated, 1)
 
         // Decode a payload that contains duplicate ids.
-        let one = try jsonString(a)
-        let two = try jsonString(b)
+        let one = try ModelFixtures.jsonString(a)
+        let two = try ModelFixtures.jsonString(b)
         let json = "{\"items\":[\(one),\(two)],\"schemaVersion\":1,\"startedAt\":\"2026-11-01T10:00:00.000Z\",\"wasCancelled\":false}"
-        let decoded = try decodeJSON(ScanResult.self, json)
+        let decoded = try ModelFixtures.decodeJSON(ScanResult.self, json)
         XCTAssertEqual(decoded.items.count, 1)
         XCTAssertEqual(decoded.items[0].sizeAllocated, 1)
     }
@@ -154,14 +154,14 @@ final class ScanResultTests: XCTestCase {
             startedAt: ModelFixtures.date,
             finishedAt: ModelFixtures.date.addingTimeInterval(5),
             wasCancelled: true)
-        XCTAssertEqual(try roundTrip(r), r)
+        XCTAssertEqual(try ModelFixtures.roundTrip(r), r)
     }
 
     func testSchemaVersionEncodedAndFutureVersionRejected() throws {
         let r = result([])
-        let s = try jsonString(r)
+        let s = try ModelFixtures.jsonString(r)
         XCTAssertTrue(s.contains("\"schemaVersion\":1"))
         let future = s.replacingOccurrences(of: "\"schemaVersion\":1", with: "\"schemaVersion\":2")
-        XCTAssertThrowsError(try decodeJSON(ScanResult.self, future))
+        XCTAssertThrowsError(try ModelFixtures.decodeJSON(ScanResult.self, future))
     }
 }
