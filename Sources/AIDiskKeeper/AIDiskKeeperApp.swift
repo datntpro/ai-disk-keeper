@@ -1,7 +1,6 @@
 import DiskKeeperCore
 import SwiftUI
 
-@main
 struct AIDiskKeeperApp: App {
     var body: some Scene {
         WindowGroup("AI Disk Keeper") {

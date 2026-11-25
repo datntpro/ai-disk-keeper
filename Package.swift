@@ -12,6 +12,7 @@ let package = Package(
         // Scan engine, scanner rules, safety policy, cleanup engine. No UI code.
         .target(
             name: "DiskKeeperCore",
+            resources: [.copy("Resources/Rules")],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
         // SwiftUI app (window + menu bar). Thin layer over DiskKeeperCore.

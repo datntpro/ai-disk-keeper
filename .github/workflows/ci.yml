@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build-test:
@@ -34,3 +34,37 @@ jobs:
 
       - name: Test
         run: swift test --parallel
+
+  package:
+    name: Package .app
+    needs: build-test
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }          # build number from commit count
+      - name: Cache SwiftPM build (release)
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: spm-release-${{ runner.os }}-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: spm-release-${{ runner.os }}-
+      - name: Lint script
+        run: bash -n scripts/make-app.sh
+      - name: Build .app
+        run: BUILD_NUMBER=${{ github.run_number }} ./scripts/make-app.sh --config release --universal --zip --output dist
+      - name: Smoke-launch .app
+        run: |
+          open -n "dist/AI Disk Keeper.app"
+          for i in $(seq 1 20); do pgrep -f "AI Disk Keeper.app/Contents/MacOS/AIDiskKeeper" && break; sleep 0.5; done
+          sleep 3
+          pgrep -f "AI Disk Keeper.app/Contents/MacOS/AIDiskKeeper" || { echo "app exited early"; log show --last 2m --predicate 'process == "AIDiskKeeper"' | tail -50; exit 1; }
+          pkill -f "AI Disk Keeper.app/Contents/MacOS/AIDiskKeeper" || true
+      - name: Upload artifact (main only)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: AI-Disk-Keeper-${{ github.sha }}
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 30
