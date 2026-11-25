@@ -11,7 +11,7 @@ struct TierBadge: View {
             .padding(.horizontal, 6).padding(.vertical, 2)
             .background(s.color.opacity(0.12), in: Capsule())
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("Tier: \(s.label)")
+            .accessibilityLabel(L10n.tr("tier.a11y", "Tier: \(s.label)"))
             .accessibilityHint(s.shortExplanation)
     }
 }

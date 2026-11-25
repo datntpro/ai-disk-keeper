@@ -13,7 +13,7 @@ public enum Formatting {
 
     public static func relative(_ date: Date?, now: Date = Date()) -> String {
         guard let date else { return "—" }
-        if abs(now.timeIntervalSince(date)) < 60 { return "just now" }
+        if abs(now.timeIntervalSince(date)) < 60 { return L10n.tr("time.justNow", "just now") }
         return relativeFormatter.localizedString(for: date, relativeTo: now)
     }
 

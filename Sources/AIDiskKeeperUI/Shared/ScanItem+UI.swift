@@ -9,8 +9,8 @@ extension ScanItem {
         return displayName
     }
     var a11yLabel: String {
-        var s = "\(displayName), \(Formatting.bytes(sizeAllocated)), tier \(TierStyle.style(for: tier).label), last used \(Formatting.relative(lastModified))"
-        if let id = requiresAppQuit { s += ", requires quitting \(AppNameResolver.name(forBundleID: id))" }
+        var s = L10n.tr("row.a11y", "\(displayName), \(Formatting.bytes(sizeAllocated)), tier \(TierStyle.style(for: tier).label), last used \(Formatting.relative(lastModified))")
+        if let id = requiresAppQuit { s += L10n.tr("row.a11y.quit", ", requires quitting \(AppNameResolver.name(forBundleID: id))") }
         return s
     }
 }

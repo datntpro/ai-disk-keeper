@@ -34,9 +34,9 @@ public struct RootView: View {
         .toolbar {
             ScanToolbar(scan: scan)
             ToolbarItem {
-                Button { showInspector.toggle() } label: { Label("Details", systemImage: "sidebar.trailing") }
-                    .help("Show or hide the detail pane")
-                    .accessibilityLabel("Toggle detail pane")
+                Button { showInspector.toggle() } label: { Label(L10n.tr("toolbar.details", "Details"), systemImage: "sidebar.trailing") }
+                    .help(L10n.tr("toolbar.details.help", "Show or hide the detail pane"))
+                    .accessibilityLabel(L10n.tr("toolbar.details.a11y", "Toggle detail pane"))
             }
         }
         .frame(minWidth: 900, minHeight: 540)
@@ -71,9 +71,9 @@ public struct RootView: View {
         let t = scan.totals.all
         switch phase {
         case .finished:
-            AccessibilityNotification.Announcement("Scan finished: \(Formatting.bytes(t.allocatedBytes)) in \(t.itemCount) items").post()
+            AccessibilityNotification.Announcement(L10n.finishedAnnouncement(bytes: Formatting.bytes(t.allocatedBytes), count: t.itemCount)).post()
         case .cancelled:
-            AccessibilityNotification.Announcement("Scan stopped. Results are partial.").post()
+            AccessibilityNotification.Announcement(L10n.tr("status.stopped", "Scan stopped. Results are partial.")).post()
         default: break
         }
     }

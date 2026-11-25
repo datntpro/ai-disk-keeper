@@ -21,19 +21,19 @@ struct ItemTableView: View {
                     let count = tierCounts[tier] ?? 0
                     Toggle(isOn: Binding(get: { query.tiers.contains(tier) },
                                          set: { on in if on { query.tiers.insert(tier) } else { query.tiers.remove(tier) } })) {
-                        Label("\(s.label) \(count)", systemImage: s.symbolName).fixedSize()
+                        Label(L10n.tr("filter.tierCount", "\(s.label) \(count)"), systemImage: s.symbolName).fixedSize()
                     }
                     .toggleStyle(.button)
-                    .accessibilityLabel("\(s.label) items, \(count)")
+                    .accessibilityLabel(L10n.tr("filter.tierA11y", "\(s.label) items, \(count)"))
                 }
                 Spacer()
-                TextField("Search name or path", text: $query.searchText)
+                TextField(L10n.tr("search.placeholder", "Search name or path"), text: $query.searchText)
                     .textFieldStyle(.roundedBorder).frame(minWidth: 140, idealWidth: 200, maxWidth: 240)
-                    .accessibilityLabel("Search items by name or path")
+                    .accessibilityLabel(L10n.tr("search.a11y", "Search items by name or path"))
             }
             .padding(8)
             Table(rows, selection: $inspectedID, sortOrder: sortOrder) {
-                TableColumn("Name", sortUsing: ItemSortComparator(key: .name, order: .forward)) { item in
+                TableColumn(L10n.tr("column.name", "Name"), sortUsing: ItemSortComparator(key: .name, order: .forward)) { item in
                     HStack(spacing: 6) {
                         Text(item.nameWithProject).lineLimit(1)
                         if let bundleID = item.requiresAppQuit { QuitAppBadge(bundleID: bundleID) }
@@ -41,16 +41,16 @@ struct ItemTableView: View {
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel(item.a11yLabel)
                 }.width(min: 180, ideal: 260)
-                TableColumn("Size", sortUsing: ItemSortComparator(key: .size)) { item in
+                TableColumn(L10n.tr("column.size", "Size"), sortUsing: ItemSortComparator(key: .size)) { item in
                     Text(Formatting.bytes(item.sizeAllocated)).monospacedDigit()
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }.width(min: 70, ideal: 80, max: 100)
-                TableColumn("Last used", sortUsing: ItemSortComparator(key: .lastUsed)) { item in
+                TableColumn(L10n.tr("column.lastUsed", "Last used"), sortUsing: ItemSortComparator(key: .lastUsed)) { item in
                     Text(Formatting.relative(item.lastModified)).foregroundStyle(.secondary)
                 }.width(min: 90, ideal: 110, max: 140)
-                TableColumn("Tier", sortUsing: ItemSortComparator(key: .tier)) { item in TierBadge(tier: item.tier) }
+                TableColumn(L10n.tr("column.tier", "Tier"), sortUsing: ItemSortComparator(key: .tier)) { item in TierBadge(tier: item.tier) }
                     .width(min: 100, ideal: 110, max: 120)
-                TableColumn("Path") { item in
+                TableColumn(L10n.tr("column.path", "Path")) { item in
                     Text(item.path).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                 }.width(min: 120, ideal: 220)
             }

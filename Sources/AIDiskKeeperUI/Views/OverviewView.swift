@@ -15,14 +15,14 @@ struct OverviewView<Slot: View>: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text("Total found").font(.headline)
+                        Text(L10n.tr("overview.totalFound", "Total found")).font(.headline)
                         Text(Formatting.bytes(totals.all.allocatedBytes)).font(.title.weight(.semibold))
                         if scan.result?.wasCancelled == true {
-                            Text("(partial: scan stopped)").font(.callout).foregroundStyle(.orange)
+                            Text(L10n.tr("overview.partial", "(partial: scan stopped)")).font(.callout).foregroundStyle(.orange)
                         }
                         Spacer()
                         if let d = scan.lastScanFinishedAt, !scan.isScanning {
-                            Text("Last scan \(Formatting.relative(d))").font(.caption).foregroundStyle(.secondary)
+                            Text(L10n.tr("overview.lastScan", "Last scan \(Formatting.relative(d))")).font(.caption).foregroundStyle(.secondary)
                         }
                     }
                     HStack(alignment: .top, spacing: 12) {
@@ -33,10 +33,10 @@ struct OverviewView<Slot: View>: View {
                     belowTierCards()
                     if !scan.warnings.isEmpty {
                         Button(action: showWarnings) {
-                            Label("\(scan.warnings.count) folders couldn't be read", systemImage: "exclamationmark.circle")
+                            Label(L10n.tr("overview.unreadable", "\(scan.warnings.count) folders couldn't be read"), systemImage: "exclamationmark.circle")
                         }.buttonStyle(.link)
                     }
-                    Text("Largest items").font(.headline)
+                    Text(L10n.tr("overview.largest", "Largest items")).font(.headline)
                     ForEach(top10(scan.items)) { item in
                         Button { inspect(item.id) } label: {
                             HStack {
@@ -64,7 +64,7 @@ struct OverviewView<Slot: View>: View {
         return VStack(alignment: .leading, spacing: 6) {
             TierBadge(tier: tier)
             Text(Formatting.bytes(t.allocatedBytes)).font(.title2.weight(.semibold))
-            Text("\(t.itemCount) items").font(.caption).foregroundStyle(.secondary)
+            Text(L10n.tr("overview.itemCount", "\(t.itemCount) items")).font(.caption).foregroundStyle(.secondary)
             Text(s.shortExplanation).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
         .padding(12).frame(maxWidth: .infinity, alignment: .leading)
