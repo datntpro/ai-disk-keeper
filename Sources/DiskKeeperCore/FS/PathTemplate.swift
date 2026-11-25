@@ -249,18 +249,6 @@ public struct PathTemplate: Sendable, Hashable, Codable, CustomStringConvertible
         return .path(([base] + components).joined(separator: "/"))
     }
 
-    /// Escapes glob metacharacters (`\ * ? [ ]`).
-    /// TODO: switch to `ProtectedPaths.escapeGlob` once T04 (PR #34) is merged. The two MUST keep the same
-    /// character set; this copy exists only so T03 stays compile-independent of T04.
-    static func escapeGlob(_ literal: String) -> String {
-        var out = String.UnicodeScalarView()
-        for sc in literal.unicodeScalars {   // scalars: "[" + combining mark must still be escaped
-            if "\\*?[]".unicodeScalars.contains(sc) { out.append("\\") }
-            out.append(sc)
-        }
-        return String(out)
-    }
-
     /// A `${VAR}` value is usable if it is absolute, has no `.`/`..` components and no control characters.
     /// Returned lexically cleaned (empty components dropped, no trailing "/").
     private static func cleanVariableValue(_ value: String) -> String? {
@@ -274,7 +262,7 @@ public struct PathTemplate: Sendable, Hashable, Codable, CustomStringConvertible
     }
 
     private static func expandRoot(_ root: Root, env: PathEnvironment, escape: Bool) -> String? {
-        func machine(_ s: String) -> String { escape ? escapeGlob(s) : s }
+        func machine(_ s: String) -> String { escape ? ProtectedPaths.escapeGlob(s) : s }
         switch root {
         case .home: return machine(env.home)
         case .tmp: return machine(env.temporaryDirectory)

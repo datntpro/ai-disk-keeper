@@ -21,6 +21,13 @@ let package = Package(
             dependencies: ["DiskKeeperCore"],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
+        // Developer-only read-only scan CLI (`swift run adk-scan`). Not a product; never shipped in the app.
+        .executableTarget(
+            name: "adk-scan",
+            dependencies: ["DiskKeeperCore"],
+            path: "Sources/adk-scan",
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
+        ),
         .testTarget(
             name: "DiskKeeperCoreTests",
             dependencies: ["DiskKeeperCore"]
