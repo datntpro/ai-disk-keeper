@@ -26,4 +26,13 @@ final class PathNormalizationTests: XCTestCase {
         XCTAssertEqual(PathNormalization.components("/").count, 0)
         XCTAssertEqual(PathNormalization.components("/a/b").map(String.init), ["a", "b"])
     }
+
+    func testSlashFollowedByCombiningMarkIsStillASeparator() {
+        XCTAssertEqual(PathNormalization.components("/a/\u{301}").map(String.init), ["a", "\u{301}"])
+        XCTAssertTrue(PathNormalization.containsParentReference("/a/../\u{301}"))
+        XCTAssertTrue(PathNormalization.containsParentReference("/a/\u{301}/.."))
+        XCTAssertEqual(PathNormalization.lexical("/a/\u{301}/../b"), "/a/b")
+        XCTAssertTrue(PathNormalization.isAbsolute("/\u{301}x"))
+        XCTAssertTrue(PathNormalization.containsNUL("/a\0\u{301}"))
+    }
 }

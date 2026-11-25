@@ -58,7 +58,7 @@ final class PathKeyTests: XCTestCase {
 
     func testGlobMatchesWholeCharacters() {
         func m(_ p: String, _ c: String) -> Bool {
-            GlobMatcher.matches(pattern: PathCanonicalizer.fold(p), component: PathCanonicalizer.fold(c))
+            GlobMatcher.matchesCharacters(pattern: PathCanonicalizer.fold(p), component: PathCanonicalizer.fold(c))
         }
         for e in ["\u{E9}", "e\u{301}"] {
             XCTAssertTrue(m("caf?", "caf" + e), e)
@@ -74,5 +74,23 @@ final class PathKeyTests: XCTestCase {
         XCTAssertTrue(m("x?", "xa\u{308}"), "base + combining mark is one character")
         XCTAssertFalse(m("x??", "xa\u{308}"))
         XCTAssertTrue(m("[\u{1F600}-\u{1F64F}]", "\u{1F601}"))
+    }
+
+    func testEitherMatcherKeepsLiteralsBeforeCombiningMarks() {
+        func m(_ p: String, _ c: String) -> Bool {
+            GlobMatcher.matches(pattern: PathCanonicalizer.fold(p), component: PathCanonicalizer.fold(c))
+        }
+        XCTAssertFalse(GlobMatcher.matchesCharacters(pattern: "id_rsa*", component: "id_rsa\u{301}"))
+        XCTAssertTrue(m("id_rsa*", "id_rsa\u{301}"))
+        XCTAssertTrue(m("id_rsa*", "id_rsa\u{200D}_old"))
+        XCTAssertTrue(m(".env.*", ".env.\u{301}"))
+        XCTAssertTrue(m("settings*.json", "settings\u{301}.json"))
+        XCTAssertTrue(m("r?", "re\u{301}"))
+    }
+
+    func testEscapeGlobEscapesMetacharacterFollowedByCombiningMark() {
+        let esc = ProtectedPaths.escapeGlob("a[\u{301}b")
+        XCTAssertTrue(GlobMatcher.matches(pattern: esc, component: "a[\u{301}b"))
+        XCTAssertFalse(GlobMatcher.matches(pattern: esc, component: "ab"))
     }
 }

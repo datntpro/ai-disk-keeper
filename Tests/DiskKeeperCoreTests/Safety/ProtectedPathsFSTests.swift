@@ -95,4 +95,22 @@ final class ProtectedPathsFSTests: XCTestCase {
         try tmp.symlink("home/.cache/tossh", to: home + "/.ssh")
         XCTAssertEqual(try policy().check("\(home)/.cache/tossh/newkey").denial?.reason, .protectedPath)
     }
+
+    func testRealFilesNamedWithCombiningMarkInsideProtectedFoldersAreDenied() throws {
+        let m = "\u{301}"
+        try tmp.file("home/.ssh/\(m)", bytes: 1)
+        try tmp.file("home/proj/.git/\(m)", bytes: 1)
+        try tmp.file("home/Library/Keychains/\(m)", bytes: 1)
+        try tmp.file("home/.claude/projects/-a/memory/\(m)", bytes: 1)
+        try tmp.file("home/proj/id_rsa\(m)", bytes: 1)
+        try tmp.file("home/.claude.json\(m)", bytes: 1)
+        try tmp.file("home/.claude/settings\(m).json", bytes: 1)
+        try tmp.file("home/proj/.env.\(m)", bytes: 1)
+        let p = try policy()
+        for rel in [".ssh/\(m)", "proj/.git/\(m)", "Library/Keychains/\(m)", ".claude/projects/-a/memory/\(m)",
+                    "proj/id_rsa\(m)", ".claude.json\(m)", ".claude/settings\(m).json", "proj/.env.\(m)"] {
+            XCTAssertFalse(p.check("\(home)/\(rel)").isAllowed, rel)
+        }
+        XCTAssertFalse(p.check("\(home)/.ssh/\(m)/x").isAllowed)
+    }
 }

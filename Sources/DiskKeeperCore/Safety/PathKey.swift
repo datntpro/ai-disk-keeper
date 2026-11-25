@@ -24,56 +24,78 @@ enum PathCanonicalizer {
     }
 }
 
-/// Component-level glob matcher over Characters (grapheme clusters), so `?` and `[..]` match one user-perceived character. Inputs are expected to be folded already.
+protocol GlobElement: Comparable {
+    init(ascii: UInt8)
+}
+extension Character: GlobElement { init(ascii: UInt8) { self = Character(Unicode.Scalar(ascii)) } }
+extension Unicode.Scalar: GlobElement { init(ascii: UInt8) { self = Unicode.Scalar(ascii) } }
+
+/// Component-level glob matcher. Inputs are expected to be folded already.
 /// Supports `*`, `?`, `[abc]`, `[a-z]`, `[!x]` and `\` escapes. A malformed `[` is a literal.
 /// `*` matches a leading dot (no FNM_PERIOD semantics).
+///
+/// `matches` is fail-closed: it is true if EITHER the Character (grapheme) matcher OR the Unicode-scalar
+/// matcher over the NFD form matches. Characters make `?`/`[..]` match one user-perceived character;
+/// scalars keep literals matching when a combining mark follows them (`id_rsa` + U+0301 vs `id_rsa*`).
 enum GlobMatcher {
-    private enum Token {
-        case literal(Character)
-        case any
-        case star
-        case set(negated: Bool, ranges: [ClosedRange<Character>])
+    static func matches(pattern: String, component: String) -> Bool {
+        matchesCharacters(pattern: pattern, component: component)
+            || matchesScalars(pattern: pattern, component: component)
     }
 
-    private static func tokenize(_ pattern: String) -> [Token] {
-        let s = Array(pattern)
-        var out: [Token] = []
+    static func matchesCharacters(pattern: String, component: String) -> Bool {
+        run(Array(pattern), Array(component))
+    }
+
+    static func matchesScalars(pattern: String, component: String) -> Bool {
+        run(Array(pattern.decomposedStringWithCanonicalMapping.unicodeScalars),
+            Array(component.decomposedStringWithCanonicalMapping.unicodeScalars))
+    }
+
+    private enum Token<E: GlobElement> {
+        case literal(E)
+        case any
+        case star
+        case set(negated: Bool, ranges: [ClosedRange<E>])
+    }
+
+    private static func tokenize<E: GlobElement>(_ s: [E]) -> [Token<E>] {
+        var out: [Token<E>] = []
         var i = 0
         while i < s.count {
             let c = s[i]
-            switch c {
-            case "*":
+            if c == E(ascii: 0x2A) {
                 if case .star? = out.last {} else { out.append(.star) }
                 i += 1
-            case "?":
+            } else if c == E(ascii: 0x3F) {
                 out.append(.any); i += 1
-            case "\\":
+            } else if c == E(ascii: 0x5C) {
                 if i + 1 < s.count { out.append(.literal(s[i + 1])); i += 2 } else { out.append(.literal(c)); i += 1 }
-            case "[":
+            } else if c == E(ascii: 0x5B) {
                 if let (tok, next) = parseSet(s, from: i) { out.append(tok); i = next } else {
                     out.append(.literal(c)); i += 1
                 }
-            default:
+            } else {
                 out.append(.literal(c)); i += 1
             }
         }
         return out
     }
 
-    private static func parseSet(_ s: [Character], from start: Int) -> (Token, Int)? {
+    private static func parseSet<E: GlobElement>(_ s: [E], from start: Int) -> (Token<E>, Int)? {
         var i = start + 1
         var negated = false
-        if i < s.count, s[i] == "!" || s[i] == "^" { negated = true; i += 1 }
-        var ranges: [ClosedRange<Character>] = []
+        if i < s.count, s[i] == E(ascii: 0x21) || s[i] == E(ascii: 0x5E) { negated = true; i += 1 }
+        var ranges: [ClosedRange<E>] = []
         var first = true
         while i < s.count {
             var c = s[i]
-            if c == "]" && !first {
+            if c == E(ascii: 0x5D) && !first {
                 return (.set(negated: negated, ranges: ranges), i + 1)
             }
             first = false
-            if c == "\\", i + 1 < s.count { i += 1; c = s[i] }
-            if i + 2 < s.count, s[i + 1] == "-", s[i + 2] != "]" {
+            if c == E(ascii: 0x5C), i + 1 < s.count { i += 1; c = s[i] }
+            if i + 2 < s.count, s[i + 1] == E(ascii: 0x2D), s[i + 2] != E(ascii: 0x5D) {
                 let hi = s[i + 2]
                 if hi >= c { ranges.append(c...hi) }
                 i += 3
@@ -85,9 +107,8 @@ enum GlobMatcher {
         return nil // unterminated
     }
 
-    static func matches(pattern: String, component: String) -> Bool {
+    private static func run<E: GlobElement>(_ pattern: [E], _ s: [E]) -> Bool {
         let toks = tokenize(pattern)
-        let s = Array(component)
         var t = 0, i = 0
         var starT = -1, starI = 0
         while i < s.count {
@@ -125,9 +146,9 @@ extension ProtectedPaths {
     /// (e.g. a home directory, `$TMPDIR` or `$HOME` expanded into `additionalPatterns`).
     public static func escapeGlob(_ literal: String) -> String {
         var out = ""
-        for ch in literal {
-            if "\\*?[]".contains(ch) { out.append("\\") }
-            out.append(ch)
+        for sc in literal.unicodeScalars {
+            if "\\*?[]".unicodeScalars.contains(sc) { out.unicodeScalars.append("\\") }
+            out.unicodeScalars.append(sc)
         }
         return out
     }

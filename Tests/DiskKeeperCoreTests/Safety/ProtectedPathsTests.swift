@@ -348,4 +348,27 @@ final class ProtectedPathsTests: XCTestCase {
         XCTAssertNil(reason(p, "/Users/tester/em\u{1F600}\u{1F600}ji"))
         XCTAssertEqual(reason(p, "/Users/tester/CAFE\u{301}"), .protectedPath)
     }
+
+    func testCombiningMarkNamedEntriesInsideProtectedFoldersAreDenied() throws {
+        let p = try policy()
+        let m = "\u{301}"
+        XCTAssertEqual(reason(p, "\(home)/.ssh/\(m)"), .protectedPath)
+        XCTAssertEqual(reason(p, "\(home)/.ssh/\(m)/x"), .protectedPath)
+        XCTAssertEqual(reason(p, "\(home)/proj/.git/\(m)"), .protectedName)
+        XCTAssertEqual(reason(p, "\(home)/Library/Keychains/\(m)"), .protectedPath)
+        XCTAssertEqual(reason(p, "\(home)/.claude/projects/-a/memory/\(m)"), .protectedPath)
+        XCTAssertEqual(reason(p, "\(home)/.cache/../\(m)"), .parentTraversal)
+        XCTAssertEqual(p.check("/\(m)x").denial?.reason, .outsideAllowedRoots)
+    }
+
+    func testBuiltInStarPatternsStillMatchNamesEndingInCombiningMark() throws {
+        let p = try policy()
+        let m = "\u{301}"
+        XCTAssertEqual(reason(p, "\(home)/p/id_rsa\(m)"), .protectedName)
+        XCTAssertEqual(reason(p, "\(home)/p/id_rsa\u{200D}"), .protectedName)
+        XCTAssertEqual(reason(p, "\(home)/p/id_rsa\u{200D}_old"), .protectedName)
+        XCTAssertEqual(reason(p, "\(home)/p/.env.\(m)"), .protectedName)
+        XCTAssertEqual(reason(p, "\(home)/.claude.json\(m)"), .protectedPath)
+        XCTAssertEqual(reason(p, "\(home)/.claude/settings\(m).json"), .protectedPath)
+    }
 }

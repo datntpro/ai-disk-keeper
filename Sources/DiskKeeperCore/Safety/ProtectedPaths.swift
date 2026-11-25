@@ -34,7 +34,7 @@ public struct ProtectedPaths: Sendable {
                 resolver: any PathResolving = SystemPathResolver()) throws {
         self.resolver = resolver
         func validRoot(_ r: String) throws -> String {
-            guard r.hasPrefix("/"), !r.contains("\0"), !PathNormalization.containsParentReference(r),
+            guard PathNormalization.isAbsolute(r), !PathNormalization.containsNUL(r), !PathNormalization.containsParentReference(r),
                   !PathNormalization.components(r).isEmpty else {
                 throw ProtectedPathsError.invalidRoot(r)
             }
@@ -45,7 +45,7 @@ public struct ProtectedPaths: Sendable {
 
         func forms(_ root: String) -> [String] {
             var out = [root]
-            if case .resolved(let r) = resolver.resolve(root), r.hasPrefix("/"),
+            if case .resolved(let r) = resolver.resolve(root), PathNormalization.isAbsolute(r),
                PathCanonicalizer.key(r) != PathCanonicalizer.key(root) {
                 out.append(PathNormalization.lexical(r))
             }
@@ -110,8 +110,8 @@ public struct ProtectedPaths: Sendable {
 
     private static func compileAdditional(_ pattern: String) throws -> Compiled {
         func bad(_ why: String) -> ProtectedPathsError { .invalidPattern(pattern: pattern, reason: why) }
-        guard pattern.hasPrefix("/") else { throw bad("pattern must be absolute") }
-        guard !pattern.contains("\0") else { throw bad("pattern contains NUL") }
+        guard PathNormalization.isAbsolute(pattern) else { throw bad("pattern must be absolute") }
+        guard !PathNormalization.containsNUL(pattern) else { throw bad("pattern contains NUL") }
         guard !PathNormalization.containsParentReference(pattern) else { throw bad("pattern contains \"..\"") }
         var comps = PathNormalization.components(pattern).map(String.init)
         if comps.last == "**" { comps.removeLast() }
@@ -125,7 +125,7 @@ public struct ProtectedPaths: Sendable {
 
     public func check(_ path: String) -> PathVerdict {
         // Cheap structural rejections first so we never resolve garbage.
-        guard path.hasPrefix("/"), !path.contains("\0"), !PathNormalization.containsParentReference(path) else {
+        guard PathNormalization.isAbsolute(path), !PathNormalization.containsNUL(path), !PathNormalization.containsParentReference(path) else {
             return evaluate(raw: path, resolution: .failed(errno: EINVAL))
         }
         return evaluate(raw: path, resolution: resolver.resolve(path))
@@ -152,7 +152,7 @@ public struct ProtectedPaths: Sendable {
             .denied(PathDenial(path: raw, reason: h.reason, matchedPattern: h.pattern, why: h.why,
                                viaSymlink: via, resolvedPath: resolved))
         }
-        if raw.isEmpty || !raw.hasPrefix("/") || raw.contains("\0") {
+        if raw.isEmpty || !PathNormalization.isAbsolute(raw) || PathNormalization.containsNUL(raw) {
             return .denied(PathDenial(path: raw, reason: .invalidPath))
         }
         if PathNormalization.containsParentReference(raw) {
@@ -165,7 +165,7 @@ public struct ProtectedPaths: Sendable {
         if let l = lexical, !l.reason.isContainerReason {
             return deny(l, via: false, resolved: resolvedPath)
         }
-        guard let resolved = resolvedPath, resolved.hasPrefix("/") else {
+        guard let resolved = resolvedPath, PathNormalization.isAbsolute(resolved) else {
             return .denied(PathDenial(path: raw, reason: .unresolvable))
         }
         let physical = denyReason(for: PathCanonicalizer.key(resolved))
