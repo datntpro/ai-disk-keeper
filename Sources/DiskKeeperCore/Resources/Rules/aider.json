@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "tool": {
+    "id": "aider",
+    "name": "Aider",
+    "docs": "https://aider.chat/docs/config/options.html"
+  },
+  "protect": [
+    "~/.aider.conf.yml",
+    "~/.aider.model.settings.yml",
+    "~/.aider.model.metadata.json"
+  ],
+  "rules": [
+    {
+      "id": "aider.tags-cache",
+      "title": "Aider repo-map cache",
+      "category": "aiToolData",
+      "paths": [
+        "~/Developer",
+        "~/code",
+        "~/src",
+        "~/Projects",
+        "~/projects",
+        "~/work",
+        "~/git",
+        "~/repos"
+      ],
+      "match": {
+        "kind": "find",
+        "name": ".aider.tags.cache.v*",
+        "marker": ".git",
+        "type": "directory",
+        "maxDepth": 4
+      },
+      "tier": "safe",
+      "project": {
+        "from": "parentOfItem"
+      },
+      "explanation": "Aider's repo-map cache; rebuilt on next run.",
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "aider.chat-history",
+      "title": "Aider chat history",
+      "category": "aiToolData",
+      "paths": [
+        "~/Developer",
+        "~/code",
+        "~/src",
+        "~/Projects",
+        "~/projects",
+        "~/work",
+        "~/git",
+        "~/repos"
+      ],
+      "match": {
+        "kind": "find",
+        "name": ".aider.chat.history.md",
+        "marker": ".git",
+        "type": "file",
+        "maxDepth": 4
+      },
+      "tier": "review",
+      "project": {
+        "from": "parentOfItem"
+      },
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 7
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Aider chat log for this repo; not regenerable. Logs from the last 7 days are kept.",
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "aider.input-history",
+      "title": "Aider input history",
+      "category": "aiToolData",
+      "paths": [
+        "~/Developer",
+        "~/code",
+        "~/src",
+        "~/Projects",
+        "~/projects",
+        "~/work",
+        "~/git",
+        "~/repos"
+      ],
+      "match": {
+        "kind": "find",
+        "name": ".aider.input.history",
+        "marker": ".git",
+        "type": "file",
+        "maxDepth": 4
+      },
+      "tier": "review",
+      "project": {
+        "from": "parentOfItem"
+      },
+      "explanation": "Prompt history (up-arrow recall) for this repo; not regenerable.",
+      "cleanup": {
+        "method": "trash"
+      }
+    }
+  ]
+}

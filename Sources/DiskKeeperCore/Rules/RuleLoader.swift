@@ -27,11 +27,21 @@ public struct RuleSet: Sendable, Hashable {
 public struct RuleLoadResult: Sendable {
     public let ruleSets: [RuleSet]
     public let errors: [RuleLoadError]
+    /// Non-fatal problems: a rule path that the guard refuses (`protectedPathTarget`) is dropped from its
+    /// rule and reported here; the rest of the file still loads. The guard is applied again at scan time.
+    public let warnings: [RuleLoadError]
     /// Union of the protect patterns (glob patterns whose machine-derived parts are backslash-escaped) of
     /// every file that decoded and passed structural validation, **including files later rejected** (for a
     /// protected target or a duplicate id). Protection is fail-safe: a mistake elsewhere in a file never
     /// removes the protection it asked for. This is what the scanner must feed to the real guard.
     public let protectPatterns: [String]
+
+    public init(ruleSets: [RuleSet], errors: [RuleLoadError], warnings: [RuleLoadError] = [], protectPatterns: [String]) {
+        self.ruleSets = ruleSets
+        self.errors = errors
+        self.warnings = warnings
+        self.protectPatterns = protectPatterns
+    }
 
     public var allRules: [ResolvedRule] { ruleSets.flatMap(\.rules) }
 }
@@ -167,10 +177,10 @@ public struct RuleLoader: Sendable {
         }
 
         var ruleSets: [RuleSet] = []
+        var warnings: [RuleLoadError] = []
         for entry in accepted {
             var resolved: [ResolvedRule] = []
-            var rejection: RuleLoadError?
-            outer: for (i, rule) in entry.rules.rules.enumerated() {
+            for (i, rule) in entry.rules.rules.enumerated() {
                 var expanded: [String] = []
                 var unavailable: [UnavailablePath] = []
                 for (j, template) in rule.paths.enumerated() {
@@ -179,10 +189,11 @@ public struct RuleLoader: Sendable {
                         unavailable.append(UnavailablePath(template: template.raw, reason: reason))
                     case .path(let path):
                         if let d = check(path), rule.match.kind == .self || d.scope == .pathItself {
-                            rejection = RuleLoadError(
+                            // Fail closed for this path only: it is dropped, never scanned.
+                            warnings.append(RuleLoadError(
                                 kind: .protectedPathTarget, file: entry.file, source: entry.source,
-                                jsonPath: "rules[\(i)].paths[\(j)]", message: "\(path): \(d.message)")
-                            break outer
+                                jsonPath: "rules[\(i)].paths[\(j)]", message: "\(path): \(d.message) (path skipped)"))
+                            continue
                         }
                         expanded.append(path)
                     }
@@ -190,12 +201,11 @@ public struct RuleLoader: Sendable {
                 resolved.append(ResolvedRule(
                     rule: rule, tool: entry.rules.tool.id, expandedPaths: expanded, unavailablePaths: unavailable))
             }
-            if let rejection { errors.append(rejection); continue }
             ruleSets.append(RuleSet(
                 source: entry.source, file: entry.file, tool: entry.rules.tool,
                 protectPatterns: entry.protect, rules: resolved))
         }
-        return RuleLoadResult(ruleSets: ruleSets, errors: errors, protectPatterns: allProtect)
+        return RuleLoadResult(ruleSets: ruleSets, errors: errors, warnings: warnings, protectPatterns: allProtect)
     }
 
     // MARK: File access

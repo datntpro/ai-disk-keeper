@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "tool": {
+    "id": "codex",
+    "name": "Codex",
+    "docs": "https://github.com/openai/codex/blob/main/docs/config.md"
+  },
+  "protect": [
+    "${CODEX_HOME:-~/.codex}/auth.json",
+    "${CODEX_HOME:-~/.codex}/config.*",
+    "${CODEX_HOME:-~/.codex}/AGENTS.md",
+    "${CODEX_HOME:-~/.codex}/history.jsonl",
+    "${CODEX_HOME:-~/.codex}/prompts/**",
+    "${CODEX_HOME:-~/.codex}/skills/**"
+  ],
+  "rules": [
+    {
+      "id": "codex.sessions",
+      "title": "Codex session rollouts (per day)",
+      "category": "aiToolData",
+      "paths": [
+        "${CODEX_HOME:-~/.codex}/sessions"
+      ],
+      "match": {
+        "kind": "children",
+        "depth": 3,
+        "type": "directory"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 7
+          },
+          "tier": "keep"
+        },
+        {
+          "if": {
+            "olderThanDays": 30
+          },
+          "tier": "safe"
+        }
+      ],
+      "explanation": "One day of Codex session rollouts (YYYY/MM/DD). Deleting it removes those sessions from `codex resume`; your code is not affected. Days from the last 7 days are kept.",
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "codex.archived-sessions",
+      "title": "Codex archived sessions",
+      "category": "aiToolData",
+      "paths": [
+        "${CODEX_HOME:-~/.codex}/archived_sessions"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "olderThanDays": 30
+          },
+          "tier": "safe"
+        }
+      ],
+      "explanation": "Sessions you archived in Codex. Deleting them removes them permanently from the archive; your code is not affected.",
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "codex.logs",
+      "title": "Codex logs",
+      "category": "systemJunk",
+      "paths": [
+        "${CODEX_HOME:-~/.codex}/log"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Diagnostic logs written by Codex. Safe to delete; new logs are created as it runs. Logs from the last day are kept.",
+      "cleanup": {
+        "method": "trash"
+      }
+    }
+  ]
+}

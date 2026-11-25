@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "tool": {
+    "id": "cursor",
+    "name": "Cursor",
+    "docs": "https://docs.cursor.com"
+  },
+  "protect": [
+    "$APP_SUPPORT/Cursor/User/globalStorage/**",
+    "$APP_SUPPORT/Cursor/User/*.json",
+    "$APP_SUPPORT/Cursor/User/snippets/**",
+    "$APP_SUPPORT/Cursor/User/profiles/**",
+    "$APP_SUPPORT/Cursor/Cookies*",
+    "$APP_SUPPORT/Cursor/Local Storage/**",
+    "$APP_SUPPORT/Cursor/Session Storage/**",
+    "$APP_SUPPORT/Cursor/IndexedDB/**",
+    "$APP_SUPPORT/Cursor/Local State",
+    "$APP_SUPPORT/Cursor/Preferences",
+    "~/.cursor/*.json",
+    "~/.cursor/rules/**"
+  ],
+  "rules": [
+    {
+      "id": "cursor.electron-cache",
+      "title": "Cursor web caches",
+      "category": "aiToolData",
+      "paths": [
+        "$APP_SUPPORT/Cursor/Cache",
+        "$APP_SUPPORT/Cursor/Code Cache",
+        "$APP_SUPPORT/Cursor/GPUCache",
+        "$APP_SUPPORT/Cursor/CachedData",
+        "$APP_SUPPORT/Cursor/DawnGraphiteCache",
+        "$APP_SUPPORT/Cursor/DawnWebGPUCache",
+        "$APP_SUPPORT/Cursor/GraphiteDawnCache",
+        "$APP_SUPPORT/Cursor/Shared Dictionary"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "safe",
+      "explanation": "Cursor is an Electron app; these are Chromium HTTP, code, GPU and shader caches. They are rebuilt automatically when the app starts.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.todesktop.230313mzl4w4u92"
+      }
+    },
+    {
+      "id": "cursor.app-logs",
+      "title": "Cursor app logs",
+      "category": "systemJunk",
+      "paths": [
+        "$APP_SUPPORT/Cursor/logs"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Diagnostic logs written by Cursor. Safe to delete; new logs are created as it runs. Logs from the last day are kept in case the app is running.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.todesktop.230313mzl4w4u92"
+      }
+    },
+    {
+      "id": "cursor.workspace-storage",
+      "title": "Cursor workspace state",
+      "category": "aiToolData",
+      "paths": [
+        "$APP_SUPPORT/Cursor/User/workspaceStorage"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "directory"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 14
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Per-workspace state for one folder opened in Cursor (chat history, editor state, indexes). Deleting it loses that workspace's chat history and open-editor state; folders touched in the last 14 days are kept.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.todesktop.230313mzl4w4u92"
+      }
+    },
+    {
+      "id": "cursor.history",
+      "title": "Cursor local file history",
+      "category": "aiToolData",
+      "paths": [
+        "$APP_SUPPORT/Cursor/User/History"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "directory"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 14
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Local file history (earlier versions of files you edited) kept per file. Deleting it removes Timeline entries for those files; your current files are not affected. Entries touched in the last 14 days are kept.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.todesktop.230313mzl4w4u92"
+      }
+    },
+    {
+      "id": "cursor.extension-cache",
+      "title": "Cursor downloaded extension packages",
+      "category": "aiToolData",
+      "paths": [
+        "$APP_SUPPORT/Cursor/CachedExtensionVSIXs"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "safe",
+      "explanation": "Downloaded extension packages (.vsix) kept after installation. Cursor downloads them again if needed; installed extensions are not affected.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.todesktop.230313mzl4w4u92"
+      }
+    }
+  ]
+}

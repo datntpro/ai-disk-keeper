@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "tool": {
+    "id": "claude-desktop",
+    "name": "Claude Desktop",
+    "docs": "https://support.claude.com/en/articles/10065433-installing-claude-desktop"
+  },
+  "protect": [
+    "$APP_SUPPORT/Claude/*.json",
+    "$APP_SUPPORT/Claude/Cookies*",
+    "$APP_SUPPORT/Claude/Local Storage/**",
+    "$APP_SUPPORT/Claude/IndexedDB/**",
+    "$APP_SUPPORT/Claude/Session Storage/**",
+    "$APP_SUPPORT/Claude/WebStorage/**",
+    "$APP_SUPPORT/Claude/Local State",
+    "$APP_SUPPORT/Claude/Preferences",
+    "$APP_SUPPORT/Claude/ant-did",
+    "$APP_SUPPORT/Claude/git-shadow/**",
+    "$APP_SUPPORT/Claude/claude-code-sessions/**",
+    "$APP_SUPPORT/Claude/local-agent-mode-sessions/**",
+    "$APP_SUPPORT/Claude/Extension State/**"
+  ],
+  "rules": [
+    {
+      "id": "claude-desktop.vm-bundle",
+      "title": "Agent mode VM image",
+      "category": "aiToolData",
+      "paths": [
+        "$APP_SUPPORT/Claude/vm_bundles"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "directory",
+        "glob": "*.bundle"
+      },
+      "tier": "review",
+      "explanation": "Linux VM image used by Claude's agent / Cowork mode (several GB on disk). Claude downloads it again (over 1 GB) the next time you use that mode, and files saved inside the VM's session disk are lost. Quit Claude first.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.anthropic.claudefordesktop"
+      }
+    },
+    {
+      "id": "claude-desktop.bundled-claude-code",
+      "title": "Bundled Claude Code",
+      "category": "aiToolData",
+      "paths": [
+        "$APP_SUPPORT/Claude/claude-code"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "directory"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 7
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "A copy of Claude Code bundled by the desktop app (one folder per version). Claude re-downloads the version it needs (about 350 MB) the next time it starts a Claude Code session; folders for older versions are not used.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.anthropic.claudefordesktop"
+      }
+    },
+    {
+      "id": "claude-desktop.claude-code-vm",
+      "title": "Claude Code for agent VM",
+      "category": "aiToolData",
+      "paths": [
+        "$APP_SUPPORT/Claude/claude-code-vm"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "directory"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 7
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Claude Code build for the agent VM (one folder per version). Claude re-downloads the version it needs (about 350 MB) the next time it starts a Claude Code session; folders for older versions are not used.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.anthropic.claudefordesktop"
+      }
+    },
+    {
+      "id": "claude-desktop.web-cache",
+      "title": "Web caches",
+      "category": "aiToolData",
+      "paths": [
+        "$APP_SUPPORT/Claude/Cache",
+        "$APP_SUPPORT/Claude/Code Cache",
+        "$APP_SUPPORT/Claude/GPUCache",
+        "$APP_SUPPORT/Claude/DawnGraphiteCache",
+        "$APP_SUPPORT/Claude/DawnWebGPUCache",
+        "$APP_SUPPORT/Claude/GraphiteDawnCache",
+        "$APP_SUPPORT/Claude/GPUPersistentCache",
+        "$APP_SUPPORT/Claude/Shared Dictionary"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "safe",
+      "explanation": "Chromium HTTP, code and GPU caches. Rebuilt automatically; the app may start a little slower once.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.anthropic.claudefordesktop"
+      }
+    },
+    {
+      "id": "claude-desktop.crash-dumps",
+      "title": "Crash dumps",
+      "category": "aiToolData",
+      "paths": [
+        "$APP_SUPPORT/Claude/Crashpad/completed",
+        "$APP_SUPPORT/Claude/Crashpad/pending"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "safe",
+      "explanation": "Crash dumps that were already reported (or will never be). Not needed to run Claude.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.anthropic.claudefordesktop"
+      }
+    }
+  ]
+}

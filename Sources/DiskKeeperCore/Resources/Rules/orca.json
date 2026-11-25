@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "tool": {
+    "id": "orca",
+    "name": "Orca",
+    "docs": "https://github.com/stablyai/orca"
+  },
+  "protect": [
+    "$APP_SUPPORT/orca/claude-profiles/**",
+    "$APP_SUPPORT/orca/codex-runtime-home/**",
+    "$APP_SUPPORT/orca/*.json",
+    "$APP_SUPPORT/orca/*.db*",
+    "$APP_SUPPORT/orca/*.sqlite*",
+    "$APP_SUPPORT/orca/ai-vault/**",
+    "$APP_SUPPORT/orca/profiles/**",
+    "$APP_SUPPORT/orca/bot-memory-history/**",
+    "$APP_SUPPORT/orca/terminal-history/**",
+    "$APP_SUPPORT/orca/agent-session-attachments/**",
+    "$APP_SUPPORT/orca/Partitions/**",
+    "$APP_SUPPORT/orca/Cookies*",
+    "$APP_SUPPORT/orca/Local Storage/**",
+    "$APP_SUPPORT/orca/Session Storage/**",
+    "$APP_SUPPORT/orca/IndexedDB/**",
+    "$APP_SUPPORT/orca/Local State",
+    "$APP_SUPPORT/orca/Preferences"
+  ],
+  "rules": [
+    {
+      "id": "orca.electron-cache",
+      "title": "Orca web caches",
+      "category": "aiToolData",
+      "paths": [
+        "$APP_SUPPORT/orca/Cache",
+        "$APP_SUPPORT/orca/Code Cache",
+        "$APP_SUPPORT/orca/GPUCache",
+        "$APP_SUPPORT/orca/CachedData",
+        "$APP_SUPPORT/orca/DawnGraphiteCache",
+        "$APP_SUPPORT/orca/DawnWebGPUCache",
+        "$APP_SUPPORT/orca/GraphiteDawnCache",
+        "$APP_SUPPORT/orca/Shared Dictionary"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "safe",
+      "explanation": "Orca is an Electron app; these are Chromium HTTP, code, GPU and shader caches. They are rebuilt automatically when the app starts.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.stablyai.orca"
+      }
+    },
+    {
+      "id": "orca.logs",
+      "title": "Orca logs",
+      "category": "systemJunk",
+      "paths": [
+        "$APP_SUPPORT/orca/logs"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Diagnostic logs written by Orca. Safe to delete; new logs are created as it runs. Logs from the last day are kept.",
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "orca.crash-dumps",
+      "title": "Orca crash dumps",
+      "category": "systemJunk",
+      "paths": [
+        "$APP_SUPPORT/orca/Crashpad/completed",
+        "$APP_SUPPORT/orca/Crashpad/pending"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "safe",
+      "explanation": "Crash reports written by Orca's crash handler. Safe to delete.",
+      "cleanup": {
+        "method": "trash"
+      }
+    }
+  ]
+}
