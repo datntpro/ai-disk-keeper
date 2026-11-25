@@ -49,8 +49,24 @@ jobs:
           path: .build
           key: spm-release-${{ runner.os }}-${{ hashFiles('Package.swift', 'Package.resolved') }}
           restore-keys: spm-release-${{ runner.os }}-
-      - name: Lint script
-        run: bash -n scripts/make-app.sh
+      - name: Lint scripts and packaging
+        run: |
+          for f in scripts/*.sh; do bash -n "$f"; done
+          plutil -lint Packaging/Info.plist Packaging/AIDiskKeeper.entitlements
+          ./scripts/sign-app.sh -h >/dev/null && ./scripts/notarize.sh -h >/dev/null && ./scripts/make-dmg.sh -h >/dev/null && ./scripts/render-release-notes.sh -h >/dev/null
+      - name: Unsigned DMG smoke test
+        run: |
+          ./scripts/make-app.sh --config debug --output "$RUNNER_TEMP/dmgtest" --skip-verify
+          ./scripts/make-dmg.sh "$RUNNER_TEMP/dmgtest/AI Disk Keeper.app" "$RUNNER_TEMP/dmgtest/test.dmg"
+          hdiutil imageinfo "$RUNNER_TEMP/dmgtest/test.dmg" >/dev/null
+      - name: Sign (ad-hoc, relative path) and release-notes smoke test
+        run: |
+          cp -R "$RUNNER_TEMP/dmgtest/AI Disk Keeper.app" "$RUNNER_TEMP/dmgtest/signme.app"
+          cd "$RUNNER_TEMP/dmgtest" && SIGN_IDENTITY=- "$GITHUB_WORKSPACE/scripts/sign-app.sh" signme.app && cd "$GITHUB_WORKSPACE"
+          printf 'aaa  one.dmg\nbbb  one.zip\n' > "$RUNNER_TEMP/sums.txt"
+          ./scripts/render-release-notes.sh 9.9.9 "UNSIGNED" "$RUNNER_TEMP/sums.txt" "$RUNNER_TEMP/notes.md"
+          grep -q 'bbb  one.zip' "$RUNNER_TEMP/notes.md"
+          grep -q 'AI-Disk-Keeper-9.9.9.dmg' "$RUNNER_TEMP/notes.md"
       - name: Build .app
         run: BUILD_NUMBER=${{ github.run_number }} ./scripts/make-app.sh --config release --universal --zip --output dist
       - name: Smoke-launch .app
