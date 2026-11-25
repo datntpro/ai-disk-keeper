@@ -265,6 +265,73 @@ final class ScanEngineTests: XCTestCase {
         XCTAssertTrue(EngineKit.items(events).allSatisfy { $0.category == .systemJunk })
     }
 
+    func testLoaderWarningsBecomeWarnings() async throws {
+        try fixture.file(".t/cache/blob")
+        // ~/.ssh is protected: the rule path is dropped with a loader warning (not an error).
+        try writeRules(["w.json": RuleFixtures.file(tool: "t", rules: [
+            RuleFixtures.rule(id: "t.cache", paths: #"["~/.t/cache", "~/.ssh"]"#)])])
+        let events = await EngineKit.collect(try await makeEngine().scan())
+        let warnings = EngineKit.warnings(events)
+        XCTAssertTrue(warnings.contains { $0.kind == .ruleError && $0.message.contains(".ssh") }, "\(warnings)")
+        XCTAssertEqual(EngineKit.items(events).map(\.path), [fixture.abs(".t/cache")])
+    }
+
+    func testProgressAdvancesWithoutScannerProgressCalls() async throws {
+        let paths = (0..<8).map { fixture.abs(".h/d\($0)") }
+        let (engine, _) = try engine(scanners: [
+            ClosureScanner(id: "slow") { _, sink in
+                for p in paths {
+                    await sink.item(EngineKit.item(p))
+                    try await Task.sleep(nanoseconds: 80_000_000)
+                }
+            },
+        ], progressInterval: .milliseconds(100))
+        let events = await EngineKit.collect(try await engine.scan())
+        XCTAssertGreaterThanOrEqual(EngineKit.progress(events).count, 3, "heartbeat/trailing-edge progress expected")
+    }
+
+    func testCrossScannerOverlapThroughSymlinkedParentIsDetected() async throws {
+        try fixture.dir(".real/cache")
+        try fixture.symlink(".alias", to: fixture.abs(".real"))
+        let (engine, context) = try engine(scanners: [
+            ClosureScanner(id: "one") { _, sink in await sink.item(EngineKit.item(self.fixture.abs(".real/cache"), rule: "o.one")) },
+            ClosureScanner(id: "two") { _, sink in
+                try await Task.sleep(nanoseconds: 50_000_000)
+                await sink.item(EngineKit.item(self.fixture.abs(".alias/cache"), rule: "o.two"))
+            },
+        ])
+        let events = await EngineKit.collect(try await engine.scan())
+        EngineKit.assertContract(events, pathGuard: context.pathGuard)
+        XCTAssertEqual(EngineKit.items(events).map(\.ruleID), ["o.one"])
+        XCTAssertEqual(EngineKit.warnings(events).filter { $0.kind == .ruleError }.count, 1)
+    }
+
+    func testOverlapWarningsDeduplicatedPerRulePair() async throws {
+        let (engine, _) = try engine(scanners: [
+            ClosureScanner(id: "one") { _, sink in await sink.item(EngineKit.item(self.fixture.abs(".o/a"), rule: "o.one")) },
+            ClosureScanner(id: "two") { _, sink in
+                try await Task.sleep(nanoseconds: 50_000_000)
+                for i in 0..<5 { await sink.item(EngineKit.item(self.fixture.abs(".o/a/\(i)"), rule: "o.two")) }
+            },
+        ])
+        let events = await EngineKit.collect(try await engine.scan())
+        XCTAssertEqual(EngineKit.warnings(events).filter { $0.kind == .ruleError }.count, 1)
+    }
+
+    func testSelfThrownCancellationWithoutScanCancelIsAFailure() async throws {
+        let (engine, _) = try engine(scanners: [ClosureScanner(id: "t") { _, _ in throw CancellationError() }])
+        let events = await EngineKit.collect(try await engine.scan())
+        XCTAssertEqual(EngineKit.warnings(events).filter { $0.kind == .scannerFailed }.count, 1)
+        XCTAssertFalse(EngineKit.terminal(events)!.cancelled)
+    }
+
+    func testExampleScannerMissingDirectoryIsSilent() async throws {
+        let (engine, _) = try engine(scanners: [ExampleScanner(directory: fixture.abs(".nope"))])
+        let events = await EngineKit.collect(try await engine.scan())
+        XCTAssertTrue(EngineKit.warnings(events).isEmpty)
+        XCTAssertTrue(EngineKit.items(events).isEmpty)
+    }
+
     func testDocsContainTheExampleVerbatim() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
             .deletingLastPathComponent().deletingLastPathComponent()

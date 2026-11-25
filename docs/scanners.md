@@ -46,6 +46,8 @@ struct ExampleScanner: Scanner {
     let directory: String
 
     func scan(context: ScanContext, sink: ScanSink) async throws {
+        // A missing directory means "tool not installed": no items and no warning.
+        guard FileManager.default.fileExists(atPath: directory) else { return }
         let names = try FileManager.default.contentsOfDirectory(atPath: directory).sorted()
         var found = 0
         for name in names where name.hasSuffix(".log") {

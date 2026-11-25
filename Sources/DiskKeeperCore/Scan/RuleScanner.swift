@@ -44,27 +44,6 @@ public struct RuleScanner: Scanner {
         var ownerDropped = 0
     }
 
-    /// Physical identity of a candidate: the resolved parent directory plus the leaf (a candidate is never a
-    /// symlink, so the leaf needs no resolving). Falls back to the lexical path when the parent can't be resolved.
-    private static func physicalPath(_ path: String, resolver: any PathResolving,
-                                     cache: inout [String: String]) -> String {
-        let comps = PathNormalization.components(path)
-        guard let leaf = comps.last else { return path }
-        let parent = "/" + comps.dropLast().joined(separator: "/")
-        let resolved: String
-        if let hit = cache[parent] {
-            resolved = hit
-        } else {
-            if case .resolved(let r) = resolver.resolve(parent), PathNormalization.isAbsolute(r) {
-                resolved = PathNormalization.lexical(r)
-            } else {
-                resolved = parent
-            }
-            cache[parent] = resolved
-        }
-        return (resolved == "/" ? "" : resolved) + "/" + leaf
-    }
-
     private func expand(context: ScanContext, sink: ScanSink) async throws -> Expansion {
         var claims = PathClaimSet()
         var owner: [String: String] = [:]          // claimed (physical) path → rule id
@@ -80,7 +59,7 @@ public struct RuleScanner: Scanner {
             out.guardDropped += result.guardDropped
             out.ownerDropped += result.ownerDropped
             for candidate in result.candidates {
-                let physical = Self.physicalPath(candidate.path, resolver: pathResolver, cache: &parentCache)
+                let physical = PhysicalPath.of(candidate.path, resolver: pathResolver, cache: &parentCache)
                 if let conflict = claims.claim(physical) {
                     let claimedPath: String
                     switch conflict {

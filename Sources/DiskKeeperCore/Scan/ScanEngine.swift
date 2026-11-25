@@ -26,6 +26,10 @@ public actor ScanEngine {
     private var cancelRequested = false
     private var lastProgressAt: ContinuousClock.Instant?
     private var startedAt = Date()
+    private var dirty = false                       // state changed since the last progress event
+    private var claimOwner: [String: String] = [:]  // claimed physical path → rule id
+    private var warnedOverlaps = Set<String>()
+    private let physicalPaths = PhysicalPathResolver()
 
     public init(context: ScanContext, scanners: [any Scanner], initialWarnings: [ScanWarning] = [],
                 progressInterval: Duration = .milliseconds(100)) {
@@ -51,7 +55,7 @@ public actor ScanEngine {
         let pathGuard = try ScanGuard(environment: environment, protectPatterns: loaded.protectPatterns)
         let context = ScanContext(environment: environment, pathGuard: pathGuard, now: now,
                                   maxConcurrentSizing: maxConcurrentSizing)
-        let warnings = loaded.errors.map {
+        let warnings = (loaded.errors + loaded.warnings).map {
             ScanWarning(kind: .ruleError, path: $0.file?.path, message: $0.description)
         }
         return ScanEngine(context: context, scanners: [RuleScanner(loadResult: loaded)] + extraScanners,
@@ -62,6 +66,9 @@ public actor ScanEngine {
 
     /// Starts a scan. Throws `.alreadyRunning` if one is in progress. The stream is unbounded; terminating it
     /// (the consumer cancels its `for await` task or drops the stream) cancels the scan.
+    ///
+    /// Single consumer: iterate the returned stream from one task only (concurrent iterators split the events
+    /// and only one of them would see the terminal event); to fan out, re-broadcast from that task.
     public func scan() throws -> AsyncStream<ScanEvent> {
         guard runTask == nil else { throw ScanEngineError.alreadyRunning }
         let (stream, continuation) = AsyncStream.makeStream(of: ScanEvent.self, bufferingPolicy: .unbounded)
@@ -74,6 +81,9 @@ public actor ScanEngine {
         items = []
         warnings = []
         claims = PathClaimSet()
+        claimOwner = [:]
+        warnedOverlaps = []
+        dirty = false
         perScanner = [:]
         finishedScanners = 0
         bytesFound = 0
@@ -104,16 +114,29 @@ public actor ScanEngine {
         for w in initialWarnings { accept(w, generation: gen) }
 
         let context = self.context
+        // Heartbeat: progress also advances on item arrivals and finished scanners, never only on scanner calls.
+        let period = min(progressInterval, .milliseconds(250))
+        let ticker = Task { [self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: period)
+                self.heartbeat(generation: gen)
+            }
+        }
         await withTaskGroup(of: Void.self) { group in
             for scanner in scanners {
                 let sink = ScanSink(
-                    item: { [self] item in await self.accept(item, generation: gen) },
+                    item: { [self] item in
+                        // The guard check and path resolution run on the caller's task, not on the actor.
+                        guard context.pathGuard.check(item.path).isAllowed else { return }
+                        let physical = await self.physicalPaths.physical(item.path)
+                        await self.accept(item, physical: physical, generation: gen)
+                    },
                     warning: { [self] w in await self.accept(w, generation: gen) },
                     progress: { [self] p in await self.update(p, scanner: scanner.id, generation: gen) })
                 group.addTask { [self] in
                     do {
                         try await scanner.scan(context: context, sink: sink)
-                    } catch is CancellationError {
+                    } catch is CancellationError where Task.isCancelled {
                     } catch {
                         await self.accept(ScanWarning(kind: .scannerFailed, message: "\(scanner.id): \(error)"),
                                           generation: gen)
@@ -122,28 +145,44 @@ public actor ScanEngine {
                 }
             }
         }
+        ticker.cancel()
         finish(generation: gen)
+    }
+
+    private func heartbeat(generation gen: Int) {
+        guard isOpen(gen), dirty else { return }
+        emitProgressIfDue()
     }
 
     private func scannerFinished(generation gen: Int) {
         guard gen == generation, !terminated else { return }
         finishedScanners += 1
+        dirty = true
+        emitProgressIfDue()
     }
 
     private func isOpen(_ gen: Int) -> Bool { gen == generation && !terminated && !cancelRequested }
 
-    private func accept(_ item: ScanItem, generation gen: Int) {
+    private func accept(_ item: ScanItem, physical: String, generation gen: Int) {
         guard isOpen(gen) else { return }
-        guard context.pathGuard.check(item.path).isAllowed else { return }
-        if claims.claim(item.path) != nil {
-            accept(ScanWarning(kind: .ruleError, path: item.path, ruleID: item.ruleID,
-                               message: "\(item.ruleID): \(item.path) overlaps another item; skipped"),
-                   generation: gen)
+        if let conflict = claims.claim(physical) {
+            let claimed: String
+            switch conflict { case .equal(let p), .inside(let p), .contains(let p): claimed = p }
+            let earlier = claimOwner[claimed] ?? "?"
+            // One warning per (rule, earlier rule) pair, not per item.
+            if warnedOverlaps.insert(item.ruleID + "\u{0}" + earlier).inserted {
+                accept(ScanWarning(kind: .ruleError, path: item.path, ruleID: item.ruleID,
+                                   message: "\(item.ruleID): \(item.path) overlaps another item (\(earlier)); skipped"),
+                       generation: gen)
+            }
             return
         }
+        claimOwner[physical] = item.ruleID
         items.append(item)
         bytesFound += item.sizeAllocated
+        dirty = true
         continuation?.yield(.itemFound(item))
+        emitProgressIfDue()
     }
 
     private func accept(_ warning: ScanWarning, generation gen: Int) {
@@ -155,9 +194,16 @@ public actor ScanEngine {
     private func update(_ progress: ScannerProgress, scanner: String, generation gen: Int) {
         guard isOpen(gen) else { return }
         perScanner[scanner] = progress
+        dirty = true
+        emitProgressIfDue()
+    }
+
+    /// Throttled; a throttled update stays `dirty` and the heartbeat emits it later (trailing edge).
+    private func emitProgressIfDue() {
         let now = ContinuousClock.now
         if let last = lastProgressAt, now - last < progressInterval { return }
         lastProgressAt = now
+        dirty = false
         continuation?.yield(.progress(snapshot()))
     }
 
@@ -179,5 +225,7 @@ public actor ScanEngine {
         continuation?.finish()
         continuation = nil
         runTask = nil
+        // Free the per-scan state; the result already holds what callers need.
+        items = []; warnings = []; claims = PathClaimSet(); claimOwner = [:]; warnedOverlaps = []
     }
 }
