@@ -166,6 +166,14 @@ final class CandidateExpanderTests: XCTestCase {
         XCTAssertEqual(result.candidates.count, 1)
     }
 
+    func testCandidateOnAnotherDeviceIsFlagged() throws {
+        try fixture.dir(".t/c/a")
+        try fixture.dir(".t/c/b")
+        let mount = fixture.abs(".t/c/a")
+        let result = try expand(json(rule(match: #"{"kind":"children"}"#)), deviceOf: { $0 == mount ? 99 : 1 })
+        XCTAssertEqual(result.candidates.map(\.onOtherVolume), [true, false])
+    }
+
     func testOwnerMismatchDroppedSilently() throws {
         try fixture.file(".t/c/a")
         let loaded = try RuleHarness.loadRules(json: json(rule(match: #"{"kind":"children"}"#)), fixture: fixture)

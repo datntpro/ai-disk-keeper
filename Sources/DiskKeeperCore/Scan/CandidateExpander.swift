@@ -8,6 +8,8 @@ struct RuleCandidate: Sendable, Hashable {
     let containerPath: String
     let isDirectory: Bool
     let ownerUID: uid_t
+    /// The candidate itself lives on another device than its container (it is a mount point).
+    var onOtherVolume = false
 }
 
 struct ExpansionResult: Sendable {
@@ -57,6 +59,7 @@ enum CandidateExpander {
         let deviceOf: (String) -> dev_t
         var result = ExpansionResult()
         var capped = false
+        var containerDevice: dev_t = 0
 
         init(rule: ResolvedRule, userID: uid_t, pathGuard: ScanGuard, cap: Int, deviceOf: @escaping (String) -> dev_t) {
             self.rule = rule
@@ -100,6 +103,7 @@ enum CandidateExpander {
                     warn(.other, container, "\(container) is not a directory or is a symlink")
                     return
                 }
+                containerDevice = deviceOf(container)
                 if match.kind == .children {
                     try children(dir: container, level: 1, container: container)
                 } else {
@@ -200,7 +204,8 @@ enum CandidateExpander {
             if result.candidates.count >= cap { capped = true; return }
             result.candidates.append(RuleCandidate(
                 path: path, containerPath: container,
-                isDirectory: (st.st_mode & S_IFMT) == S_IFDIR, ownerUID: st.st_uid))
+                isDirectory: (st.st_mode & S_IFMT) == S_IFDIR, ownerUID: st.st_uid,
+                onOtherVolume: match.kind != .self && deviceOf(path) != containerDevice))
         }
 
         struct ListError: Error { let code: Int32 }

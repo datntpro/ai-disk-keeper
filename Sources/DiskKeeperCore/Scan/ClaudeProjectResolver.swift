@@ -45,8 +45,14 @@ struct ClaudeProjectResolver {
     }
 
     private static func cwd(inProjectDir dir: String) -> String? {
-        guard let file = newestTranscript(in: dir),
-              let handle = FileHandle(forReadingAtPath: file) else { return nil }
+        guard let file = newestTranscript(in: dir) else { return nil }
+        // Open without following links or blocking (a swap after the lstat to a symlink/FIFO), then re-check
+        // the opened descriptor is a regular file.
+        let fd = open(file, O_RDONLY | O_NOFOLLOW | O_NONBLOCK)
+        guard fd >= 0 else { return nil }
+        var st = stat()
+        guard fstat(fd, &st) == 0, (st.st_mode & S_IFMT) == S_IFREG else { close(fd); return nil }
+        let handle = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
         defer { try? handle.close() }
         guard let data = try? handle.read(upToCount: readLimit), !data.isEmpty else { return nil }
         var lines = data.split(separator: 0x0A, omittingEmptySubsequences: true)

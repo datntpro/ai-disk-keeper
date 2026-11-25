@@ -213,6 +213,38 @@ final class RuleScannerTests: XCTestCase {
         XCTAssertEqual(p?.candidatesSized, 3)
     }
 
+    func testSamePhysicalDirViaSymlinkedAncestorIsEmittedOnce() async throws {
+        try fixture.dir(".t/x/a")
+        try fixture.symlink(".u", to: fixture.abs(".t"))
+        let r = try await run(file(
+            rule(id: "t.a", paths: #"["~/.t/x"]"#, match: #"{"kind":"children"}"#),
+            rule(id: "t.b", paths: #"["~/.u/x"]"#, match: #"{"kind":"children"}"#)))
+        XCTAssertEqual(r.items.map(\.path), [fixture.abs(".t/x/a")])
+        let overlap = r.warnings.filter { $0.kind == .ruleError }
+        XCTAssertEqual(overlap.count, 1)
+        XCTAssertEqual(overlap.first?.ruleID, "t.b")
+        XCTAssertTrue(overlap.first?.message.contains("t.a") == true)
+    }
+
+    func testDropStatsAreSurfacedInProgress() async throws {
+        try fixture.dir(".claude/projects/p/memory")
+        try fixture.dir(".claude/projects/p/other")
+        let loaded = try RuleHarness.loadRules(json: file(rule(
+            paths: #"["~/.claude/projects"]"#, match: #"{"kind":"children","depth":2,"type":"directory"}"#)), fixture: fixture)
+        let last = Box2()
+        let sink = ScanSink(item: { _ in }, warning: { _ in }, progress: { await last.set($0) })
+        try await RuleScanner(loadResult: loaded).scan(context: RuleHarness.context(fixture, loaded: loaded), sink: sink)
+        let p = await last.value
+        XCTAssertEqual(p?.guardDropped, 1)
+        XCTAssertEqual(p?.ownerDropped, 0)
+        let other = Box2()
+        let sink2 = ScanSink(item: { _ in }, warning: { _ in }, progress: { await other.set($0) })
+        try await RuleScanner(loadResult: loaded).scan(
+            context: RuleHarness.context(fixture, loaded: loaded, userID: getuid() + 1), sink: sink2)
+        let q = await other.value
+        XCTAssertEqual(q?.ownerDropped, 1)
+    }
+
     private actor Box2 {
         var value: ScannerProgress?
         func set(_ p: ScannerProgress) { value = p }

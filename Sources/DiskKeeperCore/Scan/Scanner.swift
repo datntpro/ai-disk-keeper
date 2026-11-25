@@ -15,10 +15,17 @@ public struct ScannerProgress: Sendable, Hashable {
     public var candidatesFound: Int
     public var candidatesSized: Int
     public var bytesFound: Int64
-    public init(candidatesFound: Int = 0, candidatesSized: Int = 0, bytesFound: Int64 = 0) {
+    /// Candidates dropped silently because the guard denied them (stats only, never a warning).
+    public var guardDropped: Int
+    /// Candidates dropped silently because another user owns them.
+    public var ownerDropped: Int
+    public init(candidatesFound: Int = 0, candidatesSized: Int = 0, bytesFound: Int64 = 0,
+                guardDropped: Int = 0, ownerDropped: Int = 0) {
         self.candidatesFound = candidatesFound
         self.candidatesSized = candidatesSized
         self.bytesFound = bytesFound
+        self.guardDropped = guardDropped
+        self.ownerDropped = ownerDropped
     }
 }
 

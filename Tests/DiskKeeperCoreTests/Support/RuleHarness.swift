@@ -72,12 +72,20 @@ enum RuleHarness {
             environment: fixture.env, bundledRulesDirectory: rulesDir.url, userRulesDirectory: nil,
             guardFactory: ScanGuard.loaderFactory(environment: fixture.env)).load()
 
-        let fixtureRoot = fixture.tmp.url.path + "/"
+        let fixtureRoot = PathCanonicalizer.key(fixture.tmp.url.path).components
+        for (id, paths) in overridePaths {
+            for p in paths {
+                let key = PathCanonicalizer.key(p).components
+                let inside = PathNormalization.isAbsolute(p) && !PathNormalization.containsParentReference(p)
+                    && key.count > fixtureRoot.count && Array(key.prefix(fixtureRoot.count)) == fixtureRoot
+                if !inside {
+                    XCTFail("override path \(p) for \(id) is outside the fixture; not scanning")
+                    return HarnessResult(items: [], warnings: [], loadErrors: loaded.errors)
+                }
+            }
+        }
         let rules = loaded.allRules.map { r -> ResolvedRule in
             guard let paths = overridePaths[r.rule.id] else { return r }
-            for p in paths where !p.hasPrefix(fixtureRoot) {
-                XCTFail("override path \(p) for \(r.rule.id) is outside the fixture")
-            }
             return ResolvedRule(rule: r.rule, tool: r.tool, expandedPaths: paths, unavailablePaths: r.unavailablePaths)
         }
 

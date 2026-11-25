@@ -27,26 +27,61 @@ public struct RuleScanner: Scanner {
     }
 
     public func scan(context: ScanContext, sink: ScanSink) async throws {
-        let planned = try await expand(context: context, sink: sink)
-        await sink.progress(ScannerProgress(candidatesFound: planned.count))
+        let expansion = try await expand(context: context, sink: sink)
+        let planned = expansion.planned
+        let base = ScannerProgress(candidatesFound: planned.count, guardDropped: expansion.guardDropped,
+                                   ownerDropped: expansion.ownerDropped)
+        await sink.progress(base)
         await _afterExpand?()
-        try await size(planned, context: context, sink: sink)
+        try await size(planned, base: base, context: context, sink: sink)
     }
 
     // MARK: Phase 1: expand (sequential, rule order)
 
-    private func expand(context: ScanContext, sink: ScanSink) async throws -> [Planned] {
+    private struct Expansion {
+        var planned: [Planned] = []
+        var guardDropped = 0
+        var ownerDropped = 0
+    }
+
+    /// Physical identity of a candidate: the resolved parent directory plus the leaf (a candidate is never a
+    /// symlink, so the leaf needs no resolving). Falls back to the lexical path when the parent can't be resolved.
+    private static func physicalPath(_ path: String, resolver: any PathResolving,
+                                     cache: inout [String: String]) -> String {
+        let comps = PathNormalization.components(path)
+        guard let leaf = comps.last else { return path }
+        let parent = "/" + comps.dropLast().joined(separator: "/")
+        let resolved: String
+        if let hit = cache[parent] {
+            resolved = hit
+        } else {
+            if case .resolved(let r) = resolver.resolve(parent), PathNormalization.isAbsolute(r) {
+                resolved = PathNormalization.lexical(r)
+            } else {
+                resolved = parent
+            }
+            cache[parent] = resolved
+        }
+        return (resolved == "/" ? "" : resolved) + "/" + leaf
+    }
+
+    private func expand(context: ScanContext, sink: ScanSink) async throws -> Expansion {
         var claims = PathClaimSet()
-        var owner: [String: String] = [:]          // claimed path → rule id
+        var owner: [String: String] = [:]          // claimed (physical) path → rule id
+        let pathResolver = SystemPathResolver()
+        var parentCache: [String: String] = [:]
+        var out = Expansion()
         var warnedPairs = Set<String>()
         var resolver = ClaudeProjectResolver()
-        var planned: [Planned] = []
         for rule in rules {
             try Task.checkCancellation()
             let result = try CandidateExpander.expand(rule, userID: context.userID, pathGuard: context.pathGuard)
             for w in result.warnings { await sink.warning(w) }
+            out.guardDropped += result.guardDropped
+            out.ownerDropped += result.ownerDropped
             for candidate in result.candidates {
-                if let conflict = claims.claim(candidate.path) {
+                let physical = Self.physicalPath(candidate.path, resolver: pathResolver, cache: &parentCache)
+                if let conflict = claims.claim(physical) {
                     let claimedPath: String
                     switch conflict {
                     case .equal(let p), .inside(let p), .contains(let p): claimedPath = p
@@ -59,12 +94,12 @@ public struct RuleScanner: Scanner {
                     }
                     continue
                 }
-                owner[candidate.path] = rule.rule.id
-                planned.append(Planned(rule: rule, candidate: candidate,
+                owner[physical] = rule.rule.id
+                out.planned.append(Planned(rule: rule, candidate: candidate,
                                        project: project(for: candidate, rule: rule.rule, resolver: &resolver)))
             }
         }
-        return planned
+        return out
     }
 
     private func project(for c: RuleCandidate, rule: ScannerRule, resolver: inout ClaudeProjectResolver) -> ProjectRef? {
@@ -89,7 +124,7 @@ public struct RuleScanner: Scanner {
 
     // MARK: Phase 2: size (sliding window)
 
-    private func size(_ planned: [Planned], context: ScanContext, sink: ScanSink) async throws {
+    private func size(_ planned: [Planned], base: ScannerProgress, context: ScanContext, sink: ScanSink) async throws {
         var sized = 0
         var emitted = 0
         var bytes: Int64 = 0
@@ -116,12 +151,18 @@ public struct RuleScanner: Scanner {
                     break
                 }
                 if sized % 64 == 0 {
-                    await sink.progress(ScannerProgress(candidatesFound: planned.count, candidatesSized: sized, bytesFound: bytes))
+                    var p = base
+                    p.candidatesSized = sized
+                    p.bytesFound = bytes
+                    await sink.progress(p)
                 }
                 startNext()
             }
         }
-        await sink.progress(ScannerProgress(candidatesFound: planned.count, candidatesSized: sized, bytesFound: bytes))
+        var final = base
+        final.candidatesSized = sized
+        final.bytesFound = bytes
+        await sink.progress(final)
     }
 
     private static func sizeOne(_ p: Planned, context: ScanContext) async throws -> Outcome {
@@ -163,6 +204,7 @@ public struct RuleScanner: Scanner {
         if !report.isComplete { flags.insert(.sizeIncomplete) }
         if report.issues.contains(where: { $0.kind == .notPermitted }) { flags.insert(.needsFullDiskAccess) }
         if !report.skippedMountPoints.isEmpty { flags.insert(.otherVolume) }
+        if p.candidate.onOtherVolume { flags.insert(.otherVolume) }
         if report.externallyLinkedFileCount > 0 { flags.insert(.sharedStorage) }
 
         let name = rule.match.kind == .self

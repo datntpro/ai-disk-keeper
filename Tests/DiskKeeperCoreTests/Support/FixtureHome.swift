@@ -31,7 +31,9 @@ final class FixtureHome {
     }
 
     func abs(_ relToHome: String) -> String {
-        relToHome.hasPrefix("$TMP/") ? tempDir + "/" + relToHome.dropFirst(5) : home + "/" + relToHome
+        precondition(!relToHome.hasPrefix("/") && !PathNormalization.containsParentReference(relToHome),
+                     "fixture paths must be relative and free of '..': \(relToHome)")
+        return relToHome.hasPrefix("$TMP/") ? tempDir + "/" + relToHome.dropFirst(5) : home + "/" + relToHome
     }
 
     /// Set `modified` AFTER creating children: creating a child bumps the directory's mtime.
