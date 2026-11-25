@@ -52,6 +52,7 @@ func run() async throws {
         guardFactory: ScanGuard.loaderFactory(environment: env))
     let loaded = loader.load()
     for e in loaded.errors { FileHandle.standardError.write(Data("rule error: \(e)\n".utf8)) }
+    for w in loaded.warnings { FileHandle.standardError.write(Data("rule warning: \(w)\n".utf8)) }
     var rules = loaded.allRules
     if let tool = options.tool { rules = rules.filter { $0.tool.rawValue == tool } }
 
