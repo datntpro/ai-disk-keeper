@@ -4,7 +4,7 @@ import Foundation
 ///
 /// Equality and hashing use `id` ONLY, so a different `displayName` never splits a project bucket.
 public struct ProjectRef: Codable, Sendable, Hashable {
-    /// Canonical key: standardized absolute repo path, or "name:<decoded name>" when unknown.
+    /// Canonical key: lexically normalized absolute repo path (`/private` preserved), or "name:<decoded name>" when unknown.
     public let id: String
     public let displayName: String
 
@@ -13,11 +13,11 @@ public struct ProjectRef: Codable, Sendable, Hashable {
         self.displayName = displayName
     }
 
-    /// id = standardized path, displayName = last path component.
+    /// id = lexically normalized path, displayName = last path component.
     public init(rootURL: URL) {
-        let std = rootURL.standardizedFileURL
-        self.id = std.path
-        self.displayName = std.lastPathComponent
+        let path = PathNormalization.lexical(rootURL.absoluteURL.path)
+        self.id = path
+        self.displayName = PathNormalization.components(path).last.map(String.init) ?? "/"
     }
 
     public static func == (l: ProjectRef, r: ProjectRef) -> Bool { l.id == r.id }

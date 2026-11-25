@@ -267,35 +267,34 @@ final class FileSizerTests: XCTestCase {
     }
 
     func testPrivateAliasRootsAreNotRewritten() throws {
-        // /private/var/... must keep its prefix in reported paths, and /private/tmp must be a directory root.
+        // Reported paths keep the caller's spelling for both /private/var and /var.
         try skipIfRoot()
         try tmp.dir("tree/locked")
         try tmp.chmod("tree/locked", 0)
         XCTAssertTrue(tmp.url.path.hasPrefix("/private/"), "fixture is expected under /private/var")
         let r = try size(tmp.url.appendingPathComponent("tree"))
         XCTAssertEqual(r.issues.first?.path, tmp.path("tree/locked"))
-        let priv = try size(URL(fileURLWithPath: "/private/tmp"))
-        XCTAssertEqual(priv.rootKind, .directory)
-        XCTAssertGreaterThanOrEqual(priv.directoryCount, 1)
+        let alias = String(tmp.path("tree").dropFirst("/private".count))
+        let viaAlias = try size(URL(fileURLWithPath: alias))
+        XCTAssertEqual(viaAlias.issues.first?.path, alias + "/locked")
         let viaLink = try size(URL(fileURLWithPath: "/tmp"))
         XCTAssertEqual(viaLink.rootKind, .symlink)
     }
 
     func testVanishedDirectoryIsCountedOnce() throws {
-        // Directory removed after fts listed it: FTS_D then FTS_DNR/ENOENT must not double count.
+        // Directory removed after fts listed it but before it is opened: FTS_D then FTS_DNR/ENOENT.
         try tmp.dir("tree/gone")
-        try tmp.file("tree/keep", bytes: 1)
         var opts = FileSizer.Options()
         let root = tmp.path("tree")
-        let removed = OSAllocatedUnfairLock(initialState: false)
+        let calls = OSAllocatedUnfairLock<Int>(initialState: 0)
         opts._entryHook = {
-            if removed.withLock({ let was = $0; $0 = true; return !was }) {
-                try? FileManager.default.removeItem(atPath: root + "/gone")
-            }
+            let n = calls.withLock { $0 += 1; return $0 }
+            if n == 2 { try? FileManager.default.removeItem(atPath: root + "/gone") }
         }
         let r = try FileSizer(options: opts).sizeBlocking(of: URL(fileURLWithPath: root))
-        XCTAssertLessThanOrEqual(r.directoryCount, 2)
-        XCTAssertGreaterThanOrEqual(r.directoryCount, 1)
+        XCTAssertEqual(r.directoryCount, 2)
+        XCTAssertEqual(r.entriesVisited, 2)
+        XCTAssertTrue(r.issues.contains { $0.kind == .vanished && $0.path == root + "/gone" })
     }
 
     // MARK: Errors

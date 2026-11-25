@@ -55,7 +55,7 @@ final class ScanItemTests: XCTestCase {
         XCTAssertEqual(i.flags, [.sizeIncomplete])
     }
 
-    func testURLIsStandardized() {
+    func testURLIsLexicallyNormalized() {
         let a = ModelFixtures.item(path: "/Users/test/a/../b/")
         let b = ModelFixtures.item(path: "/Users/test/b")
         XCTAssertEqual(a.path, "/Users/test/b")
@@ -63,9 +63,23 @@ final class ScanItemTests: XCTestCase {
         XCTAssertEqual(a, b)
     }
 
-    func testSymlinksAreNotResolved() {
-        XCTAssertEqual(ModelFixtures.item(path: "/private/var/x").path, "/private/var/x")
-        XCTAssertEqual(ModelFixtures.item(path: "/var/x").path, "/var/x")
+    func testPrivatePrefixIsPreservedForExistingAliases() {
+        XCTAssertEqual(ModelFixtures.item(path: "/private/tmp").path, "/private/tmp")
+        XCTAssertEqual(ModelFixtures.item(path: "/private/var/folders").path, "/private/var/folders")
+        XCTAssertEqual(ModelFixtures.item(path: "/tmp").path, "/tmp")
+        XCTAssertEqual(ModelFixtures.item(path: "/private/tmp", ruleID: "r").id, "r|/private/tmp")
+        XCTAssertEqual(ProjectRef(rootURL: URL(fileURLWithPath: "/private/tmp/x/")).id, "/private/tmp/x")
+        XCTAssertEqual(ProjectRef(rootURL: URL(fileURLWithPath: "/private/tmp/x/")).displayName, "x")
+        XCTAssertEqual(ProjectRef(rootURL: URL(fileURLWithPath: "/")).displayName, "/")
+    }
+
+    func testItemPathMatchesFileSizerRootPath() throws {
+        let tmp = try TemporaryDirectory()
+        try tmp.file("a", bytes: 1)
+        _ = try FileSizer().sizeBlocking(of: tmp.url)
+        let item = ModelFixtures.item(path: tmp.url.path)
+        XCTAssertEqual(item.path, tmp.url.path)
+        XCTAssertTrue(tmp.url.path.hasPrefix("/private/"))
     }
 
     func testDefaultIDIsRuleAndPath() {

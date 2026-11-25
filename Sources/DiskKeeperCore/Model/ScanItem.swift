@@ -6,7 +6,8 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
 
     /// Stable across scans: ``makeID(ruleID:url:)``.
     public let id: ID
-    /// File URL, standardized (no "..", no trailing "/"); symlinks NOT resolved.
+    /// File URL, lexically normalized (no ".", "..", "//" or trailing "/"); `/private` and symlinks are
+    /// preserved, so it matches `FileSizer` paths.
     public let url: URL
     public var displayName: String
     public var tool: ToolID
@@ -45,7 +46,7 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
                 requiresAppQuit: String? = nil,
                 flags: Set<ItemFlag> = []) {
         precondition(url.isFileURL, "ScanItem requires a file URL")
-        let normalized = URL(fileURLWithPath: url.standardizedFileURL.path)
+        let normalized = URL(fileURLWithPath: PathNormalization.lexical(url.absoluteURL.path))
         self.url = normalized
         self.id = id ?? ScanItem.makeID(ruleID: ruleID, url: normalized)
         self.displayName = displayName
@@ -64,9 +65,9 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
         self.flags = flags
     }
 
-    /// "<ruleID>|<standardized absolute path>"
+    /// "<ruleID>|<lexically normalized absolute path>"
     public static func makeID(ruleID: String, url: URL) -> ID {
-        "\(ruleID)|\(url.standardizedFileURL.path)"
+        "\(ruleID)|\(PathNormalization.lexical(url.absoluteURL.path))"
     }
 
     public var path: String { url.path }
