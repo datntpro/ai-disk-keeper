@@ -52,7 +52,7 @@ final class AppSettingsTests: XCTestCase {
 
     func testRelativeRejected() {
         var s = AppSettings.defaults
-        XCTAssertThrowsError(try s.addExcludedPath(URL(fileURLWithPath: "rel"), environment: env)) { _ in }
+        XCTAssertThrowsError(try s.addExcludedPath(URL(string: "rel")!, environment: env)) { _ in }
     }
 
     func testToolToggleAndReset() throws {
