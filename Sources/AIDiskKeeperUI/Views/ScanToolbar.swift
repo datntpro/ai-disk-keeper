@@ -5,14 +5,14 @@ struct ScanToolbar: ToolbarContent {
     var body: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
             if scan.isScanning {
-                Button { scan.cancelScan() } label: { Label(L10n.tr("action.stop", "Stop"), systemImage: "stop.fill") }
+                Button { scan.cancelScan() } label: { Label(loc("action.stop", "Stop"), systemImage: "stop.fill") }
                     .disabled(scan.phase == .cancelling)
-                    .help(L10n.tr("toolbar.stop.help", "Stop scanning (⌘.)"))
-                    .accessibilityLabel(L10n.tr("toolbar.stop.a11y", "Stop scan"))
+                    .help(loc("toolbar.stop.help", "Stop scanning (⌘.)"))
+                    .accessibilityLabel(loc("toolbar.stop.a11y", "Stop scan"))
             } else {
-                Button { scan.startScan() } label: { Label(L10n.tr("action.scan", "Scan"), systemImage: "arrow.clockwise") }
-                    .help(L10n.tr("toolbar.scan.help", "Scan (⌘R)"))
-                    .accessibilityLabel(L10n.tr("action.scan", "Scan"))
+                Button { scan.startScan() } label: { Label(loc("action.scan", "Scan"), systemImage: "arrow.clockwise") }
+                    .help(loc("toolbar.scan.help", "Scan (⌘R)"))
+                    .accessibilityLabel(loc("action.scan", "Scan"))
             }
         }
     }

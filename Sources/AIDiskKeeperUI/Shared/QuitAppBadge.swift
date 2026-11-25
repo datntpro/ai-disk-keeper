@@ -5,14 +5,14 @@ struct QuitAppBadge: View {
     let bundleID: String
     var body: some View {
         let name = AppNameResolver.name(forBundleID: bundleID)
-        Label(L10n.tr("quit.badge", "Quit \(name)"), systemImage: "power")
+        Label(loc("quit.badge", "Quit \(name)"), systemImage: "power")
             .font(.caption.weight(.medium))
             .foregroundStyle(.orange)
             .padding(.horizontal, 6).padding(.vertical, 2)
             .background(Color.orange.opacity(0.12), in: Capsule())
             .fixedSize()
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(L10n.tr("quit.a11y", "Requires quitting \(name)"))
+            .accessibilityLabel(loc("quit.a11y", "Requires quitting \(name)"))
     }
 }
 
@@ -23,7 +23,7 @@ struct QuitAppNote: View {
         let name = AppNameResolver.name(forBundleID: bundleID)
         VStack(alignment: .leading, spacing: 4) {
             QuitAppBadge(bundleID: bundleID)
-            Text(L10n.tr("quit.note", "\(name) is using this. Quit \(name) yourself, then click Re-check before cleaning. AI Disk Keeper never quits other apps for you."))
+            Text(loc("quit.note", "\(name) is using this. Quit \(name) yourself, then click Re-check before cleaning. AI Disk Keeper never quits other apps for you."))
                 .font(.callout).fixedSize(horizontal: false, vertical: true)
         }
         .padding(10).frame(maxWidth: .infinity, alignment: .leading)

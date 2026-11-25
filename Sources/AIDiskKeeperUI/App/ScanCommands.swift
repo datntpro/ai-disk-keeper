@@ -22,11 +22,11 @@ public struct ScanCommands: Commands {
     public init() {}
 
     public var body: some Commands {
-        CommandMenu(L10n.tr("menu.scan", "Scan")) {
-            Button(L10n.tr("action.scan", "Scan")) { actions?.start() }
+        CommandMenu(loc("menu.scan", "Scan")) {
+            Button(loc("action.scan", "Scan")) { actions?.start() }
                 .keyboardShortcut("r", modifiers: .command)
                 .disabled(!(actions?.canStart ?? false))
-            Button(L10n.tr("action.stop", "Stop")) { actions?.stop() }
+            Button(loc("action.stop", "Stop")) { actions?.stop() }
                 .keyboardShortcut(".", modifiers: .command)
                 .disabled(!(actions?.canStop ?? false))
         }
