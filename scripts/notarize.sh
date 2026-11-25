@@ -40,7 +40,8 @@ for attempt in 1 2 3; do
   xcrun notarytool submit "$FILE" "${AUTH[@]}" --wait --timeout 30m --output-format json > "$JSON" || rc=$?
   ID="$(plutil -extract id raw -o - "$JSON" 2>/dev/null || true)"
   # Only retry when the submission never got an id (network-level failure).
-  if [ -n "$ID" ] || [ "$attempt" = 3 ]; then break; fi
+  # rc 64 = usage/credential error: retrying cannot help.
+  if [ -n "$ID" ] || [ "$attempt" = 3 ] || [ "$rc" = 64 ]; then break; fi
   echo "submit failed (exit $rc, no submission id); retrying in 30s" >&2
   sleep 30
 done

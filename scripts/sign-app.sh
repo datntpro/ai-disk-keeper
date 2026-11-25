@@ -12,8 +12,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 case "${1:-}" in -h|--help) sed -n '2,6p' "$0"; exit 0 ;; esac
 [ $# -eq 1 ] || die "usage: sign-app.sh <App.app> (see -h)"
-APP="${1%/}"
-[ -d "$APP" ] || die "app bundle not found: $APP"
+[ -d "${1%/}" ] || die "app bundle not found: ${1%/}"
+APP="$(cd "${1%/}" && pwd)"
 [ -n "${SIGN_IDENTITY:-}" ] || die "SIGN_IDENTITY is not set"
 ENTITLEMENTS="${ENTITLEMENTS:-$ROOT/Packaging/AIDiskKeeper.entitlements}"
 [ -f "$ENTITLEMENTS" ] || die "entitlements file not found: $ENTITLEMENTS"
@@ -21,8 +21,11 @@ ENTITLEMENTS="${ENTITLEMENTS:-$ROOT/Packaging/AIDiskKeeper.entitlements}"
 KC_ARGS=()
 if [ -n "${KEYCHAIN:-}" ]; then KC_ARGS=(--keychain "$KEYCHAIN"); fi
 
-MAIN_EXE="$APP/Contents/MacOS/$(defaults read "$APP/Contents/Info" CFBundleExecutable)"
-BUNDLE_ID="$(defaults read "$APP/Contents/Info" CFBundleIdentifier)"
+INFO="$APP/Contents/Info.plist"
+[ -f "$INFO" ] || die "Info.plist not found: $INFO"
+EXE_NAME="$(plutil -extract CFBundleExecutable raw -o - "$INFO")" || die "cannot read CFBundleExecutable"
+BUNDLE_ID="$(plutil -extract CFBundleIdentifier raw -o - "$INFO")" || die "cannot read CFBundleIdentifier"
+MAIN_EXE="$APP/Contents/MacOS/$EXE_NAME"
 [ -n "$BUNDLE_ID" ] || die "could not read CFBundleIdentifier"
 
 echo "==> Signing nested code (inside-out)"
@@ -43,5 +46,5 @@ codesign --force --timestamp --options runtime \
 
 echo "==> Verifying"
 codesign --verify --strict --deep --verbose=2 "$APP" || die "signature verification failed"
-codesign -d --entitlements :- "$APP" || true
+codesign -d --entitlements - --xml "$APP" || true
 echo "signed: $APP"
