@@ -1,0 +1,122 @@
+import Foundation
+
+public enum SettingsError: Error, Equatable, Sendable {
+    case notAbsolute(String)
+    case outsideHome(String)
+}
+
+/// User settings. Paths under home are stored as `~/…`; tools are enabled unless listed in `disabledTools`.
+public struct AppSettings: Codable, Sendable, Hashable {
+    public static let currentSchemaVersion = 1
+
+    public var schemaVersion = AppSettings.currentSchemaVersion
+    public var hasCompletedOnboarding = false
+    public var projectRoots: [String]
+    public var excludedPaths: [String]
+    /// Empty = all enabled (new tools are on by default).
+    public var disabledTools: Set<ToolID>
+
+    public static let defaultProjectRoots = ["~", "~/orca/workspaces", "~/Developer", "~/code", "~/src", "~/projects"]
+
+    public static let defaults = AppSettings(projectRoots: defaultProjectRoots, excludedPaths: [], disabledTools: [])
+
+    public init(hasCompletedOnboarding: Bool = false, projectRoots: [String] = AppSettings.defaultProjectRoots,
+                excludedPaths: [String] = [], disabledTools: Set<ToolID> = []) {
+        self.hasCompletedOnboarding = hasCompletedOnboarding
+        self.projectRoots = projectRoots
+        self.excludedPaths = excludedPaths
+        self.disabledTools = disabledTools
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion, hasCompletedOnboarding, projectRoots, excludedPaths, disabledTools
+    }
+
+    /// Lenient: unknown keys are ignored and missing keys take defaults.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try c.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? Self.currentSchemaVersion
+        hasCompletedOnboarding = try c.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? false
+        projectRoots = try c.decodeIfPresent([String].self, forKey: .projectRoots) ?? Self.defaultProjectRoots
+        excludedPaths = try c.decodeIfPresent([String].self, forKey: .excludedPaths) ?? []
+        disabledTools = try c.decodeIfPresent(Set<ToolID>.self, forKey: .disabledTools) ?? []
+    }
+
+    public func scanScope(environment: PathEnvironment) -> ScanScope {
+        ScanScope(excludedPaths: Self.dedupe(excludedPaths.map { Self.expand($0, environment) }),
+                  disabledTools: disabledTools,
+                  projectRoots: Self.dedupe(projectRoots.map { Self.expand($0, environment) }))
+    }
+
+    // MARK: Editing
+
+    /// Excluding is always safe, so any absolute path is accepted. A child of an existing exclusion is a no-op;
+    /// a new parent absorbs its existing children.
+    public mutating func addExcludedPath(_ url: URL, environment: PathEnvironment) throws(SettingsError) {
+        let path = try Self.normalized(url)
+        let key = PathCanonicalizer.key(path).components
+        for existing in excludedPaths {
+            let ex = PathCanonicalizer.key(Self.expand(existing, environment)).components
+            if ex.count <= key.count, key.prefix(ex.count) == ex[...] { return }
+        }
+        excludedPaths.removeAll {
+            let ex = PathCanonicalizer.key(Self.expand($0, environment)).components
+            return key.count <= ex.count && ex.prefix(key.count) == key[...]
+        }
+        excludedPaths.append(Self.store(path, environment))
+    }
+
+    public mutating func addProjectRoot(_ url: URL, environment: PathEnvironment) throws(SettingsError) {
+        let path = try Self.normalized(url)
+        let home = PathCanonicalizer.key(environment.home).components
+        let key = PathCanonicalizer.key(path).components
+        guard key.count >= home.count, key.prefix(home.count) == home[...] else {
+            throw SettingsError.outsideHome(path)
+        }
+        if projectRoots.contains(where: { PathCanonicalizer.key(Self.expand($0, environment)) == PathCanonicalizer.key(path) }) { return }
+        projectRoots.append(Self.store(path, environment))
+    }
+
+    public mutating func removeExcludedPath(_ stored: String) { excludedPaths.removeAll { $0 == stored } }
+    public mutating func removeProjectRoot(_ stored: String) { projectRoots.removeAll { $0 == stored } }
+
+    public mutating func setTool(_ tool: ToolID, enabled: Bool) {
+        if enabled { disabledTools.remove(tool) } else { disabledTools.insert(tool) }
+    }
+
+    public func isEnabled(_ tool: ToolID) -> Bool { !disabledTools.contains(tool) }
+
+    public mutating func resetScopeToDefaults() {
+        projectRoots = Self.defaultProjectRoots
+        excludedPaths = []
+        disabledTools = []
+    }
+
+    // MARK: Paths
+
+    private static func normalized(_ url: URL) throws(SettingsError) -> String {
+        let path = url.path
+        guard PathNormalization.isAbsolute(path), !PathNormalization.containsNUL(path) else {
+            throw SettingsError.notAbsolute(path)
+        }
+        return PathNormalization.lexical(path)
+    }
+
+    static func expand(_ stored: String, _ env: PathEnvironment) -> String {
+        if stored == "~" { return env.home }
+        if stored.hasPrefix("~/") { return PathNormalization.lexical(env.home + "/" + stored.dropFirst(2)) }
+        return PathNormalization.lexical(stored)
+    }
+
+    static func store(_ path: String, _ env: PathEnvironment) -> String {
+        let home = PathNormalization.lexical(env.home)
+        if path == home { return "~" }
+        if path.hasPrefix(home + "/") { return "~" + path.dropFirst(home.count) }
+        return path
+    }
+
+    private static func dedupe(_ paths: [String]) -> [String] {
+        var seen = Set<PathKey>()
+        return paths.filter { seen.insert(PathCanonicalizer.key($0)).inserted }
+    }
+}
