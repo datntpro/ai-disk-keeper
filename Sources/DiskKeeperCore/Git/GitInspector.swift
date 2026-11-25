@@ -31,6 +31,11 @@ public final class GitInspector: Sendable {
         func store(_ p: Prepared) { prepared = p }
     }
 
+    /// Per-repository `-c filter.<name>.*=` neutralizers, applied to every git call of one inspection.
+    @TaskLocal static var extraConfigArgs: [String] = []
+    static let maxSubmoduleDepth = 3
+    static let hiddenFileCheckCap = 500
+
     private let configuration: Configuration
     private let runner: ProcessRunner
     private let state = InspectorState()
@@ -50,7 +55,9 @@ public final class GitInspector: Sendable {
         fileExists: (String) -> Bool = { FileManager.default.isExecutableFile(atPath: $0) },
         developerDir: () -> String? = GitInspector.selectedDeveloperDir
     ) -> URL? {
+        #if DEBUG
         if let o = environment["AIDK_GIT"], o.hasPrefix("/"), fileExists(o) { return URL(fileURLWithPath: o) }
+        #endif
         if let d = developerDir() {
             let p = d + "/usr/bin/git"
             if fileExists(p) { return URL(fileURLWithPath: p) }
@@ -108,6 +115,12 @@ public final class GitInspector: Sendable {
         return a
     }
 
+    static func realpathString(_ p: String) -> String {
+        guard let r = realpath(p, nil) else { return p }
+        defer { free(r) }
+        return String(cString: r)
+    }
+
     private static func realpathOfParent(_ path: URL) -> String {
         let parent = path.deletingLastPathComponent().path
         guard let r = realpath(parent, nil) else { return parent }
@@ -128,6 +141,7 @@ public final class GitInspector: Sendable {
             throw GitInspectorError.gitUnavailable
         }
         var excludes: String?
+        var cacheable = true
         if !configuration.rawMode {
             let root = URL(fileURLWithPath: "/")
             let env = Self.makeEnvironment(home: configuration.homeDirectory)
@@ -152,18 +166,25 @@ public final class GitInspector: Sendable {
                 throw GitInspectorError.gitTooOld(found: "\(v.major).\(v.minor).\(v.patch)")
             }
             // Re-inject only the user's global excludes file (global config is otherwise disabled).
-            if let c = try? await limited({
-                try await self.runner.run(
-                    executable: git, arguments: ["config", "--global", "--get", "core.excludesFile"],
-                    environment: excludesEnv, currentDirectory: root, timeout: self.configuration.defaultTimeout)
-            }), c.exitStatus == 0 {
-                var p = c.stdoutString.trimmingCharacters(in: .newlines)
-                if p.hasPrefix("~/") { p = configuration.homeDirectory + "/" + p.dropFirst(2) }
-                if p.hasPrefix("/"), FileManager.default.fileExists(atPath: p) { excludes = p }
+            do {
+                let c = try await limited {
+                    try await self.runner.run(
+                        executable: git, arguments: ["config", "--global", "--get", "core.excludesFile"],
+                        environment: excludesEnv, currentDirectory: root, timeout: self.configuration.defaultTimeout)
+                }
+                if c.exitStatus == 0 {
+                    var p = c.stdoutString.trimmingCharacters(in: .newlines)
+                    if p.hasPrefix("~/") { p = configuration.homeDirectory + "/" + p.dropFirst(2) }
+                    if p.hasPrefix("/"), FileManager.default.fileExists(atPath: p) { excludes = p }
+                }
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                cacheable = false  // timeout/launch failure: use no excludes now, but retry next time
             }
         }
         let p = Prepared(git: git, excludesFile: excludes)
-        await state.store(p)
+        if cacheable { await state.store(p) }
         return p
     }
 
@@ -183,7 +204,7 @@ public final class GitInspector: Sendable {
     func runGit(_ args: [String], in path: URL, timeout: Duration? = nil) async throws -> ProcessResult {
         let prep = try await prepare()
         let argv = configuration.rawMode
-            ? args : Self.baseArguments(excludesFile: prep.excludesFile) + ["-C", path.path] + args
+            ? args : Self.baseArguments(excludesFile: prep.excludesFile) + Self.extraConfigArgs + ["-C", path.path] + args
         let env = Self.makeEnvironment(
             home: configuration.homeDirectory, ceiling: Self.realpathOfParent(path))
         let t = timeout ?? configuration.defaultTimeout
@@ -237,9 +258,16 @@ public final class GitInspector: Sendable {
 
     /// Inspect a worktree root (main or linked), a submodule root or a bare repo directory.
     public func inspect(_ path: URL) async throws -> GitState {
+        try await inspect(path, depth: 0)
+    }
+
+    func inspect(_ path: URL, depth: Int) async throws -> GitState {
         try Task.checkCancellation()
         var st = stat()
-        guard lstat(path.path, &st) == 0 else { throw GitInspectorError.pathNotFound(path.path) }
+        guard lstat(path.path, &st) == 0 else {
+            if errno == ENOENT || errno == ENOTDIR { throw GitInspectorError.pathNotFound(path.path) }
+            throw GitInspectorError.gitFailed("lstat \(path.path): \(String(cString: strerror(errno)))")
+        }
         // Follow a symlink to a directory the way git will.
         var isDir = (st.st_mode & S_IFMT) == S_IFDIR
         if (st.st_mode & S_IFMT) == S_IFLNK, stat(path.path, &st) == 0 { isDir = (st.st_mode & S_IFMT) == S_IFDIR }
@@ -286,7 +314,30 @@ public final class GitInspector: Sendable {
             topLevel = Self.firstLine(t)
         }
 
+        // Neutralize repo-local filter drivers (clean/smudge/process could execute during status).
+        var filterNames: [String] = []
         var failures: [GitProbeFailure] = []
+        let (fr, ff) = try await probe(
+            .filters, ["config", "-z", "--name-only", "--get-regexp", "^filter\\."], in: path,
+            okStatuses: [0, 1])
+        if let fr, ff == nil { filterNames = GitPorcelain.parseFilterNames(fr.stdout) } else if let ff { failures.append(ff) }
+        let filterArgs = GitPorcelain.filterNeutralizingArguments(filterNames)
+        if ff != nil {
+            // Cannot enumerate drivers: refuse to run anything that could execute one.
+            throw GitInspectorError.gitFailed("cannot enumerate filter drivers: \(ff!.message)")
+        }
+        return try await Self.$extraConfigArgs.withValue(filterArgs) {
+            try await self.finishInspect(
+                path, depth: depth, gitDir: gitDir, commonDir: commonDir, kind: kind, topLevel: topLevel,
+                disc: disc, failures: failures)
+        }
+    }
+
+    private func finishInspect(
+        _ path: URL, depth: Int, gitDir: String, commonDir: String, kind: GitState.Kind, topLevel: String?,
+        disc: GitPorcelain.Discovery, failures initialFailures: [GitProbeFailure]
+    ) async throws -> GitState {
+        var failures = initialFailures
         let isBare = disc.isBare
 
         async let statusP = statusProbe(path, skip: isBare)
@@ -295,6 +346,8 @@ public final class GitInspector: Sendable {
         async let remotesP = remotesProbe(path)
         async let defaultP = defaultBranchProbe(path)
         async let lastP = lastCommitProbe(path)
+        async let indexP = indexProbe(path, skip: isBare)
+        async let ignoredP = ignoredProbe(path, skip: isBare)
 
         let status = try await statusP
         let bareHead = try await bareHeadP
@@ -302,6 +355,9 @@ public final class GitInspector: Sendable {
         let remotes = try await remotesP
         let defaultB = try await defaultP
         let last = try await lastP
+        let index = try await indexP
+        let ignoredR = try await ignoredP
+        failures += [index.failure, ignoredR.failure].compactMap { $0 }
         failures += [status.failure, bareHead.failure, stashRecords.failure, remotes.failure, defaultB.failure, last.failure]
             .compactMap { $0 }
         if let s = status.value, s.workingTree.isLowerBound {
@@ -358,6 +414,49 @@ public final class GitInspector: Sendable {
             failures += [m.failure, n.failure].compactMap { $0 }
         }
 
+        // Hidden edits (assume-unchanged / skip-worktree)
+        var hidden: GitState.HiddenFromStatus?
+        if let entries = index.value {
+            let h = try await hiddenProbe(path, entries: entries)
+            hidden = h.value
+            if let f = h.failure { failures.append(f) }
+        }
+
+        // Submodules: recurse (unpushed commits and dirty state inside them)
+        var subStates: [GitState]?
+        if let entries = index.value, !isBare {
+            var subs: [GitState] = []
+            var dirtyPaths = Set(status.value?.dirtySubmodulePaths ?? [])
+            for e in entries where e.isGitlink {
+                let sub = path.appendingPathComponent(e.path, isDirectory: true)
+                guard FileManager.default.fileExists(atPath: sub.path + "/.git") else { continue }  // not initialized
+                guard depth < Self.maxSubmoduleDepth else {
+                    failures.append(.init(probe: .submodules, kind: .failed, message: "\(e.path): nesting too deep"))
+                    continue
+                }
+                do {
+                    let st = try await inspect(sub, depth: depth + 1)
+                    subs.append(st)
+                    if st.workingTree?.isClean != true { dirtyPaths.insert(e.path) }
+                } catch is CancellationError {
+                    throw CancellationError()
+                } catch {
+                    failures.append(.init(probe: .submodules, kind: .failed, message: "\(e.path): \(error)"))
+                    dirtyPaths.insert(e.path)
+                }
+            }
+            subStates = subs
+            workingTree?.submodulesDirty = dirtyPaths.count
+        }
+
+        // Does status describe this directory? (core.worktree redirect, not a root)
+        var mismatch = false
+        if let topLevel, Self.realpathString(topLevel) != Self.realpathString(path.path) {
+            mismatch = true
+            failures.append(.init(
+                probe: .status, kind: .failed, message: "worktree is elsewhere: top level is \(topLevel)"))
+        }
+
         // Filesystem-only facts
         let fm = FileManager.default
         var lock: GitState.WorktreeLock?
@@ -381,7 +480,8 @@ public final class GitInspector: Sendable {
             commitsNotOnAnyRemote: notOnRemote, workingTree: workingTree, stash: stash,
             defaultBranch: defaultB.value ?? nil, isMergedIntoDefault: merged, lastCommit: last.value ?? nil,
             operationInProgress: op, indexLockPresent: fm.fileExists(atPath: gitDir + "/index.lock"),
-            worktreeLock: lock, isShallow: disc.isShallow, probeFailures: failures)
+            worktreeLock: lock, isShallow: disc.isShallow, probeFailures: failures,
+            ignored: ignoredR.value, hiddenFromStatus: hidden, submodules: subStates, topLevelMismatch: mismatch)
     }
 
     private func discoveryCall(_ args: [String], _ path: URL) async throws -> ProcessResult {
@@ -443,7 +543,7 @@ public final class GitInspector: Sendable {
         let (r, f) = try await probe(
             .status,
             ["status", "--porcelain=v2", "--branch", "--show-stash", "-z", "--untracked-files=normal",
-             "--no-renames", "--ignore-submodules=none"],
+             "--no-renames", "--ignore-submodules=dirty"],
             in: path, timeout: configuration.statusTimeout)
         guard let r, f == nil else { return .init(failure: f) }
         return .init(value: GitPorcelain.parseStatus(r.stdout, truncated: r.stdoutTruncated))
@@ -464,8 +564,24 @@ public final class GitInspector: Sendable {
         return .init(failure: f)
     }
 
-    private func stashProbe(_ path: URL, skip: Bool) async throws -> ProbeOut<[GitPorcelain.StashRecord]> {
-        if skip { return .init() }  // `git stash` needs a work tree
+    private func stashProbe(_ path: URL, skip isBare: Bool) async throws -> ProbeOut<[GitPorcelain.StashRecord]> {
+        if isBare {
+            // `git stash` needs a work tree; read refs/stash and its reflog directly.
+            let (ref, f0) = try await probe(
+                .stash, ["for-each-ref", "--count=1", "--format=%(refname)", "refs/stash"], in: path)
+            guard let ref, f0 == nil else { return .init(failure: f0) }
+            if ref.stdoutString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return .init(value: []) }
+            let (r, f) = try await probe(
+                .stash, ["log", "-g", "-z", "--format=%gd%x1f%ct%x1f%gs", "refs/stash"], in: path)
+            guard let r, f == nil else { return .init(failure: f) }
+            var recs = GitPorcelain.parseStashList(r.stdout)
+            var failure: GitProbeFailure?
+            if recs.isEmpty {  // mirror clones copy refs/stash without its reflog
+                recs = [.init(ref: "refs/stash", date: nil, subject: "")]
+                failure = .init(probe: .stash, kind: .failed, message: "stash reflog missing; count is a lower bound")
+            }
+            return .init(value: recs, failure: failure)
+        }
         let (r, f) = try await probe(
             .stash, ["stash", "list", "-z", "--format=%gd%x1f%ct%x1f%gs"], in: path)
         guard let r, f == nil else { return .init(failure: f) }
@@ -524,5 +640,67 @@ public final class GitInspector: Sendable {
             ["rev-list", "--count", "--max-count=\(cap + 1)", "HEAD", "--not", "--remotes"], in: path)
         guard let r, f == nil, let n = Int(Self.firstLine(r)) else { return .init(failure: f) }
         return .init(value: n > cap ? .init(value: cap, isCapped: true) : .init(value: n, isCapped: false))
+    }
+
+    private func indexProbe(_ path: URL, skip: Bool) async throws -> ProbeOut<[GitPorcelain.IndexEntry]> {
+        if skip { return .init() }
+        let (r, f) = try await probe(.hiddenFiles, ["ls-files", "-s", "-v", "-z"], in: path)
+        guard let r, f == nil else { return .init(failure: f) }
+        var failure: GitProbeFailure?
+        if r.stdoutTruncated {
+            failure = .init(probe: .hiddenFiles, kind: .outputTruncated, message: "index listing truncated")
+        }
+        return .init(value: GitPorcelain.parseIndexEntries(r.stdout, truncated: r.stdoutTruncated), failure: failure)
+    }
+
+    private func ignoredProbe(_ path: URL, skip: Bool) async throws -> ProbeOut<GitState.IgnoredSummary> {
+        if skip { return .init() }
+        let (r, f) = try await probe(
+            .ignored, ["ls-files", "-z", "--others", "--ignored", "--exclude-standard", "--directory"], in: path)
+        guard let r, f == nil else { return .init(failure: f) }
+        var names = GitPorcelain.splitNUL(r.stdout)
+        if r.stdoutTruncated, !names.isEmpty { names.removeLast() }
+        let c = GitPorcelain.classifyIgnored(names)
+        return .init(
+            value: .init(
+                count: names.count, isLowerBound: r.stdoutTruncated, preciousPaths: c.precious,
+                unclassifiedPaths: c.unclassified),
+            failure: r.stdoutTruncated
+                ? .init(probe: .ignored, kind: .outputTruncated, message: "ignored listing truncated") : nil)
+    }
+
+    /// Counts assume-unchanged / skip-worktree entries and compares their on-disk content with the index.
+    private func hiddenProbe(_ path: URL, entries: [GitPorcelain.IndexEntry]) async throws -> ProbeOut<GitState.HiddenFromStatus> {
+        var h = GitState.HiddenFromStatus()
+        let hidden = entries.filter { !$0.isGitlink && ($0.isAssumeUnchanged || $0.isSkipWorktree) }
+        h.assumeUnchanged = hidden.filter(\.isAssumeUnchanged).count
+        h.skipWorktree = hidden.filter { !$0.isAssumeUnchanged && $0.isSkipWorktree }.count
+        var failure: GitProbeFailure?
+        var toHash: [GitPorcelain.IndexEntry] = []
+        for (i, e) in hidden.enumerated() {
+            if i >= Self.hiddenFileCheckCap { h.unverified += 1; continue }
+            var st = stat()
+            guard lstat(path.path + "/" + e.path, &st) == 0 else { continue }  // absent (sparse checkout)
+            if (st.st_mode & S_IFMT) == S_IFREG { toHash.append(e) } else { h.modified += 1 }
+        }
+        var i = 0
+        while i < toHash.count {
+            let batch = Array(toHash[i..<min(i + 100, toHash.count)])
+            i += 100
+            let (r, f) = try await probe(
+                .hiddenFiles, ["hash-object", "--no-filters", "--"] + batch.map(\.path), in: path)
+            guard let r, f == nil else {
+                h.unverified += batch.count
+                failure = f
+                continue
+            }
+            let shas = r.stdoutString.split(separator: "\n").map(String.init)
+            if shas.count != batch.count {
+                h.unverified += batch.count
+                continue
+            }
+            h.modified += zip(shas, batch).filter { $0 != $1.sha }.count
+        }
+        return .init(value: h, failure: failure)
     }
 }

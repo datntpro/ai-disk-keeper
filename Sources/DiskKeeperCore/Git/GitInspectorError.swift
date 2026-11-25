@@ -2,7 +2,7 @@ import Foundation
 
 public enum GitProbe: String, Sendable, Hashable, Codable {
     case discovery, status, stash, upstream, remotes, notOnRemote, defaultBranch, merged
-    case lastCommit, worktreeList, shallow
+    case lastCommit, worktreeList, shallow, ignored, hiddenFiles, submodules, filters
 }
 
 public struct GitProbeFailure: Sendable, Hashable, Codable {

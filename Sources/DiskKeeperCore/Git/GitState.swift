@@ -82,6 +82,41 @@ public struct GitState: Sendable, Hashable, Codable {
         public init(reason: String?) { self.reason = reason }
     }
 
+    /// Ignored (gitignored) content that `status` does not show. Ignored files are NOT regenerable
+    /// by definition: `.env`, `*.pem`, local data. T14: any `preciousPaths` ⇒ at most Review;
+    /// `unclassifiedPaths` non-empty ⇒ not Safe unless the user's rules say otherwise.
+    public struct IgnoredSummary: Sendable, Hashable, Codable {
+        public var count: Int
+        public var isLowerBound: Bool
+        /// Secret-like or data-like ignored paths (capped). Directories end with `/`.
+        public var preciousPaths: [String]
+        /// Ignored paths that are neither precious nor a known regenerable artifact (capped).
+        public var unclassifiedPaths: [String]
+        public init(count: Int, isLowerBound: Bool, preciousPaths: [String], unclassifiedPaths: [String]) {
+            self.count = count
+            self.isLowerBound = isLowerBound
+            self.preciousPaths = preciousPaths
+            self.unclassifiedPaths = unclassifiedPaths
+        }
+    }
+    /// Index entries flagged assume-unchanged / skip-worktree: `status` never reports edits to them.
+    /// T14: `total > 0` ⇒ not Safe (sparse checkouts set skip-worktree legitimately), `modified > 0` ⇒ dirty.
+    public struct HiddenFromStatus: Sendable, Hashable, Codable {
+        public var assumeUnchanged: Int
+        public var skipWorktree: Int
+        /// Hidden files present on disk whose content differs from the index (or are not regular files).
+        public var modified: Int
+        /// Hidden files whose content could not be compared (cap or hashing failure).
+        public var unverified: Int
+        public var total: Int { assumeUnchanged + skipWorktree }
+        public init(assumeUnchanged: Int = 0, skipWorktree: Int = 0, modified: Int = 0, unverified: Int = 0) {
+            self.assumeUnchanged = assumeUnchanged
+            self.skipWorktree = skipWorktree
+            self.modified = modified
+            self.unverified = unverified
+        }
+    }
+
     /// As passed in (lexical, not resolved).
     public var path: String
     public var kind: Kind
@@ -104,6 +139,13 @@ public struct GitState: Sendable, Hashable, Codable {
     public var worktreeLock: WorktreeLock?
     public var isShallow: Bool?
     public var probeFailures: [GitProbeFailure]
+    public var ignored: IgnoredSummary?
+    public var hiddenFromStatus: HiddenFromStatus?
+    /// Recursively inspected initialized submodules (their own unpushed commits / dirty state).
+    /// T14: any submodule with unpushed commits or a dirty tree ⇒ not Safe. nil = not probed.
+    public var submodules: [GitState]?
+    /// `topLevel` is not the inspected path (core.worktree redirect or not a root): status describes elsewhere.
+    public var topLevelMismatch: Bool
 
     public init(
         path: String, kind: Kind, topLevel: String? = nil, gitDir: String, commonDir: String,
@@ -112,8 +154,14 @@ public struct GitState: Sendable, Hashable, Codable {
         defaultBranch: DefaultBranch? = nil, isMergedIntoDefault: Bool? = nil,
         lastCommit: LastCommit? = nil, operationInProgress: Operation? = nil,
         indexLockPresent: Bool = false, worktreeLock: WorktreeLock? = nil, isShallow: Bool? = nil,
-        probeFailures: [GitProbeFailure] = []
+        probeFailures: [GitProbeFailure] = [], ignored: IgnoredSummary? = nil,
+        hiddenFromStatus: HiddenFromStatus? = nil, submodules: [GitState]? = nil,
+        topLevelMismatch: Bool = false
     ) {
+        self.ignored = ignored
+        self.hiddenFromStatus = hiddenFromStatus
+        self.submodules = submodules
+        self.topLevelMismatch = topLevelMismatch
         self.path = path
         self.kind = kind
         self.topLevel = topLevel

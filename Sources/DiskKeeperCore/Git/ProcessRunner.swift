@@ -115,24 +115,30 @@ final class RunningProcess: @unchecked Sendable {
         arguments: [String], environment: [String: String], currentDirectory: URL,
         continuation: CheckedContinuation<ProcessResult, Error>
     ) {
-        let cancelledEarly = lock.withLock { s -> Bool in
+        let earlyReason = lock.withLock { s -> Reason? in
             s.continuation = continuation
             s.startedAt = .now
-            if s.reason != nil {
+            if let r = s.reason {
                 s.finished = true
                 s.continuation = nil
-                return true
+                return r
             }
-            return false
+            return nil
         }
-        if cancelledEarly {
-            continuation.resume(throwing: CancellationError())
+        if let earlyReason {
+            continuation.resume(throwing: earlyReason == .timeout ? Timeout.timedOut as Error : CancellationError())
             return
         }
 
         var outPipe: [Int32] = [0, 0]
         var errPipe: [Int32] = [0, 0]
-        guard pipe(&outPipe) == 0, pipe(&errPipe) == 0 else {
+        guard pipe(&outPipe) == 0 else {
+            fail(ProcessRunnerError.launchFailed(executable: executable.path, message: "pipe() failed"))
+            return
+        }
+        guard pipe(&errPipe) == 0 else {
+            close(outPipe[0])
+            close(outPipe[1])
             fail(ProcessRunnerError.launchFailed(executable: executable.path, message: "pipe() failed"))
             return
         }
@@ -187,8 +193,9 @@ final class RunningProcess: @unchecked Sendable {
         drain(fd: errPipe[0], isStdout: false)
         DispatchQueue.global(qos: .utility).async { [self] in
             var st: Int32 = 0
-            while waitpid(spawned, &st, 0) < 0 && errno == EINTR {}
-            exited(st)
+            var rc = waitpid(spawned, &st, 0)
+            while rc < 0 && errno == EINTR { rc = waitpid(spawned, &st, 0) }
+            exited(rc < 0 ? (255 << 8) : st)  // waitpid failure must not read as success
         }
         if let reasonAlready { signalGroup(reason: reasonAlready) }
     }
@@ -271,6 +278,23 @@ final class RunningProcess: @unchecked Sendable {
         if proceed { signalGroup(reason: reason) }
     }
 
+    /// Resumes with the recorded reason without waiting for pipe EOF; drops the read handlers.
+    private func forceFinish() {
+        let (cont, handles, reason) = lock.withLock { s -> (CheckedContinuation<ProcessResult, Error>?, [FileHandle], Reason?) in
+            guard !s.finished, let cont = s.continuation else { return (nil, [], nil) }
+            s.finished = true
+            s.continuation = nil
+            defer { s.handles = [] }
+            return (cont, s.handles, s.reason)
+        }
+        guard let cont else { return }
+        for h in handles {
+            h.readabilityHandler = nil
+            try? h.close()
+        }
+        cont.resume(throwing: reason == .cancelled ? CancellationError() as Error : Timeout.timedOut)
+    }
+
     private func signalGroup(reason: Reason) {
         let pid = lock.withLock { $0.pid }
         guard pid > 0 else { return }
@@ -278,7 +302,13 @@ final class RunningProcess: @unchecked Sendable {
         let grace = killGrace
         DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + grace.timeInterval) { [self] in
             let finished = lock.withLock { $0.finished }
-            if !finished { kill(-pid, SIGKILL) }
+            guard !finished else { return }
+            kill(-pid, SIGKILL)
+            // A descendant that escaped the group (setsid) may still hold the pipes open:
+            // the timeout is a hard bound, so stop waiting for EOF shortly after SIGKILL.
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + .milliseconds(200)) { [self] in
+                forceFinish()
+            }
         }
     }
 }

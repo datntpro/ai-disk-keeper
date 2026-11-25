@@ -55,6 +55,8 @@ enum GitPorcelain {
         var behind: Int?
         var stashTotal: Int?
         var workingTree = GitState.WorkingTree()
+        /// Repo-relative paths of submodule entries with changed commits.
+        var dirtySubmodulePaths: [String] = []
     }
 
     static func parseStatus(_ data: Data, truncated: Bool) -> StatusResult {
@@ -97,7 +99,10 @@ enum GitPorcelain {
                 if xy[0] != "." { r.workingTree.staged += 1 }
                 if xy[1] != "." {
                     let subDirty = sub[0] == "S" && (sub[1] != "." || sub[2] != "." || sub[3] != ".")
-                    if subDirty { r.workingTree.submodulesDirty += 1 } else { r.workingTree.unstaged += 1 }
+                    if subDirty {
+                        r.workingTree.submodulesDirty += 1
+                        if let last = p.last { r.dirtySubmodulePaths.append(String(last)) }
+                    } else { r.workingTree.unstaged += 1 }
                 }
             case "u": r.workingTree.conflicted += 1
             case "?": r.workingTree.untracked += 1
@@ -168,6 +173,92 @@ enum GitPorcelain {
     /// `worktree list -z` needs git 2.36.
     static func isVersionSupported(_ v: (major: Int, minor: Int, patch: Int)) -> Bool {
         (v.major, v.minor) >= (2, 36)
+    }
+
+    // MARK: ls-files -s -v -z
+
+    struct IndexEntry: Equatable {
+        var tag: Character
+        var mode: String
+        var sha: String
+        var path: String
+        var isGitlink: Bool { mode == "160000" }
+        var isAssumeUnchanged: Bool { tag.isLowercase }
+        var isSkipWorktree: Bool { tag == "S" }
+    }
+
+    static func parseIndexEntries(_ data: Data, truncated: Bool) -> [IndexEntry] {
+        var fields = splitNUL(data)
+        if truncated, !fields.isEmpty { fields.removeLast() }
+        return fields.compactMap { rec in
+            guard let tag = rec.first, let tab = rec.firstIndex(of: "\t") else { return nil }
+            let meta = rec[rec.index(after: rec.startIndex)..<tab].split(separator: " ")
+            guard meta.count >= 3 else { return nil }
+            return IndexEntry(
+                tag: tag, mode: String(meta[0]), sha: String(meta[1]),
+                path: String(rec[rec.index(after: tab)...]))
+        }
+    }
+
+    // MARK: ignored files
+
+    private static let preciousPatterns = [
+        ".env", ".env.*", "*.pem", "*.key", "*.p12", "*.pfx", "*.jks", "*.keystore", "*.kdbx",
+        "id_rsa*", "id_dsa*", "id_ecdsa*", "id_ed25519*", ".npmrc", ".netrc", ".pypirc", ".htpasswd",
+        "credentials*", "secrets*", "*.secret", "*.secrets", "*.sqlite", "*.sqlite3", "*.db",
+        "*.mobileprovision", ".ssh", ".aws", ".gnupg",
+    ]
+    private static let preciousDirNames: Set<String> = [
+        "data", "db", "database", "databases", "uploads", "backups", "backup", "dumps", "storage",
+        "secrets", "private",
+    ]
+    private static let regenerable: [String] = [
+        "node_modules", "build", "dist", "target", ".build", "DerivedData", ".gradle", "Pods",
+        "__pycache__", ".venv", "venv", ".next", ".nuxt", ".cache", "coverage", "out", ".DS_Store",
+        "*.log", "*.pyc", ".idea", ".swiftpm", ".tox", ".pytest_cache", ".mypy_cache", ".turbo",
+        ".parcel-cache", ".angular", ".svelte-kit", ".dart_tool", "*.o", "*.class", "*.tsbuildinfo",
+    ]
+
+    private static func matches(_ name: String, _ pats: [String]) -> Bool {
+        pats.contains { fnmatch($0, name, 0) == 0 }
+    }
+
+    /// `paths`: output of `ls-files --others --ignored --directory` (dirs end with `/`).
+    static func classifyIgnored(_ paths: [String], cap: Int = 50) -> (precious: [String], unclassified: [String]) {
+        var precious: [String] = []
+        var other: [String] = []
+        for p in paths {
+            let comps = p.split(separator: "/").map(String.init)
+            let isPrecious = comps.contains { matches($0, preciousPatterns) || preciousDirNames.contains($0) }
+            if isPrecious {
+                if precious.count < cap { precious.append(p) }
+            } else if !comps.contains(where: { matches($0, regenerable) }) {
+                if other.count < cap { other.append(p) }
+            }
+        }
+        return (precious, other)
+    }
+
+    // MARK: filter drivers
+
+    /// Names of `filter.<name>.<var>` config keys (from `config -z --name-only --get-regexp '^filter\.'`).
+    static func parseFilterNames(_ data: Data) -> [String] {
+        var names: [String] = []
+        for key in splitNUL(data) {
+            guard key.lowercased().hasPrefix("filter."), let last = key.lastIndex(of: "."),
+                last > key.index(key.startIndex, offsetBy: 6)
+            else { continue }
+            let name = String(key[key.index(key.startIndex, offsetBy: 7)..<last])
+            if !name.isEmpty, !names.contains(name) { names.append(name) }
+        }
+        return names
+    }
+
+    static func filterNeutralizingArguments(_ names: [String]) -> [String] {
+        names.flatMap { n in
+            ["-c", "filter.\(n).clean=", "-c", "filter.\(n).smudge=", "-c", "filter.\(n).process=",
+             "-c", "filter.\(n).required=false"]
+        }
     }
 
     // MARK: helpers
