@@ -1,0 +1,342 @@
+{
+  "schemaVersion": 1,
+  "tool": {
+    "id": "claude-code",
+    "name": "Claude Code",
+    "docs": "https://docs.claude.com/en/docs/claude-code/settings"
+  },
+  "protect": [
+    "${CLAUDE_CONFIG_DIR:-~/.claude}/settings*.json",
+    "${CLAUDE_CONFIG_DIR:-~/.claude}/.credentials.json",
+    "${CLAUDE_CONFIG_DIR:-~/.claude}/CLAUDE.md",
+    "${CLAUDE_CONFIG_DIR:-~/.claude}/keybindings.json",
+    "${CLAUDE_CONFIG_DIR:-~/.claude}/skills/**",
+    "${CLAUDE_CONFIG_DIR:-~/.claude}/agents/**",
+    "${CLAUDE_CONFIG_DIR:-~/.claude}/commands/**",
+    "${CLAUDE_CONFIG_DIR:-~/.claude}/hooks/**",
+    "${CLAUDE_CONFIG_DIR:-~/.claude}/output-styles/**",
+    "${CLAUDE_CONFIG_DIR:-~/.claude}/plans/**",
+    "${CLAUDE_CONFIG_DIR:-~/.claude}/plugins/config*",
+    "${CLAUDE_CONFIG_DIR:-~/.claude}/plugins/*.json",
+    "${CLAUDE_CONFIG_DIR:-~/.claude}/projects/*/memory/**",
+    "${CLAUDE_CONFIG_DIR:-~/.claude}/history.jsonl"
+  ],
+  "rules": [
+    {
+      "id": "claude-code.transcripts",
+      "title": "Conversation transcripts",
+      "category": "aiToolData",
+      "paths": [
+        "${CLAUDE_CONFIG_DIR:-~/.claude}/projects"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "file",
+        "depth": 2,
+        "glob": "*.jsonl"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 7
+          },
+          "tier": "keep"
+        },
+        {
+          "if": {
+            "olderThanDays": 30
+          },
+          "tier": "safe"
+        }
+      ],
+      "project": {
+        "from": "claudeProjectDirName"
+      },
+      "explanation": "One Claude Code conversation for this project. Deleting it removes it from `claude --resume` and `/resume`. Your code and the project's memory are not affected. Not regenerable."
+    },
+    {
+      "id": "claude-code.session-data",
+      "title": "Conversation tool outputs",
+      "category": "aiToolData",
+      "paths": [
+        "${CLAUDE_CONFIG_DIR:-~/.claude}/projects"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "directory",
+        "depth": 2,
+        "exclude": [
+          "memory"
+        ]
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 7
+          },
+          "tier": "keep"
+        },
+        {
+          "if": {
+            "olderThanDays": 30
+          },
+          "tier": "safe"
+        }
+      ],
+      "project": {
+        "from": "claudeProjectDirName"
+      },
+      "explanation": "Tool outputs and subagent logs saved alongside one conversation. Deleting it can make a resumed conversation miss earlier tool results. Not regenerable."
+    },
+    {
+      "id": "claude-code.legacy-transcripts",
+      "title": "Older transcripts",
+      "category": "aiToolData",
+      "paths": [
+        "${CLAUDE_CONFIG_DIR:-~/.claude}/transcripts"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 7
+          },
+          "tier": "keep"
+        },
+        {
+          "if": {
+            "olderThanDays": 30
+          },
+          "tier": "safe"
+        }
+      ],
+      "explanation": "Conversation transcripts in an older format that current Claude Code versions no longer write. Deleting them removes those conversations for good. Not regenerable."
+    },
+    {
+      "id": "claude-code.todos",
+      "title": "Todo lists",
+      "category": "aiToolData",
+      "paths": [
+        "${CLAUDE_CONFIG_DIR:-~/.claude}/todos"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "file"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Todo lists of past sessions. Old sessions never read them again."
+    },
+    {
+      "id": "claude-code.shell-snapshots",
+      "title": "Shell snapshots",
+      "category": "aiToolData",
+      "paths": [
+        "${CLAUDE_CONFIG_DIR:-~/.claude}/shell-snapshots"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "file"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Shell environment snapshots taken at session start; recreated for each new session."
+    },
+    {
+      "id": "claude-code.session-env",
+      "title": "Session environments",
+      "category": "aiToolData",
+      "paths": [
+        "${CLAUDE_CONFIG_DIR:-~/.claude}/session-env"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Per-session environment files; recreated for each session."
+    },
+    {
+      "id": "claude-code.file-history",
+      "title": "File edit history",
+      "category": "aiToolData",
+      "paths": [
+        "${CLAUDE_CONFIG_DIR:-~/.claude}/file-history"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "directory"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 7
+          },
+          "tier": "keep"
+        },
+        {
+          "if": {
+            "olderThanDays": 30
+          },
+          "tier": "safe"
+        }
+      ],
+      "explanation": "Copies of files from before Claude edited them, used by checkpoint/rewind for that session. Deleting it removes rewind for old sessions."
+    },
+    {
+      "id": "claude-code.paste-cache",
+      "title": "Pasted text cache",
+      "category": "aiToolData",
+      "paths": [
+        "${CLAUDE_CONFIG_DIR:-~/.claude}/paste-cache"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Large pasted text kept for a session; old sessions don't use it."
+    },
+    {
+      "id": "claude-code.debug-logs",
+      "title": "Debug logs",
+      "category": "aiToolData",
+      "paths": [
+        "${CLAUDE_CONFIG_DIR:-~/.claude}/debug"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Debug logs. Regenerated when debugging is on."
+    },
+    {
+      "id": "claude-code.backups",
+      "title": "Config backups",
+      "category": "aiToolData",
+      "paths": [
+        "${CLAUDE_CONFIG_DIR:-~/.claude}/backups"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 7
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Automatic backups of Claude Code's config file. The current config is not affected; you lose the ability to restore an older copy."
+    },
+    {
+      "id": "claude-code.cache",
+      "title": "Downloaded catalogs",
+      "category": "aiToolData",
+      "paths": [
+        "${CLAUDE_CONFIG_DIR:-~/.claude}/cache"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "safe",
+      "explanation": "Downloaded changelog and model catalog; re-downloaded automatically."
+    },
+    {
+      "id": "claude-code.plugin-cache",
+      "title": "Plugin cache",
+      "category": "aiToolData",
+      "paths": [
+        "${CLAUDE_CONFIG_DIR:-~/.claude}/plugins/cache"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "explanation": "Installed plugin files. Claude Code re-downloads them, but plugins are unavailable until it does."
+    },
+    {
+      "id": "claude-code.xdg-cache",
+      "title": "Update staging",
+      "category": "aiToolData",
+      "paths": [
+        "~/.cache/claude"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Update staging files; re-created when Claude Code updates."
+    },
+    {
+      "id": "claude-code.mcp-logs",
+      "title": "MCP server logs",
+      "category": "aiToolData",
+      "paths": [
+        "$CACHES/claude-cli-nodejs"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "safe",
+      "explanation": "Logs from MCP servers started by Claude Code. Regenerated."
+    }
+  ]
+}
