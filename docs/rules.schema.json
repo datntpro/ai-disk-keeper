@@ -1,0 +1,372 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/datntpro/ai-disk-keeper/docs/rules.schema.json",
+  "title": "AI Disk Keeper scanner rule file (schema v1)",
+  "description": "Reference / editor support only. The Swift RuleLoader is the validator of record (see docs/rules.md).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "tool",
+    "rules"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "maxLength": 64
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "docs": {
+          "type": "string",
+          "pattern": "^https://"
+        }
+      }
+    },
+    "protect": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/pathTemplate"
+      }
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "$ref": "#/$defs/rule"
+      }
+    }
+  },
+  "$defs": {
+    "pathTemplate": {
+      "type": "string",
+      "maxLength": 1024,
+      "pattern": "^(~|\\$HOME|\\$TMPDIR|\\$APP_SUPPORT|\\$CACHES|\\$LOGS|\\$CONTAINERS|\\$GROUP_CONTAINERS|\\$\\{[A-Z_][A-Z0-9_]{0,63}(:-[^}]+)?\\}|/private/tmp|/tmp)(/[^/]+)*$"
+    },
+    "glob": {
+      "type": "string",
+      "minLength": 1,
+      "not": {
+        "pattern": "/|\\u0000|\\*\\*"
+      }
+    },
+    "tier": {
+      "enum": [
+        "safe",
+        "review",
+        "keep"
+      ]
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "category",
+        "paths",
+        "match",
+        "tier",
+        "explanation"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 96,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*\\.[a-z0-9]+([.-][a-z0-9]+)*$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "category": {
+          "enum": [
+            "aiToolData",
+            "worktree",
+            "buildArtifact",
+            "modelWeights",
+            "systemJunk",
+            "docker"
+          ]
+        },
+        "paths": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/pathTemplate"
+          }
+        },
+        "match": {
+          "$ref": "#/$defs/match"
+        },
+        "project": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "from"
+          ],
+          "properties": {
+            "from": {
+              "enum": [
+                "none",
+                "claudeProjectDirName",
+                "itemName",
+                "parentOfItem"
+              ]
+            }
+          }
+        },
+        "tier": {
+          "$ref": "#/$defs/tier"
+        },
+        "tierWhen": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "if",
+              "tier"
+            ],
+            "properties": {
+              "if": {
+                "$ref": "#/$defs/condition"
+              },
+              "tier": {
+                "$ref": "#/$defs/tier"
+              }
+            }
+          }
+        },
+        "explanation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "cleanup": {
+          "$ref": "#/$defs/cleanup"
+        }
+      }
+    },
+    "match": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "self"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "children"
+            },
+            "glob": {
+              "$ref": "#/$defs/glob"
+            },
+            "type": {
+              "enum": [
+                "directory",
+                "file",
+                "any"
+              ]
+            },
+            "depth": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3
+            },
+            "includeHidden": {
+              "type": "boolean"
+            },
+            "exclude": {
+              "type": "array",
+              "maxItems": 16,
+              "items": {
+                "$ref": "#/$defs/glob"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "name",
+            "marker",
+            "maxDepth"
+          ],
+          "properties": {
+            "kind": {
+              "const": "find"
+            },
+            "name": {
+              "$ref": "#/$defs/glob"
+            },
+            "marker": {
+              "type": "string",
+              "minLength": 1,
+              "not": {
+                "pattern": "(/|\\u0000)|^\\.{1,2}$"
+              }
+            },
+            "type": {
+              "enum": [
+                "directory",
+                "file",
+                "any"
+              ]
+            },
+            "maxDepth": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10
+            },
+            "prune": {
+              "type": "boolean"
+            },
+            "exclude": {
+              "type": "array",
+              "maxItems": 16,
+              "items": {
+                "$ref": "#/$defs/glob"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "olderThanDays": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 3650
+        },
+        "newerThanDays": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 3650
+        },
+        "sizeOverMB": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "markerExists": {
+          "type": "string",
+          "minLength": 1,
+          "not": {
+            "pattern": "(/|\\u0000)|^\\.{1,2}$"
+          }
+        }
+      }
+    },
+    "cleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "method"
+      ],
+      "properties": {
+        "method": {
+          "enum": [
+            "trash",
+            "none",
+            "toolCommand"
+          ]
+        },
+        "command": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]*$"
+        },
+        "arguments": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "type": "string"
+          }
+        },
+        "requiresAppQuit": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "method": {
+                "enum": [
+                  "trash",
+                  "none"
+                ]
+              }
+            },
+            "required": [
+              "method"
+            ]
+          },
+          "then": {
+            "properties": {
+              "command": false,
+              "arguments": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "method": {
+                "const": "toolCommand"
+              }
+            },
+            "required": [
+              "method"
+            ]
+          },
+          "then": {
+            "required": [
+              "command",
+              "arguments"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
