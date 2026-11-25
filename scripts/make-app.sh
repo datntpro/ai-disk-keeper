@@ -68,9 +68,11 @@ for b in "$BIN"/*.bundle; do
 done
 [ "$found_core" = 1 ] || die "AIDiskKeeper_DiskKeeperCore.bundle not found in $BIN"
 
-sed -e "s|__BUNDLE_ID__|$BUNDLE_ID|g" \
-    -e "s|__VERSION__|$VERSION|g" \
-    -e "s|__BUILD__|$BUILD_NUMBER|g" \
+# Escape sed-replacement specials (& \ |) and XML specials (& < >) in values.
+esc() { printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' | sed -e 's/[&|\\]/\\&/g'; }
+sed -e "s|__BUNDLE_ID__|$(esc "$BUNDLE_ID")|g" \
+    -e "s|__VERSION__|$(esc "$VERSION")|g" \
+    -e "s|__BUILD__|$(esc "$BUILD_NUMBER")|g" \
     Packaging/Info.plist > "$STAGE/Contents/Info.plist"
 plutil -lint "$STAGE/Contents/Info.plist" >/dev/null || die "generated Info.plist is invalid"
 printf 'APPL????' > "$STAGE/Contents/PkgInfo"

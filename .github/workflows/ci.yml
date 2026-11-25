@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build-test:
@@ -54,7 +54,6 @@ jobs:
       - name: Build .app
         run: BUILD_NUMBER=${{ github.run_number }} ./scripts/make-app.sh --config release --universal --zip --output dist
       - name: Smoke-launch .app
-        continue-on-error: true   # hosted runners may lack a usable GUI session
         run: |
           open -n "dist/AI Disk Keeper.app"
           for i in $(seq 1 20); do pgrep -f "AI Disk Keeper.app/Contents/MacOS/AIDiskKeeper" && break; sleep 0.5; done
