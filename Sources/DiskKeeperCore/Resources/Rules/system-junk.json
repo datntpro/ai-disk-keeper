@@ -1,0 +1,703 @@
+{
+  "schemaVersion": 1,
+  "tool": {
+    "id": "system",
+    "name": "System"
+  },
+  "rules": [
+    {
+      "id": "system.ai-logs",
+      "title": "AI app logs",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/Claude",
+        "$LOGS/Cursor",
+        "$LOGS/Windsurf",
+        "$LOGS/Kiro",
+        "$LOGS/kirocrew-desktop",
+        "$LOGS/Antigravity",
+        "$LOGS/orca",
+        "$LOGS/Codex"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: diagnostic logs from AI apps; new logs are written as the app runs. Logs touched in the last day may still be open by the app."
+    },
+    {
+      "id": "system.crash-reports.claude",
+      "title": "Claude crash reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "claude*",
+        "type": "file"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "review"
+        }
+      ],
+      "explanation": "Regenerable: not needed. Crash and hang reports from Claude. They are only useful if you plan to send a bug report; recent ones are Review for that reason."
+    },
+    {
+      "id": "system.crash-reports.claude-faults",
+      "title": "Claude fault reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "excuserfault_claude*",
+        "type": "file"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "review"
+        }
+      ],
+      "explanation": "Regenerable: not needed. Crash and hang reports from Claude. They are only useful if you plan to send a bug report; recent ones are Review for that reason."
+    },
+    {
+      "id": "system.crash-reports.cursor",
+      "title": "Cursor crash reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "cursor*",
+        "type": "file"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "review"
+        }
+      ],
+      "explanation": "Regenerable: not needed. Crash and hang reports from Cursor. They are only useful if you plan to send a bug report; recent ones are Review for that reason."
+    },
+    {
+      "id": "system.crash-reports.cursor-faults",
+      "title": "Cursor fault reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "excuserfault_cursor*",
+        "type": "file"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "review"
+        }
+      ],
+      "explanation": "Regenerable: not needed. Crash and hang reports from Cursor. They are only useful if you plan to send a bug report; recent ones are Review for that reason."
+    },
+    {
+      "id": "system.crash-reports.windsurf",
+      "title": "Windsurf crash reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "windsurf*",
+        "type": "file"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "review"
+        }
+      ],
+      "explanation": "Regenerable: not needed. Crash and hang reports from Windsurf. They are only useful if you plan to send a bug report; recent ones are Review for that reason."
+    },
+    {
+      "id": "system.crash-reports.windsurf-faults",
+      "title": "Windsurf fault reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "excuserfault_windsurf*",
+        "type": "file"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "review"
+        }
+      ],
+      "explanation": "Regenerable: not needed. Crash and hang reports from Windsurf. They are only useful if you plan to send a bug report; recent ones are Review for that reason."
+    },
+    {
+      "id": "system.crash-reports.kiro",
+      "title": "Kiro and KiroCrew crash reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "kiro*",
+        "type": "file"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "review"
+        }
+      ],
+      "explanation": "Regenerable: not needed. Crash and hang reports from Kiro and KiroCrew. They are only useful if you plan to send a bug report; recent ones are Review for that reason."
+    },
+    {
+      "id": "system.crash-reports.kiro-faults",
+      "title": "Kiro and KiroCrew fault reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "excuserfault_kiro*",
+        "type": "file"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "review"
+        }
+      ],
+      "explanation": "Regenerable: not needed. Crash and hang reports from Kiro and KiroCrew. They are only useful if you plan to send a bug report; recent ones are Review for that reason."
+    },
+    {
+      "id": "system.crash-reports.antigravity",
+      "title": "Antigravity crash reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "antigravity*",
+        "type": "file"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "review"
+        }
+      ],
+      "explanation": "Regenerable: not needed. Crash and hang reports from Antigravity. They are only useful if you plan to send a bug report; recent ones are Review for that reason."
+    },
+    {
+      "id": "system.crash-reports.antigravity-faults",
+      "title": "Antigravity fault reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "excuserfault_antigravity*",
+        "type": "file"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "review"
+        }
+      ],
+      "explanation": "Regenerable: not needed. Crash and hang reports from Antigravity. They are only useful if you plan to send a bug report; recent ones are Review for that reason."
+    },
+    {
+      "id": "system.crash-reports.orca",
+      "title": "Orca crash reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "orca*",
+        "type": "file"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "review"
+        }
+      ],
+      "explanation": "Regenerable: not needed. Crash and hang reports from Orca. They are only useful if you plan to send a bug report; recent ones are Review for that reason."
+    },
+    {
+      "id": "system.crash-reports.orca-faults",
+      "title": "Orca fault reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "excuserfault_orca*",
+        "type": "file"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "review"
+        }
+      ],
+      "explanation": "Regenerable: not needed. Crash and hang reports from Orca. They are only useful if you plan to send a bug report; recent ones are Review for that reason."
+    },
+    {
+      "id": "system.crash-reports.ollama",
+      "title": "Ollama crash reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "ollama*",
+        "type": "file"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "review"
+        }
+      ],
+      "explanation": "Regenerable: not needed. Crash and hang reports from Ollama. They are only useful if you plan to send a bug report; recent ones are Review for that reason."
+    },
+    {
+      "id": "system.crash-reports.ollama-faults",
+      "title": "Ollama fault reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "excuserfault_ollama*",
+        "type": "file"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "review"
+        }
+      ],
+      "explanation": "Regenerable: not needed. Crash and hang reports from Ollama. They are only useful if you plan to send a bug report; recent ones are Review for that reason."
+    },
+    {
+      "id": "system.crash-reports.codex",
+      "title": "Codex crash reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "codex*",
+        "type": "file"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "review"
+        }
+      ],
+      "explanation": "Regenerable: not needed. Crash and hang reports from Codex. They are only useful if you plan to send a bug report; recent ones are Review for that reason."
+    },
+    {
+      "id": "system.crash-reports.codex-faults",
+      "title": "Codex fault reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "excuserfault_codex*",
+        "type": "file"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "review"
+        }
+      ],
+      "explanation": "Regenerable: not needed. Crash and hang reports from Codex. They are only useful if you plan to send a bug report; recent ones are Review for that reason."
+    },
+    {
+      "id": "system.app-cache.claude",
+      "title": "Claude Desktop app cache",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "com.anthropic.*",
+        "type": "directory"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: Claude Desktop's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit Claude Desktop first.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.anthropic.claudefordesktop"
+      }
+    },
+    {
+      "id": "system.app-cache.cursor",
+      "title": "Cursor app cache",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "com.todesktop.230313mzl4w4u92*",
+        "type": "directory"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: Cursor's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit Cursor first.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.todesktop.230313mzl4w4u92"
+      }
+    },
+    {
+      "id": "system.app-cache.windsurf",
+      "title": "Windsurf app cache",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "com.exafunction.*",
+        "type": "directory"
+      },
+      "tier": "safe",
+      "explanation": "Regenerable: Windsurf's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit Windsurf first.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.exafunction.windsurf"
+      }
+    },
+    {
+      "id": "system.app-cache.kiro",
+      "title": "Kiro app cache",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "dev.kiro.*",
+        "type": "directory"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: Kiro's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit Kiro first.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "dev.kiro.desktop"
+      }
+    },
+    {
+      "id": "system.app-cache.kiro-crew",
+      "title": "KiroCrew app cache",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "com.amazon.kiro.*",
+        "type": "directory"
+      },
+      "tier": "safe",
+      "explanation": "Regenerable: KiroCrew's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit KiroCrew first.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.amazon.kiro.crew"
+      }
+    },
+    {
+      "id": "system.app-cache.antigravity",
+      "title": "Antigravity app cache",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "com.google.antigravity*",
+        "type": "directory"
+      },
+      "tier": "safe",
+      "explanation": "Regenerable: Antigravity's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit Antigravity first.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.google.antigravity"
+      }
+    },
+    {
+      "id": "system.app-cache.orca",
+      "title": "Orca app cache",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "com.stablyai.*",
+        "type": "directory"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: Orca's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit Orca first.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.stablyai.orca"
+      }
+    },
+    {
+      "id": "system.app-cache.orca-updater",
+      "title": "Orca updater downloads",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "orca-updater",
+        "type": "directory"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: downloaded Orca updates. Deleting during an update in progress makes it download again.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.stablyai.orca"
+      }
+    },
+    {
+      "id": "system.agent-temp",
+      "title": "Claude Code temp and scratch dirs",
+      "category": "systemJunk",
+      "paths": [
+        "$TMPDIR",
+        "/private/tmp"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "claude-*",
+        "type": "directory"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: temporary and scratch files from Claude Code sessions. Anything touched in the last 24 h may belong to a running session and is kept."
+    },
+    {
+      "id": "system.npm-cache",
+      "title": "npm download cache",
+      "category": "systemJunk",
+      "paths": [
+        "~/.npm/_cacache"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: npm's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then."
+    },
+    {
+      "id": "system.pnpm-store-cache",
+      "title": "pnpm download cache",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES/pnpm"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: pnpm's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then."
+    },
+    {
+      "id": "system.uv-cache",
+      "title": "uv download cache",
+      "category": "systemJunk",
+      "paths": [
+        "${UV_CACHE_DIR:-~/.cache/uv}"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: uv's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then."
+    },
+    {
+      "id": "system.pip-cache",
+      "title": "pip download cache",
+      "category": "systemJunk",
+      "paths": [
+        "${PIP_CACHE_DIR:-$CACHES/pip}"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: pip's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then."
+    },
+    {
+      "id": "system.bun-cache",
+      "title": "bun download cache",
+      "category": "systemJunk",
+      "paths": [
+        "${BUN_INSTALL_CACHE_DIR:-~/.bun/install/cache}"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: bun's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then."
+    }
+  ]
+}
