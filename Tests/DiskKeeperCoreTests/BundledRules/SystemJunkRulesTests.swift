@@ -7,8 +7,14 @@ final class SystemJunkRulesTests: XCTestCase {
     private func ago(days: Double) -> Date { ago(hours: days * 24) }
     private let file = "system-junk.json"
 
-    private func run(_ f: FixtureHome, over: [String: [String]] = [:], userID: uid_t = getuid()) async throws -> HarnessResult {
-        try await RuleHarness.run(bundledFile: file, fixture: f, now: now, overridePaths: over, userID: userID)
+    /// Always overrides the temp rule's containers with fixture dirs, so the real /private/tmp is never read,
+    /// and fails the test if any item lies outside the fixture.
+    private func run(_ f: FixtureHome, over: [String: [String]]? = nil, userID: uid_t = getuid()) async throws -> HarnessResult {
+        let r = try await RuleHarness.run(bundledFile: file, fixture: f, now: now,
+                                          overridePaths: over ?? tempOverride(f), userID: userID)
+        let root = f.tmp.url.path
+        for i in r.items where !i.path.hasPrefix(root + "/") { XCTFail("item outside the fixture: \(i.path)") }
+        return r
     }
 
     private func tempOverride(_ f: FixtureHome) -> [String: [String]] {
@@ -26,14 +32,15 @@ final class SystemJunkRulesTests: XCTestCase {
             "\(d)/Claude Helper (Renderer)-2026-11-20-101010.ips": "system.crash-reports.claude",
             "\(d)/ExcUserFault_Claude-2026-11-21-000000.ips": "system.crash-reports.claude-faults",
             "\(d)/claude_2026-11-20-101010_Host.cpu_resource.diag": "system.crash-reports.claude",
-            "\(d)/Cursor Helper-2026-11-20-101010.ips": "system.crash-reports.cursor",
+            "\(d)/Cursor Helper-2026-11-20-101010.ips": "system.crash-reports.cursor-helper",
+            "\(d)/Cursor-2026-11-20-101010.ips": "system.crash-reports.cursor",
             "\(d)/ollama-2026-11-20-101010.ips": "system.crash-reports.ollama",
             "\(d)/Retired/Kiro-2026-11-19-000000.ips": "system.crash-reports.kiro",
         ]
         for p in expected.keys { try f.file(p, modified: old) }
         for p in ["Safari-2026-11-20-101010.ips", "SFA-networking.json_2026-11-25-164318_Host.diag",
                   "node-2026-11-20-101010.ips", "ExcUserFault_IMDPersistenceAgent-2026-11-20-225015.ips",
-                  "Microsoft Edge-2026-11-20.ips"] {
+                  "Microsoft Edge-2026-11-20.ips", "CursorUIViewService-2026-11-20-101010.ips"] {
             try f.file("\(d)/\(p)", modified: old)
         }
         let r = try await run(f)
@@ -42,18 +49,18 @@ final class SystemJunkRulesTests: XCTestCase {
         XCTAssertEqual(Set(crash.map(\.path)), Set(expected.keys.map { f.abs($0) }))
         for (rel, rule) in expected {
             XCTAssertEqual(r.item(f.abs(rel))?.ruleID, rule, rel)
-            XCTAssertEqual(r.tier(f.abs(rel)), .safe, rel)
+            XCTAssertEqual(r.tier(f.abs(rel)), .review, rel)
         }
     }
 
-    func testCrashReportsRecentAreReview() async throws {
+    func testCrashReportsAreAlwaysReview() async throws {
         let f = try FixtureHome()
         let d = "Library/Logs/DiagnosticReports"
         try f.file("\(d)/Claude-new.ips", modified: ago(hours: 2))
         try f.file("\(d)/Claude-old.ips", modified: ago(days: 3))
         let r = try await run(f)
         XCTAssertEqual(r.tier(f.abs("\(d)/Claude-new.ips")), .review)
-        XCTAssertEqual(r.tier(f.abs("\(d)/Claude-old.ips")), .safe)
+        XCTAssertEqual(r.tier(f.abs("\(d)/Claude-old.ips")), .review)
     }
 
     func testRetiredFolderItselfIsNotAnItem() async throws {
@@ -121,6 +128,8 @@ final class SystemJunkRulesTests: XCTestCase {
         XCTAssertEqual(r.tier(f.abs("Library/Logs/Claude/main.log")), .keep)
         XCTAssertEqual(r.tier(f.abs("Library/Logs/Claude/old.log")), .safe)
         XCTAssertNil(r.item(f.abs("Library/Logs/Claude")))
+        XCTAssertEqual(r.item(f.abs("Library/Logs/Claude/old.log"))?.requiresAppQuit, "com.anthropic.claudefordesktop")
+        XCTAssertEqual(r.item(f.abs("Library/Logs/Claude/old.log"))?.ruleID, "system.ai-logs.claude")
     }
 
     func testAppCachesGlobsAndQuit() async throws {
@@ -191,7 +200,7 @@ final class SystemJunkRulesTests: XCTestCase {
         let f = try FixtureHome()
         let result = RuleHarness.loadAllBundled(fixture: f)
         XCTAssertEqual(result.errors, [], result.errors.map(\.description).joined(separator: "\n"))
-        XCTAssertTrue(result.allRules.contains { $0.rule.id == "system.ai-logs" })
+        XCTAssertTrue(result.allRules.contains { $0.rule.id == "system.ai-logs.claude" })
         XCTAssertTrue(result.allRules.allSatisfy { $0.tool.rawValue != "system" || $0.rule.id.hasPrefix("system.") })
     }
 
