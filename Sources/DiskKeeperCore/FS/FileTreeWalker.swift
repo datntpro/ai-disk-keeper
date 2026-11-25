@@ -77,7 +77,8 @@ struct FileTreeWalker {
         defer { fts_close(fts) }
 
         let rootDev = rootStat.st_dev
-        var seen = Set<InodeKey>()
+        // Only multi-link inodes: (links seen, st_nlink, allocated bytes).
+        var seen: [InodeKey: (seen: Int, nlink: Int, bytes: Int64)] = [:]
         let maxIssues = options.maxRecordedIssues
         let interval = max(1, options.progressInterval)
 
@@ -99,7 +100,8 @@ struct FileTreeWalker {
 
             let info = Int32(ent.pointee.fts_info)
             if info == FTS_DP { continue }
-            report.entriesVisited += 1
+            // FTS_DNR re-returns an entry already returned (and counted) as FTS_D.
+            if info != FTS_DNR { report.entriesVisited += 1 }
             let st = ent.pointee.fts_statp
 
             switch info {
@@ -123,10 +125,13 @@ struct FileTreeWalker {
                 touch(st.pointee.st_mtimespec)
                 if st.pointee.st_nlink > 1 {
                     let key = InodeKey(device: st.pointee.st_dev, inode: st.pointee.st_ino)
-                    if !seen.insert(key).inserted {
+                    if var e = seen[key] {
+                        e.seen += 1
+                        seen[key] = e
                         report.hardlinkDuplicateCount += 1
                         break
                     }
+                    seen[key] = (1, Int(st.pointee.st_nlink), Int64(st.pointee.st_blocks) * 512)
                 }
                 report.fileCount += 1
                 report.allocatedBytes += Int64(st.pointee.st_blocks) * 512
@@ -135,12 +140,8 @@ struct FileTreeWalker {
                 report.symlinkCount += 1
                 if let st { touch(st.pointee.st_mtimespec) }
             case FTS_DNR:
+                // Already counted (dirs, blocks, mtime) at its FTS_D visit; only record the issue.
                 record(ent)
-                if let st {
-                    report.directoryCount += 1
-                    report.allocatedBytes += Int64(st.pointee.st_blocks) * 512
-                    touch(st.pointee.st_mtimespec)
-                }
             case FTS_NS, FTS_ERR:
                 record(ent)
             case FTS_DC:
@@ -160,6 +161,10 @@ struct FileTreeWalker {
             if report.issues.count < maxIssues {
                 report.issues.append(SizingIssue(path: path, kind: .other, errno: code))
             }
+        }
+        for e in seen.values where e.seen < e.nlink {
+            report.externallyLinkedFileCount += 1
+            report.externallyLinkedBytes += e.bytes
         }
         return finish()
     }

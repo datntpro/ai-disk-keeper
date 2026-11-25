@@ -184,7 +184,9 @@ final class FileSizerTests: XCTestCase {
         let r = try size(tmp.url.appendingPathComponent("tree"))
         XCTAssertEqual(r.issueCount, 1)
         XCTAssertEqual(r.issues.first?.kind, .permissionDenied)
-        XCTAssertTrue(r.issues.first?.path.hasSuffix("/locked") ?? false)
+        XCTAssertEqual(r.issues.first?.path, tmp.path("tree/locked"))
+        XCTAssertEqual(r.directoryCount, 2) // tree + locked, counted once
+        XCTAssertEqual(r.entriesVisited, 3) // tree, locked, ok.bin (DNR repeat not recounted)
         XCTAssertFalse(r.isComplete)
         XCTAssertGreaterThanOrEqual(r.logicalBytes, 2000)
         XCTAssertLessThan(r.logicalBytes, 1_000_000)
@@ -243,13 +245,57 @@ final class FileSizerTests: XCTestCase {
         let root = tmp.url.appendingPathComponent("tree")
         let def = try size(root)
         XCTAssertEqual(def.skippedMountPoints.count, 1)
-        // standardizedFileURL may strip /private, so compare by suffix.
-        XCTAssertTrue(def.skippedMountPoints.first?.hasSuffix("/tree/mnt") ?? false)
+        XCTAssertEqual(def.skippedMountPoints, [mountPoint])
         XCTAssertLessThan(def.logicalBytes, 1_048_576)
 
         let crossed = try size(root, .init(crossVolumes: true))
         XCTAssertGreaterThanOrEqual(crossed.logicalBytes, 1_048_576)
         XCTAssertTrue(crossed.skippedMountPoints.isEmpty)
+    }
+
+    func testHardlinkWithNameOutsideTreeIsExternallyLinked() throws {
+        try tmp.file("outside/one.bin", bytes: 1_000_000)
+        try tmp.hardlink("tree/in.bin", to: "outside/one.bin")
+        try tmp.file("tree/solo.bin", bytes: 10)
+        try tmp.file("inner/a.bin", bytes: 100)
+        try tmp.hardlink("inner/b.bin", to: "inner/a.bin")
+        let r = try size(tmp.url.appendingPathComponent("tree"))
+        XCTAssertEqual(r.externallyLinkedFileCount, 1)
+        XCTAssertGreaterThanOrEqual(r.externallyLinkedBytes, 1_000_000)
+        let inner = try size(tmp.url.appendingPathComponent("inner"))
+        XCTAssertEqual(inner.externallyLinkedFileCount, 0)
+    }
+
+    func testPrivateAliasRootsAreNotRewritten() throws {
+        // /private/var/... must keep its prefix in reported paths, and /private/tmp must be a directory root.
+        try skipIfRoot()
+        try tmp.dir("tree/locked")
+        try tmp.chmod("tree/locked", 0)
+        XCTAssertTrue(tmp.url.path.hasPrefix("/private/"), "fixture is expected under /private/var")
+        let r = try size(tmp.url.appendingPathComponent("tree"))
+        XCTAssertEqual(r.issues.first?.path, tmp.path("tree/locked"))
+        let priv = try size(URL(fileURLWithPath: "/private/tmp"))
+        XCTAssertEqual(priv.rootKind, .directory)
+        XCTAssertGreaterThanOrEqual(priv.directoryCount, 1)
+        let viaLink = try size(URL(fileURLWithPath: "/tmp"))
+        XCTAssertEqual(viaLink.rootKind, .symlink)
+    }
+
+    func testVanishedDirectoryIsCountedOnce() throws {
+        // Directory removed after fts listed it: FTS_D then FTS_DNR/ENOENT must not double count.
+        try tmp.dir("tree/gone")
+        try tmp.file("tree/keep", bytes: 1)
+        var opts = FileSizer.Options()
+        let root = tmp.path("tree")
+        let removed = OSAllocatedUnfairLock(initialState: false)
+        opts._entryHook = {
+            if removed.withLock({ let was = $0; $0 = true; return !was }) {
+                try? FileManager.default.removeItem(atPath: root + "/gone")
+            }
+        }
+        let r = try FileSizer(options: opts).sizeBlocking(of: URL(fileURLWithPath: root))
+        XCTAssertLessThanOrEqual(r.directoryCount, 2)
+        XCTAssertGreaterThanOrEqual(r.directoryCount, 1)
     }
 
     // MARK: Errors

@@ -97,7 +97,8 @@ public struct FileSizer: Sendable {
         progress: (@Sendable (SizeProgress) -> Void)? = nil
     ) throws -> SizeReport {
         guard url.isFileURL else { throw FileSizerError.notAFileURL(url.absoluteString) }
-        var path = url.standardizedFileURL.path
+        // Do not standardize: standardizedFileURL strips /private (/private/tmp -> /tmp symlink) and rewrites reported paths.
+        var path = url.absoluteURL.path
         while path.count > 1 && path.hasSuffix("/") { path.removeLast() }
 
         var rootStat = stat()

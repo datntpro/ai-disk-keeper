@@ -17,6 +17,11 @@ public struct SizeReport: Sendable, Hashable, Codable {
     public var symlinkCount: Int
     /// Extra links to an already-counted inode (st_nlink > 1) that were skipped.
     public var hardlinkDuplicateCount: Int
+    /// Counted multi-link files that still have links not seen in this walk (st_nlink > links seen),
+    /// i.e. other names exist outside the tree; deleting this tree frees nothing for them.
+    public var externallyLinkedFileCount: Int
+    /// Allocated bytes of those externally linked files (already included in `allocatedBytes`).
+    public var externallyLinkedBytes: Int64
     /// Directories with SF_DATALESS (iCloud/File Provider placeholders) that were not descended.
     public var datalessSkippedCount: Int
     /// Max lstat mtime over every visited entry (root, dirs, files, symlinks). nil only if nothing could be stat'ed.
@@ -40,6 +45,8 @@ public struct SizeReport: Sendable, Hashable, Codable {
         directoryCount: Int = 0,
         symlinkCount: Int = 0,
         hardlinkDuplicateCount: Int = 0,
+        externallyLinkedFileCount: Int = 0,
+        externallyLinkedBytes: Int64 = 0,
         datalessSkippedCount: Int = 0,
         newestModification: Date? = nil,
         skippedMountPoints: [String] = [],
@@ -54,6 +61,8 @@ public struct SizeReport: Sendable, Hashable, Codable {
         self.directoryCount = directoryCount
         self.symlinkCount = symlinkCount
         self.hardlinkDuplicateCount = hardlinkDuplicateCount
+        self.externallyLinkedFileCount = externallyLinkedFileCount
+        self.externallyLinkedBytes = externallyLinkedBytes
         self.datalessSkippedCount = datalessSkippedCount
         self.newestModification = newestModification
         self.skippedMountPoints = skippedMountPoints

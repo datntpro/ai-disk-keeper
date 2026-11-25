@@ -17,7 +17,7 @@ final class FileSizerBenchmarkTests: XCTestCase {
         measure {
             entries = (try? sizer.sizeBlocking(of: tmp.url.appendingPathComponent("nm")).entriesVisited) ?? 0
         }
-        print("synthetic: \(entries) entries")
+        print("synthetic: \(entries) entries (entries/s = entries / measured average above)")
     }
 
     func testBenchmarkRealPaths() throws {
@@ -28,8 +28,9 @@ final class FileSizerBenchmarkTests: XCTestCase {
         for p in raw.split(separator: ":").map(String.init) {
             let t0 = ContinuousClock.now
             let r = try sizer.sizeBlocking(of: URL(fileURLWithPath: p))
-            let secs = Double((t0.duration(to: .now)).components.seconds)
-                + Double((t0.duration(to: .now)).components.attoseconds) / 1e18
+            let d = t0.duration(to: .now)
+            let secs = Double(d.components.seconds) + Double(d.components.attoseconds) / 1e18
+            let t1 = ContinuousClock.now
             let du = Process()
             du.executableURL = URL(fileURLWithPath: "/usr/bin/du")
             du.arguments = ["-sk", p]
@@ -39,9 +40,12 @@ final class FileSizerBenchmarkTests: XCTestCase {
             try du.run()
             let out = String(decoding: pipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
             du.waitUntilExit()
+            let d2 = t1.duration(to: .now)
+            let duSecs = Double(d2.components.seconds) + Double(d2.components.attoseconds) / 1e18
             let duKB = out.split(whereSeparator: { $0 == "\t" || $0 == " " }).first.map(String.init) ?? "?"
             print("BENCH \(p), entries=\(r.entriesVisited), allocated=\(r.allocatedBytes / 1024)KB, "
-                  + "seconds=\(String(format: "%.3f", secs)), du=\(duKB)KB")
+                  + "seconds=\(String(format: "%.3f", secs)), entries/s=\(Int(Double(r.entriesVisited) / max(secs, 1e-9))), "
+                  + "du=\(duKB)KB, du_seconds=\(String(format: "%.3f", duSecs))")
         }
     }
 }
