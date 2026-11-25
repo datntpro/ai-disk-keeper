@@ -198,7 +198,7 @@
         "kind": "children",
         "type": "any"
       },
-      "tier": "safe",
+      "tier": "review",
       "tierWhen": [
         {
           "if": {
@@ -207,7 +207,7 @@
           "tier": "keep"
         }
       ],
-      "explanation": "Regenerable: diagnostic logs from Codex; new logs are written as the app runs. Quit the app first, because a running app keeps log files open and trashing them frees no space. Logs touched in the last day are kept. Logs may be open while Codex runs."
+      "explanation": "Regenerable: diagnostic logs from Codex; new logs are written as the app runs. Quit the app first, because a running app keeps log files open and trashing them frees no space. Logs touched in the last day are kept. Codex may have these logs open while it runs, so check that it is not running first."
     },
     {
       "id": "system.crash-reports.claude",

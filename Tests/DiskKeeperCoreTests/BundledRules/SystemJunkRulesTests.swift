@@ -132,6 +132,14 @@ final class SystemJunkRulesTests: XCTestCase {
         XCTAssertEqual(r.item(f.abs("Library/Logs/Claude/old.log"))?.ruleID, "system.ai-logs.claude")
     }
 
+    func testCodexLogsAreReviewBecauseNoQuitGate() async throws {
+        let f = try FixtureHome()
+        try f.file("Library/Logs/Codex/old.log", modified: ago(days: 3))
+        let r = try await run(f)
+        XCTAssertEqual(r.tier(f.abs("Library/Logs/Codex/old.log")), .review)
+        XCTAssertEqual(r.item(f.abs("Library/Logs/Codex/old.log"))?.ruleID, "system.ai-logs.codex")
+    }
+
     func testAppCachesGlobsAndQuit() async throws {
         let f = try FixtureHome()
         let c = "Library/Caches"
