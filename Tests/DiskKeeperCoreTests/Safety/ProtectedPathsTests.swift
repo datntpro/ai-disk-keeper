@@ -250,4 +250,89 @@ final class ProtectedPathsTests: XCTestCase {
             XCTAssertFalse(d.message.isEmpty)
         }
     }
+
+    // MARK: Review fixes (F1, F2, table gaps, coverage)
+
+    func testGlobMetacharactersInHomeDoNotDisableProtection() throws {
+        for h in ["/Users/a[b]", "/Users/a\\b", "/Users/a*b", "/Users/a?b", "/Users/a]b"] {
+            let p = try ProtectedPaths(homeDirectory: h, temporaryDirectory: tmp, resolver: FakePathResolver())
+            XCTAssertEqual(p.check("\(h)/.ssh/x").denial?.reason, .protectedPath, h)
+            XCTAssertEqual(p.check("\(h)/Library/Keychains").denial?.reason, .protectedPath, h)
+            XCTAssertEqual(p.check("\(h)/Library/Application Support/AIDiskKeeper/a").denial?.reason, .protectedPath, h)
+            XCTAssertEqual(p.check("\(h)/.claude").denial?.reason, .containsProtectedPath, h)
+            XCTAssertTrue(p.check("\(h)/.cache/x").isAllowed, h)
+        }
+    }
+
+    func testEscapeGlobHelper() {
+        XCTAssertEqual(ProtectedPaths.escapeGlob("/a[b]\\c*?"), "/a\\[b\\]\\\\c\\*\\?")
+        XCTAssertTrue(GlobMatcher.matches(pattern: ProtectedPaths.escapeGlob("a[b]*"), component: "a[b]*"))
+        XCTAssertFalse(GlobMatcher.matches(pattern: ProtectedPaths.escapeGlob("a[b]"), component: "ab"))
+    }
+
+    func testBadRootsAreRejected() throws {
+        let bad = ["/", "/Users", "/private", "/Volumes", "/Volumes/Data", "/usr", "/usr/local", "/System",
+                   "/Library", "/bin", "/etc", "/private/etc", "/var", "/private/var", "/private/var/db"]
+        for r in bad {
+            XCTAssertThrowsError(try ProtectedPaths(homeDirectory: r, temporaryDirectory: tmp,
+                                                    resolver: FakePathResolver()), "home \(r)") {
+                XCTAssertEqual($0 as? ProtectedPathsError, .invalidRoot(r))
+            }
+        }
+        for r in ["/usr", "/Library", "/usr/local/tmp", "/System/Library/x", "/Users", "/"] {
+            XCTAssertThrowsError(try ProtectedPaths(homeDirectory: home, temporaryDirectory: r,
+                                                    resolver: FakePathResolver()), "tmp \(r)")
+        }
+    }
+
+    func testRootResolvingToSystemLocationIsRejected() {
+        for target in ["/", "/usr", "/Users", "/Volumes/Data"] {
+            var f = FakePathResolver()
+            f.map[home] = .resolved(target)
+            XCTAssertThrowsError(try policy(f), target) {
+                XCTAssertEqual($0 as? ProtectedPathsError, .invalidRoot(home))
+            }
+            var g = FakePathResolver()
+            g.map["/var/folders/zz/T"] = .resolved(target)
+            XCTAssertThrowsError(try ProtectedPaths(homeDirectory: home, temporaryDirectory: tmp, resolver: g), target)
+        }
+        var h = FakePathResolver()
+        h.map["/var/folders/zz/T"] = .resolved("/usr/local")
+        XCTAssertThrowsError(try ProtectedPaths(homeDirectory: home, temporaryDirectory: tmp, resolver: h))
+    }
+
+    func testAddedCredentialEntriesAreProtected() throws {
+        let p = try policy()
+        let appSupport = "\(home)/Library/Application Support"
+        for s in ["\(appSupport)/Claude/claude_desktop_config.json", "\(home)/.cargo/credentials.toml",
+                  "\(home)/.config/op/config", "\(home)/.vault-token", "\(home)/.terraform.d/credentials.tfrc.json",
+                  "\(home)/.gem/credentials", "\(home)/.m2/settings-security.xml",
+                  "\(appSupport)/Google/Chrome/Default/Login Data", "\(appSupport)/Google/Chrome/Profile 1/Cookies-journal",
+                  "\(appSupport)/Firefox/Profiles/abc.default/key4.db", "\(home)/Library/Cookies/x",
+                  "/private/tmp/com.apple.launchd.AbC123/Listeners", "/tmp/com.apple.launchd.AbC123"] {
+            XCTAssertEqual(reason(p, s), .protectedPath, s)
+        }
+    }
+
+    func testPathUnderTwoRootsUsesLongest() throws {
+        let p = try ProtectedPaths(homeDirectory: home, temporaryDirectory: "\(home)/scratch", resolver: FakePathResolver())
+        XCTAssertTrue(p.check("\(home)/scratch/x").isAllowed)
+        XCTAssertEqual(p.check("\(home)/scratch/.env").denial?.reason, .protectedName)
+        XCTAssertEqual(reason(p, "\(home)/scratch"), .protectedLocation)
+    }
+
+    func testResolvedHomeDifferingOnlyInCaseIsHandled() throws {
+        var f = FakePathResolver()
+        f.map[home] = .resolved("/users/TESTER")
+        let p = try policy(f)
+        XCTAssertEqual(reason(p, "\(home)/.ssh"), .protectedPath)
+        XCTAssertTrue(p.check("\(home)/.cache/x").isAllowed)
+    }
+
+    func testDenialMessageWithoutPatternOrWhy() {
+        let d = PathDenial(path: "/x", reason: .protectedPath)
+        XCTAssertTrue(d.message.contains("Protected"))
+        let w = PathDenial(path: "/x", reason: .protectedPath, matchedPattern: "~/p")
+        XCTAssertTrue(w.message.contains("~/p"))
+    }
 }

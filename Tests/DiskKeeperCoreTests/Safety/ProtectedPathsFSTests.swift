@@ -85,4 +85,14 @@ final class ProtectedPathsFSTests: XCTestCase {
         try tmp.symlink("loopb", to: tmp.path("loopa"))
         XCTAssertEqual(SystemPathResolver().resolve(tmp.path("loopa")), .failed(errno: ELOOP))
     }
+
+    func testSymlinkToExistingDirWithMissingChildResolvesThrough() throws {
+        try tmp.dir("home/.cache/real")
+        try tmp.symlink("home/.cache/mem", to: home + "/.cache/real")
+        let r = SystemPathResolver().resolve("\(home)/.cache/mem/new/deeper")
+        XCTAssertEqual(r, .resolved(tmp.path("home/.cache/real/new/deeper")))
+        XCTAssertTrue(try policy().check("\(home)/.cache/mem/new").isAllowed)
+        try tmp.symlink("home/.cache/tossh", to: home + "/.ssh")
+        XCTAssertEqual(try policy().check("\(home)/.cache/tossh/newkey").denial?.reason, .protectedPath)
+    }
 }

@@ -45,4 +45,14 @@ final class PathKeyTests: XCTestCase {
         XCTAssertTrue(m("[]]", "]"))
         XCTAssertTrue(m("[a-]", "-"))
     }
+
+    func testUnicodeCaseFolding() {
+        XCTAssertEqual(PathCanonicalizer.key("/x/.\u{17F}sh"), PathCanonicalizer.key("/x/.ssh"))
+    }
+
+    func testGlobEdgeCases() {
+        XCTAssertTrue(GlobMatcher.matches(pattern: "a**b", component: "aXXb"))
+        XCTAssertTrue(GlobMatcher.matches(pattern: "[\\]]", component: "]"))
+        XCTAssertFalse(GlobMatcher.matches(pattern: "[\\]]", component: "a"))
+    }
 }

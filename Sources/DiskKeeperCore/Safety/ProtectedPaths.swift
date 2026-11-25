@@ -53,25 +53,38 @@ public struct ProtectedPaths: Sendable {
         }
         let homeForms = forms(home)
         let tmpForms = forms(tmp)
+        // Fail closed on roots that would open the system (checked on lexical and resolved forms).
+        let sysKeys = Self.systemRoots.map { PathCanonicalizer.key($0).components }
+        func rejectBadRoot(_ original: String, _ forms: [String], isTemp: Bool) throws {
+            for f in forms {
+                let c = PathCanonicalizer.key(f).components
+                if c.count < 2 || (c.first == "volumes" && c.count < 3)
+                    || sysKeys.contains(where: { Self.isPrefix(c, of: $0) })
+                    || (c.first != "volumes" || isTemp) && sysKeys.contains(where: { Self.isPrefix($0, of: c) }) {
+                    throw ProtectedPathsError.invalidRoot(original)
+                }
+            }
+        }
+        try rejectBadRoot(homeDirectory, homeForms, isTemp: false)
+        try rejectBadRoot(temporaryDirectory, tmpForms, isTemp: true)
         var rootKeys = (homeForms + tmpForms + ["/private/tmp"]).map(PathCanonicalizer.key)
         rootKeys = Array(Set(rootKeys))
         self.roots = rootKeys
 
         func expand(_ template: String) -> [String] {
             if template.hasPrefix("~") {
-                return homeForms.map { $0 + template.dropFirst() }
+                return homeForms.map { Self.escapeGlob($0) + template.dropFirst() }
             }
             if template.hasPrefix("$APP_SUPPORT") {
-                return homeForms.map { $0 + "/Library/Application Support" + template.dropFirst("$APP_SUPPORT".count) }
+                return homeForms.map {
+                    Self.escapeGlob($0) + "/Library/Application Support" + template.dropFirst("$APP_SUPPORT".count)
+                }
             }
             return [template]
         }
         func compile(_ p: ProtectedPattern) -> [Compiled] {
-            var seen = Set<[String]>()
-            return expand(p.template).compactMap { path in
-                let comps = PathCanonicalizer.key(path).components
-                guard seen.insert(comps).inserted else { return nil }
-                return Compiled(template: p.template, why: p.why, components: comps)
+            expand(p.template).map {
+                Compiled(template: p.template, why: p.why, components: PathCanonicalizer.key($0).components)
             }
         }
 
@@ -80,6 +93,15 @@ public struct ProtectedPaths: Sendable {
         self.exactOnly = Self.builtInExactOnly.flatMap { compile(ProtectedPattern($0, "protected folder")) }
         self.basenames = Self.builtInBasenames.map {
             Compiled(template: $0.template, why: $0.why, components: [PathCanonicalizer.fold($0.template)])
+        }
+        // Fail closed: every expanded home pattern must match the literal home path.
+        for h in homeForms {
+            let probe = PathCanonicalizer.key(h).components
+            let pat = PathCanonicalizer.key(Self.escapeGlob(h)).components
+            guard probe.count == pat.count,
+                  zip(pat, probe).allSatisfy({ GlobMatcher.matches(pattern: $0, component: $1) }) else {
+                throw ProtectedPathsError.invalidRoot(h)
+            }
         }
         self.systemRootKeys = Self.systemRoots.map {
             Compiled(template: $0, why: "system", components: PathCanonicalizer.key($0).components)
@@ -173,6 +195,9 @@ public struct ProtectedPaths: Sendable {
         }
         // c.
         var pending: Hit?
+        if containing.contains(where: { $0.components.count == kc.count }) {
+            return Hit(reason: .protectedLocation, pattern: nil, why: "allowed root")
+        }
         guard let root = under.max(by: { $0.components.count < $1.components.count }) else {
             if containing.isEmpty { return Hit(reason: .outsideAllowedRoots, pattern: nil, why: nil) }
             pending = Hit(reason: .protectedLocation, pattern: nil, why: "allowed root")
@@ -260,6 +285,27 @@ public struct ProtectedPaths: Sendable {
         .init("~/.Trash", "Trash"),
         // Docker
         .init("~/Library/Containers/com.docker.docker/Data/vms/*/data/Docker.raw", "Docker disk image"),
+        // Other credential stores
+        .init("$APP_SUPPORT/Claude/claude_desktop_config.json", "Claude desktop MCP config"),
+        .init("~/.cargo/credentials*", "Cargo credentials"),
+        .init("~/.config/op", "1Password CLI"),
+        .init("~/.vault-token", "Vault token"),
+        .init("~/.terraform.d/credentials*", "Terraform credentials"),
+        .init("~/.gem/credentials", "RubyGems credentials"),
+        .init("~/.m2/settings*.xml", "Maven credentials"),
+        .init("$APP_SUPPORT/Google/Chrome/*/Login Data*", "browser passwords"),
+        .init("$APP_SUPPORT/Google/Chrome/*/Cookies*", "browser cookies"),
+        .init("$APP_SUPPORT/Chromium/*/Login Data*", "browser passwords"),
+        .init("$APP_SUPPORT/Chromium/*/Cookies*", "browser cookies"),
+        .init("$APP_SUPPORT/BraveSoftware/Brave-Browser/*/Login Data*", "browser passwords"),
+        .init("$APP_SUPPORT/BraveSoftware/Brave-Browser/*/Cookies*", "browser cookies"),
+        .init("$APP_SUPPORT/Microsoft Edge/*/Login Data*", "browser passwords"),
+        .init("$APP_SUPPORT/Microsoft Edge/*/Cookies*", "browser cookies"),
+        .init("$APP_SUPPORT/Firefox/Profiles/*/logins.json", "browser passwords"),
+        .init("$APP_SUPPORT/Firefox/Profiles/*/key4.db", "browser password key"),
+        .init("$APP_SUPPORT/Firefox/Profiles/*/cookies.sqlite", "browser cookies"),
+        .init("~/Library/Cookies", "browser cookies"),
+        .init("/private/tmp/com.apple.launchd.*", "SSH agent socket directory"),
         // Self
         .init("$APP_SUPPORT/AIDiskKeeper", "AI Disk Keeper settings, audit log and rules"),
     ]

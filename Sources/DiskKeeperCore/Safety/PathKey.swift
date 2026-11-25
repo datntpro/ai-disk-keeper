@@ -20,7 +20,7 @@ enum PathCanonicalizer {
     }
 
     static func fold(_ s: String) -> String {
-        s.lowercased().decomposedStringWithCanonicalMapping
+        s.folding(options: [.caseInsensitive], locale: nil).decomposedStringWithCanonicalMapping
     }
 }
 
@@ -117,5 +117,18 @@ enum GlobMatcher {
         }
         while t < toks.count, case .star = toks[t] { t += 1 }
         return t == toks.count
+    }
+}
+
+extension ProtectedPaths {
+    /// Escapes glob metacharacters (`\ * ? [ ]`) so a literal path fragment can be embedded in a pattern
+    /// (e.g. a home directory, `$TMPDIR` or `$HOME` expanded into `additionalPatterns`).
+    public static func escapeGlob(_ literal: String) -> String {
+        var out = ""
+        for ch in literal {
+            if "\\*?[]".contains(ch) { out.append("\\") }
+            out.append(ch)
+        }
+        return out
     }
 }

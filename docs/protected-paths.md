@@ -17,6 +17,13 @@ table is hard-coded and cannot be overridden; rules may only **add** anchored pa
 - Reasons are either **hard** or **container**. `protectedLocation` and `containsProtectedPath` mean the
   path itself must never be an item, but it may be scanned *inside*. A hard reason always wins.
 
+- **Root validation (fail closed):** `init` throws `invalidRoot` if a home or `$TMPDIR` form (lexical or
+  resolved) has fewer than 2 components, is `/Volumes/<vol>`, equals or contains a system root, or (home
+  outside `/Volumes`; always for `$TMPDIR`) lies under one.
+- **Glob escaping:** `~`/`$APP_SUPPORT` expansion escapes `\ * ? [ ]` in the home path. Entries in
+  `additionalPatterns` are globs: callers embedding literal paths (e.g. `$HOME`, `$TMPDIR`) must wrap
+  them in the public helper `ProtectedPaths.escapeGlob(_:)`.
+
 ## Pattern classes
 
 1. **Anchored**: absolute. Denies the path, everything below it, and its *ancestors*
@@ -42,6 +49,7 @@ tests. Summary:
 | Dev credentials | `~/.ssh ~/.aws ~/.gnupg ~/.azure ~/.kube ~/.docker/config.json ~/.config/{gh,gcloud,git} ~/.gitconfig ~/.git-credentials ~/.netrc ~/.npmrc ~/.pypirc ~/.password-store` |
 | macOS | `~/Library/{Keychains,Preferences,Mobile Documents,CloudStorage,Mail,Messages}`, `~/.Trash` |
 | Docker | `~/Library/Containers/com.docker.docker/Data/vms/*/data/Docker.raw` |
+| Other credentials | `$APP_SUPPORT/Claude/claude_desktop_config.json`, `~/.cargo/credentials*`, `~/.config/op`, `~/.vault-token`, `~/.terraform.d/credentials*`, `~/.gem/credentials`, `~/.m2/settings*.xml`, browser `Login Data*`/`Cookies*`/Firefox `logins.json`/`key4.db`/`cookies.sqlite`, `~/Library/Cookies`, `/private/tmp/com.apple.launchd.*` |
 | Self | `$APP_SUPPORT/AIDiskKeeper` |
 | Exact-only | `~`, `~/Library` and its main subfolders, `~/Documents`, `~/Desktop`, `~/Downloads`, `~/Pictures`, `~/Movies`, `~/Music`, `~/Public`, `~/Applications`, `~/Developer`, `~/.cache`, `~/.config`, `~/.local`, `~/.local/share`, `~/orca`, `~/orca/workspaces`, `/private/tmp`, `$TMPDIR` (as an allowed root) |
 | Basenames | `.env`, `.env.*`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.keychain`, `*.keychain-db`, `id_rsa*`, `id_ed25519*`, `id_ecdsa*`, `id_dsa*`, `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `.credentials.json`, `.git` |

@@ -27,7 +27,14 @@ public struct SystemPathResolver: PathResolving {
             let prefix = "/" + comps.joined(separator: "/")
             var st = stat()
             if lstat(prefix, &st) == 0 {
-                if (st.st_mode & S_IFMT) == S_IFLNK { return .failed(errno: ENOENT) }
+                if (st.st_mode & S_IFMT) == S_IFLNK {
+                    // Dangling only if the target is missing; otherwise resolve through it.
+                    var target = stat()
+                    if stat(prefix, &target) != 0 {
+                        let e = errno
+                        return .failed(errno: (e == ENOENT || e == ENOTDIR) ? ENOENT : e)
+                    }
+                }
                 guard let real = Self.realpathString(prefix) else { return .failed(errno: errno) }
                 let tail = dropped.reversed().joined(separator: "/")
                 if tail.isEmpty { return .resolved(real) }
