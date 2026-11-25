@@ -1,0 +1,806 @@
+{
+  "schemaVersion": 1,
+  "tool": {
+    "id": "system",
+    "name": "System"
+  },
+  "rules": [
+    {
+      "id": "system.ai-logs.claude",
+      "title": "Claude logs",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/Claude"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: diagnostic logs from Claude; new logs are written as the app runs. Quit the app first, because a running app keeps log files open and trashing them frees no space. Logs touched in the last day are kept.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.anthropic.claudefordesktop"
+      }
+    },
+    {
+      "id": "system.ai-logs.cursor",
+      "title": "Cursor logs",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/Cursor"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: diagnostic logs from Cursor; new logs are written as the app runs. Quit the app first, because a running app keeps log files open and trashing them frees no space. Logs touched in the last day are kept.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.todesktop.230313mzl4w4u92"
+      }
+    },
+    {
+      "id": "system.ai-logs.windsurf",
+      "title": "Windsurf logs",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/Windsurf"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: diagnostic logs from Windsurf; new logs are written as the app runs. Quit the app first, because a running app keeps log files open and trashing them frees no space. Logs touched in the last day are kept.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.exafunction.windsurf"
+      }
+    },
+    {
+      "id": "system.ai-logs.kiro",
+      "title": "Kiro logs",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/Kiro"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: diagnostic logs from Kiro; new logs are written as the app runs. Quit the app first, because a running app keeps log files open and trashing them frees no space. Logs touched in the last day are kept.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "dev.kiro.desktop"
+      }
+    },
+    {
+      "id": "system.ai-logs.kiro-crew",
+      "title": "KiroCrew logs",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/kirocrew-desktop"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: diagnostic logs from KiroCrew; new logs are written as the app runs. Quit the app first, because a running app keeps log files open and trashing them frees no space. Logs touched in the last day are kept.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.amazon.kiro.crew"
+      }
+    },
+    {
+      "id": "system.ai-logs.antigravity",
+      "title": "Antigravity logs",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/Antigravity"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: diagnostic logs from Antigravity; new logs are written as the app runs. Quit the app first, because a running app keeps log files open and trashing them frees no space. Logs touched in the last day are kept.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.google.antigravity"
+      }
+    },
+    {
+      "id": "system.ai-logs.orca",
+      "title": "Orca logs",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/orca"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: diagnostic logs from Orca; new logs are written as the app runs. Quit the app first, because a running app keeps log files open and trashing them frees no space. Logs touched in the last day are kept.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.stablyai.orca"
+      }
+    },
+    {
+      "id": "system.ai-logs.codex",
+      "title": "Codex logs",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/Codex"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: diagnostic logs from Codex; new logs are written as the app runs. Quit the app first, because a running app keeps log files open and trashing them frees no space. Logs touched in the last day are kept. Codex may have these logs open while it runs, so check that it is not running first."
+    },
+    {
+      "id": "system.crash-reports.claude",
+      "title": "Claude crash reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "claude*",
+        "type": "file"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: not needed. Crash and hang reports from Claude. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+    },
+    {
+      "id": "system.crash-reports.claude-faults",
+      "title": "Claude fault reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "excuserfault_claude*",
+        "type": "file"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: not needed. Crash and hang reports from Claude. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+    },
+    {
+      "id": "system.crash-reports.cursor",
+      "title": "Cursor crash reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "cursor-*",
+        "type": "file"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: not needed. Crash and hang reports from Cursor. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+    },
+    {
+      "id": "system.crash-reports.cursor-faults",
+      "title": "Cursor fault reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "excuserfault_cursor-*",
+        "type": "file"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: not needed. Crash and hang reports from Cursor. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+    },
+    {
+      "id": "system.crash-reports.cursor-helper",
+      "title": "Cursor Helper crash reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "cursor helper*",
+        "type": "file"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: not needed. Crash and hang reports from Cursor Helper. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+    },
+    {
+      "id": "system.crash-reports.cursor-helper-faults",
+      "title": "Cursor Helper fault reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "excuserfault_cursor helper*",
+        "type": "file"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: not needed. Crash and hang reports from Cursor Helper. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+    },
+    {
+      "id": "system.crash-reports.windsurf",
+      "title": "Windsurf crash reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "windsurf*",
+        "type": "file"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: not needed. Crash and hang reports from Windsurf. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+    },
+    {
+      "id": "system.crash-reports.windsurf-faults",
+      "title": "Windsurf fault reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "excuserfault_windsurf*",
+        "type": "file"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: not needed. Crash and hang reports from Windsurf. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+    },
+    {
+      "id": "system.crash-reports.kiro",
+      "title": "Kiro and KiroCrew crash reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "kiro*",
+        "type": "file"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: not needed. Crash and hang reports from Kiro and KiroCrew. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+    },
+    {
+      "id": "system.crash-reports.kiro-faults",
+      "title": "Kiro and KiroCrew fault reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "excuserfault_kiro*",
+        "type": "file"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: not needed. Crash and hang reports from Kiro and KiroCrew. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+    },
+    {
+      "id": "system.crash-reports.antigravity",
+      "title": "Antigravity crash reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "antigravity*",
+        "type": "file"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: not needed. Crash and hang reports from Antigravity. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+    },
+    {
+      "id": "system.crash-reports.antigravity-faults",
+      "title": "Antigravity fault reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "excuserfault_antigravity*",
+        "type": "file"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: not needed. Crash and hang reports from Antigravity. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+    },
+    {
+      "id": "system.crash-reports.orca",
+      "title": "Orca crash reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "orca*",
+        "type": "file"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: not needed. Crash and hang reports from Orca. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+    },
+    {
+      "id": "system.crash-reports.orca-faults",
+      "title": "Orca fault reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "excuserfault_orca*",
+        "type": "file"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: not needed. Crash and hang reports from Orca. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+    },
+    {
+      "id": "system.crash-reports.ollama",
+      "title": "Ollama crash reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "ollama*",
+        "type": "file"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: not needed. Crash and hang reports from Ollama. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+    },
+    {
+      "id": "system.crash-reports.ollama-faults",
+      "title": "Ollama fault reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "excuserfault_ollama*",
+        "type": "file"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: not needed. Crash and hang reports from Ollama. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+    },
+    {
+      "id": "system.crash-reports.codex",
+      "title": "Codex crash reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "codex*",
+        "type": "file"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: not needed. Crash and hang reports from Codex. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+    },
+    {
+      "id": "system.crash-reports.codex-faults",
+      "title": "Codex fault reports",
+      "category": "systemJunk",
+      "paths": [
+        "$LOGS/DiagnosticReports",
+        "$LOGS/DiagnosticReports/Retired"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "excuserfault_codex*",
+        "type": "file"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: not needed. Crash and hang reports from Codex. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+    },
+    {
+      "id": "system.app-cache.claude",
+      "title": "Claude Desktop app cache",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "com.anthropic.*",
+        "type": "directory"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: Claude Desktop's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit Claude Desktop first.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.anthropic.claudefordesktop"
+      }
+    },
+    {
+      "id": "system.app-cache.cursor",
+      "title": "Cursor app cache",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "com.todesktop.230313mzl4w4u92*",
+        "type": "directory"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: Cursor's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit Cursor first.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.todesktop.230313mzl4w4u92"
+      }
+    },
+    {
+      "id": "system.app-cache.windsurf",
+      "title": "Windsurf app cache",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "com.exafunction.*",
+        "type": "directory"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: Windsurf's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit Windsurf first.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.exafunction.windsurf"
+      }
+    },
+    {
+      "id": "system.app-cache.kiro",
+      "title": "Kiro app cache",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "dev.kiro.*",
+        "type": "directory"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: Kiro's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit Kiro first.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "dev.kiro.desktop"
+      }
+    },
+    {
+      "id": "system.app-cache.kiro-crew",
+      "title": "KiroCrew app cache",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "com.amazon.kiro.*",
+        "type": "directory"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: KiroCrew's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit KiroCrew first.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.amazon.kiro.crew"
+      }
+    },
+    {
+      "id": "system.app-cache.antigravity",
+      "title": "Antigravity app cache",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "com.google.antigravity*",
+        "type": "directory"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: Antigravity's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit Antigravity first.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.google.antigravity"
+      }
+    },
+    {
+      "id": "system.app-cache.orca",
+      "title": "Orca app cache",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "com.stablyai.*",
+        "type": "directory"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: Orca's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit Orca first.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.stablyai.orca"
+      }
+    },
+    {
+      "id": "system.app-cache.orca-updater",
+      "title": "Orca updater downloads",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "orca-updater",
+        "type": "directory"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: downloaded Orca updates. Deleting during an update in progress makes it download again.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.stablyai.orca"
+      }
+    },
+    {
+      "id": "system.agent-temp",
+      "title": "Claude Code temp and scratch dirs",
+      "category": "systemJunk",
+      "paths": [
+        "$TMPDIR",
+        "/private/tmp"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "claude-*",
+        "type": "directory"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: temporary and scratch files from Claude Code sessions. Anything touched in the last 24 h may belong to a running session and is kept."
+    },
+    {
+      "id": "system.npm-cache",
+      "title": "npm download cache",
+      "category": "systemJunk",
+      "paths": [
+        "~/.npm/_cacache"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: npm's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then."
+    },
+    {
+      "id": "system.pnpm-store-cache",
+      "title": "pnpm download cache",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES/pnpm"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: pnpm's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then."
+    },
+    {
+      "id": "system.uv-cache",
+      "title": "uv download cache",
+      "category": "systemJunk",
+      "paths": [
+        "${UV_CACHE_DIR:-~/.cache/uv}"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: uv's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then."
+    },
+    {
+      "id": "system.pip-cache",
+      "title": "pip download cache",
+      "category": "systemJunk",
+      "paths": [
+        "${PIP_CACHE_DIR:-$CACHES/pip}"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: pip's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then."
+    },
+    {
+      "id": "system.bun-cache",
+      "title": "bun download cache",
+      "category": "systemJunk",
+      "paths": [
+        "${BUN_INSTALL_CACHE_DIR:-~/.bun/install/cache}"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "explanation": "Regenerable: bun's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then."
+    }
+  ]
+}
