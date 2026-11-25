@@ -19,7 +19,8 @@ public final class ScanViewModel {
     public private(set) var lastScanFinishedAt: Date?
 
     public var isScanning: Bool { phase == .starting || phase == .scanning || phase == .cancelling }
-    public var totals: ScanTotals { ScanTotals(items: items) }
+    /// Stored and updated incrementally on flush; recomputed once at a terminal event.
+    public private(set) var totals = ScanTotals()
 
     @ObservationIgnored private let makeEngine: @Sendable () throws -> any ScanEngineProtocol
     @ObservationIgnored private var engine: (any ScanEngineProtocol)?
@@ -28,12 +29,19 @@ public final class ScanViewModel {
     @ObservationIgnored private var sawTerminal = false
     @ObservationIgnored private var startedAt = Date()
     @ObservationIgnored private var cancelRequestedEarly = false
+    @ObservationIgnored private var itemIndex: [ScanItem.ID: Int] = [:]
+    @ObservationIgnored private var lastFlush = ContinuousClock.Instant.now - .seconds(3600)
+    /// Coalesces UI-visible updates: at most one flush per interval (terminal events always flush).
+    @ObservationIgnored private let flushInterval: Duration = .milliseconds(200)
 
     public init(makeEngine: @escaping @Sendable () throws -> any ScanEngineProtocol) {
         self.makeEngine = makeEngine
     }
 
-    public func item(id: ScanItem.ID) -> ScanItem? { items.first { $0.id == id } }
+    public func item(id: ScanItem.ID) -> ScanItem? {
+        guard let i = itemIndex[id], i < items.count, items[i].id == id else { return nil }
+        return items[i]
+    }
 
     /// No-op while a scan is running.
     public func startScan() {
@@ -45,6 +53,9 @@ public final class ScanViewModel {
         result = nil
         progress = nil
         pending = []
+        totals = ScanTotals()
+        itemIndex = [:]
+        lastFlush = ContinuousClock.Instant.now - .seconds(3600)
         sawTerminal = false
         cancelRequestedEarly = false
         startedAt = Date()
@@ -87,6 +98,7 @@ public final class ScanViewModel {
         guard !ids.isEmpty else { return }
         items.removeAll { ids.contains($0.id) }
         pending.removeAll { ids.contains($0.id) }
+        rebuildDerived()
         if let r = result {
             result = ScanResult(items: items, warnings: r.warnings, startedAt: r.startedAt,
                                 finishedAt: r.finishedAt, wasCancelled: r.wasCancelled)
@@ -102,6 +114,11 @@ public final class ScanViewModel {
         case .itemFound(let item):
             pending.append(item)
         case .progress(let p):
+            // While stopping, just drain to the terminal event: it replaces everything anyway.
+            guard phase != .cancelling else { break }
+            let now = ContinuousClock.Instant.now
+            guard now - lastFlush >= flushInterval else { break }
+            lastFlush = now
             flushPending()
             progress = p
         case .warning(let w):
@@ -115,7 +132,11 @@ public final class ScanViewModel {
 
     private func flushPending() {
         guard !pending.isEmpty else { return }
-        items.append(contentsOf: pending)
+        for item in pending {
+            itemIndex[item.id] = items.count
+            items.append(item)
+            totals.add(item)
+        }
         pending = []
     }
 
@@ -124,11 +145,17 @@ public final class ScanViewModel {
         sawTerminal = true
         pending = []
         items = r.items
+        rebuildDerived()
         warnings = r.warnings
         result = r
         lastScanFinishedAt = r.finishedAt ?? Date()
         engine = nil
         phase = cancelled ? .cancelled : .finished
+    }
+
+    private func rebuildDerived() {
+        totals = ScanTotals(items: items)
+        itemIndex = Dictionary(items.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { a, _ in a })
     }
 
     private func streamEnded() {

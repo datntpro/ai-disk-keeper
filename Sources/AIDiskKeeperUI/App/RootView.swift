@@ -7,6 +7,8 @@ public struct RootView: View {
     @State private var selection: SidebarSelection = .overview
     @State private var query = ItemQuery()
     @State private var inspectedID: ScanItem.ID?
+    @State private var list = ItemListModel()
+    @State private var showInspector = true
 
     public init(env: AppEnvironment) {
         self.env = env
@@ -16,24 +18,37 @@ public struct RootView: View {
     public var body: some View {
         NavigationSplitView {
             SidebarView(scan: scan, selection: $selection)
-                .navigationSplitViewColumnWidth(min: 200, ideal: 230)
-        } content: {
+                .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 280)
+        } detail: {
             VStack(spacing: 0) {
                 content
                 Divider()
                 ScanStatusBar(scan: scan)
             }
-            .navigationSplitViewColumnWidth(min: 380, ideal: 560)
-        } detail: {
-            ItemDetailView(item: inspectedID.flatMap { scan.item(id: $0) })
-                .navigationSplitViewColumnWidth(min: 260, ideal: 320)
+            .frame(minWidth: 560)
         }
-        .toolbar { ScanToolbar(scan: scan) }
+        .inspector(isPresented: $showInspector) {
+            ItemDetailView(item: inspectedID.flatMap { scan.item(id: $0) })
+                .inspectorColumnWidth(min: 260, ideal: 300, max: 400)
+        }
+        .toolbar {
+            ScanToolbar(scan: scan)
+            ToolbarItem {
+                Button { showInspector.toggle() } label: { Label("Details", systemImage: "sidebar.trailing") }
+                    .help("Show or hide the detail pane")
+                    .accessibilityLabel("Toggle detail pane")
+            }
+        }
         .frame(minWidth: 900, minHeight: 540)
         .focusedSceneValue(\.scanActions, ScanActions(
             canStart: !scan.isScanning, canStop: scan.phase == .scanning || scan.phase == .starting,
             start: { scan.startScan() }, stop: { scan.cancelScan() }))
         .onChange(of: selection) { _, new in query.scope = new }
+        .onChange(of: query) { _, _ in refreshList() }
+        .onChange(of: scan.items.count) { _, _ in refreshList() }
+        .onChange(of: scan.phase) { _, _ in refreshList() }
+        .onChange(of: scan.scanGeneration) { _, _ in refreshList() }
+        .onAppear { refreshList() }
         .onChange(of: scan.scanGeneration) { _, _ in inspectedID = nil }
         .onChange(of: scan.phase) { _, phase in announce(phase) }
         .onExitCommand { if scan.isScanning { scan.cancelScan() } }
@@ -46,9 +61,11 @@ public struct RootView: View {
         case .warnings:
             WarningsView(warnings: scan.warnings)
         case .tool, .category:
-            ItemTableView(items: scan.items, query: $query, inspectedID: $inspectedID)
+            ItemTableView(rows: list.rows, tierCounts: list.tierCounts, query: $query, inspectedID: $inspectedID)
         }
     }
+
+    private func refreshList() { list.update(items: scan.items, query: query) }
 
     private func announce(_ phase: ScanViewModel.Phase) {
         let t = scan.totals.all

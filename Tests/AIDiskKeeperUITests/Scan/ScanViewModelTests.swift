@@ -118,6 +118,77 @@ final class ScanViewModelTests: XCTestCase {
         XCTAssertNil(vm.item(id: a.id))
     }
 
+    func testCancelDuringStartingEndsCancelledAndCancelsEngineOnce() async {
+        let engine = FakeScanEngine(.gated)
+        let gate = DispatchSemaphore(value: 0)
+        let vm = ScanViewModel { gate.wait(); return engine }
+        vm.startScan()
+        XCTAssertEqual(vm.phase, .starting)
+        vm.cancelScan()
+        XCTAssertEqual(vm.phase, .cancelling)
+        gate.signal()
+        await until("cancelled") { vm.phase == .cancelled }
+        let calls = await engine.cancelCalls
+        XCTAssertEqual(calls, 1)
+    }
+
+    func testProgressFlushesAreCoalesced() async {
+        let engine = FakeScanEngine(.gated)
+        let vm = ScanViewModel { engine }
+        vm.startScan()
+        await until("scanning") { vm.phase == .scanning }
+        await engine.send(.itemFound(F.item("a")))
+        await engine.send(.progress(F.progress(found: 1)))      // flushes (first)
+        await until("flush") { vm.items.count == 1 }
+        await engine.send(.itemFound(F.item("b")))
+        await engine.send(.progress(F.progress(found: 2)))      // within 200 ms: coalesced
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        XCTAssertEqual(vm.items.count, 1)
+        await engine.send(.finished(F.result([F.item("a"), F.item("b")])))
+        await until("finished") { vm.phase == .finished }
+        XCTAssertEqual(vm.items.count, 2)
+    }
+
+    func testLargeScanStaysBoundedAndCancelDrainsFast() async {
+        let n = 20_000
+        let all = (0..<n).map { F.item("item\($0)", tool: ToolID(rawValue: "tool-\($0 % 20)"), size: Int64($0 + 1)) }
+        var events: [ScanEvent] = []
+        for (i, item) in all.enumerated() {
+            events.append(.itemFound(item))
+            if i % 10 == 0 { events.append(.progress(F.progress(found: i + 1))) }
+        }
+        events.append(.finished(F.result(all)))
+        let vm = ScanViewModel { FakeScanEngine(.scripted(events)) }
+        let start = ContinuousClock.now
+        vm.startScan()
+        await until("finished") { vm.phase == .finished }
+        XCTAssertLessThan(ContinuousClock.now - start, .seconds(5))
+        XCTAssertEqual(vm.items.count, n)
+        XCTAssertEqual(vm.totals.all.itemCount, n)
+        XCTAssertEqual(vm.totals.byTool.count, 20)
+        XCTAssertEqual(vm.item(id: all[12_345].id)?.displayName, "item12345")
+
+        // Cancel drains: the backlog is skipped, not re-rendered.
+        let engine = FakeScanEngine(.gated)
+        let vm2 = ScanViewModel { engine }
+        vm2.startScan()
+        await until("scanning") { vm2.phase == .scanning }
+        for item in all { await engine.send(.itemFound(item)); }
+        vm2.cancelScan()
+        let t0 = ContinuousClock.now
+        await until("cancelled") { vm2.phase == .cancelled }
+        XCTAssertLessThan(ContinuousClock.now - t0, .seconds(2))
+        XCTAssertEqual(vm2.items.count, n)
+    }
+
+    func testQueryOver20kIsFast() {
+        let all = (0..<20_000).map { F.item("item\($0)", size: Int64($0)) }
+        let t0 = ContinuousClock.now
+        _ = ItemQuery(sort: ItemSort(key: .name)).apply(to: all)
+        _ = ItemQuery(searchText: "item1").apply(to: all)
+        XCTAssertLessThan(ContinuousClock.now - t0, .seconds(3))
+    }
+
     func testFactoryRunsOffMainThread() async {
         let flag = Counter()
         let vm = ScanViewModel {

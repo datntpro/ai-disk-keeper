@@ -12,18 +12,22 @@ public struct ScanTotals: Sendable, Equatable {
     /// Items "Select all Safe" may tick (`isBulkSelectable`).
     public var bulkSelectable: UsageTotals = .zero
 
-    public init() {}
+    public init() {
+        for tier in RiskTier.allCases { byTier[tier] = .zero }
+    }
 
     public init(items: [ScanItem]) {
-        for tier in RiskTier.allCases { byTier[tier] = .zero }
-        for item in items {
-            all.add(item)
-            byTier[item.tier, default: .zero].add(item)
-            byTool[item.tool, default: .zero].add(item)
-            byCategory[item.category, default: .zero].add(item)
-            if item.isSelectable { selectable.add(item) }
-            if item.isBulkSelectable { bulkSelectable.add(item) }
-        }
+        self.init()
+        for item in items { add(item) }
+    }
+
+    public mutating func add(_ item: ScanItem) {
+        all.add(item)
+        byTier[item.tier, default: .zero].add(item)
+        byTool[item.tool, default: .zero].add(item)
+        byCategory[item.category, default: .zero].add(item)
+        if item.isSelectable { selectable.add(item) }
+        if item.isBulkSelectable { bulkSelectable.add(item) }
     }
 }
 

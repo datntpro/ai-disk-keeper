@@ -17,6 +17,9 @@ struct OverviewView<Slot: View>: View {
                     HStack(alignment: .firstTextBaseline) {
                         Text("Total found").font(.headline)
                         Text(Formatting.bytes(totals.all.allocatedBytes)).font(.title.weight(.semibold))
+                        if scan.result?.wasCancelled == true {
+                            Text("(partial: scan stopped)").font(.callout).foregroundStyle(.orange)
+                        }
                         Spacer()
                         if let d = scan.lastScanFinishedAt, !scan.isScanning {
                             Text("Last scan \(Formatting.relative(d))").font(.caption).foregroundStyle(.secondary)

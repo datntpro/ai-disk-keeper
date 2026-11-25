@@ -11,6 +11,7 @@ struct ItemDetailView: View {
                     Text(item.displayName).font(.title2.weight(.semibold)).textSelection(.enabled)
                     let s = TierStyle.style(for: item.tier)
                     TierBadge(tier: item.tier)
+                    if let id = item.requiresAppQuit { QuitAppNote(bundleID: id) }
                     Text(s.longExplanation).font(.callout).foregroundStyle(.secondary)
                     section("Why this tier") { Text(item.explanation) }
                     section("Size") {
@@ -45,7 +46,6 @@ struct ItemDetailView: View {
         if item.flags.contains(.sizeIncomplete) { out.append("Some files couldn't be read, so the real size may be larger.") }
         if item.flags.contains(.needsFullDiskAccess) { out.append("macOS blocked access to part of this folder.") }
         if item.flags.contains(.inUse) { out.append("In use by a running app.") }
-        if let app = item.requiresAppQuit { out.append("Quit «\(app)» before cleaning this.") }
         return out
     }
 
