@@ -20,6 +20,13 @@ final class RuleValidatorTests: XCTestCase {
         return RuleFixtures.loader(e, user: tmp.url.appendingPathComponent("user"), recorder: recorder).load()
     }
 
+    private func expectOneWarning(_ r: RuleLoadResult, path: String? = nil, line: UInt = #line) {
+        XCTAssertTrue(r.errors.isEmpty, "\(r.errors)", line: line)
+        XCTAssertEqual(r.warnings.count, 1, "\(r.warnings)", line: line)
+        XCTAssertEqual(r.warnings.first?.kind, .protectedPathTarget, line: line)
+        if let path { XCTAssertEqual(r.warnings.first?.jsonPath, path, line: line) }
+    }
+
     private func expectOne(_ r: RuleLoadResult, _ kind: RuleLoadError.Kind, path: String? = nil,
                            line: UInt = #line) {
         XCTAssertEqual(r.errors.count, 1, "\(r.errors)", line: line)
@@ -97,17 +104,19 @@ final class RuleValidatorTests: XCTestCase {
         XCTAssertTrue(try load([RuleFixtures.file(rules: [children])]).errors.isEmpty)
         try FileManager.default.removeItem(at: tmp.url.appendingPathComponent("user"))
         let selfRule = RuleFixtures.rule(paths: #"["~/.claude/projects"]"#)
-        expectOne(try load([RuleFixtures.file(rules: [selfRule])]), .protectedPathTarget, path: "rules[0].paths[0]")
+        let r = try load([RuleFixtures.file(rules: [selfRule])])
+        expectOneWarning(r, path: "rules[0].paths[0]")
+        XCTAssertEqual(r.allRules.first?.expandedPaths, [])
     }
 
     func testProtectedTargetRejected() throws {
         for match in [#"{"kind":"self"}"#, #"{"kind":"children"}"#] {
             let r = try load([RuleFixtures.file(rules: [RuleFixtures.rule(paths: #"["~/.ssh"]"#, match: match)])])
-            expectOne(r, .protectedPathTarget, path: "rules[0].paths[0]")
-            XCTAssertTrue(r.errors[0].message.contains("protected"), "\(r.errors[0])")
-            XCTAssertTrue(r.errors[0].message.contains(".ssh"))
-            XCTAssertNotNil(r.errors[0].file)
-            XCTAssertTrue(r.ruleSets.isEmpty)
+            expectOneWarning(r, path: "rules[0].paths[0]")
+            XCTAssertTrue(r.warnings[0].message.contains("protected"), "\(r.warnings[0])")
+            XCTAssertTrue(r.warnings[0].message.contains(".ssh"))
+            XCTAssertNotNil(r.warnings[0].file)
+            XCTAssertEqual(r.allRules.first?.expandedPaths, [], "the protected path must be dropped")
             try FileManager.default.removeItem(at: tmp.url.appendingPathComponent("user"))
         }
     }
@@ -116,7 +125,8 @@ final class RuleValidatorTests: XCTestCase {
         let rec = PatternRecorder()
         let file = RuleFixtures.file(protect: #"["~/.foo/**"]"#, rules: [RuleFixtures.rule(paths: #"["~/.foo/cache"]"#)])
         let r = try load([file], recorder: rec)
-        expectOne(r, .protectedPathTarget, path: "rules[0].paths[0]")
+        expectOneWarning(r, path: "rules[0].paths[0]")
+        XCTAssertEqual(r.allRules.first?.expandedPaths, [])
         XCTAssertEqual(rec.calls, [[env.home + "/.foo/**"]])
     }
 
@@ -125,10 +135,11 @@ final class RuleValidatorTests: XCTestCase {
                                   rules: [RuleFixtures.rule(id: "a.r", paths: #"["~/.a/cache"]"#)])
         let b = RuleFixtures.file(tool: "b", rules: [RuleFixtures.rule(id: "b.r", paths: #"["~/.shared/cache"]"#)])
         let r = try load([a, b])
-        XCTAssertEqual(r.ruleSets.count, 1)
-        XCTAssertEqual(r.ruleSets[0].tool.id, "a")
-        expectOne(r, .protectedPathTarget, path: "rules[0].paths[0]")
-        XCTAssertEqual(r.errors[0].file?.lastPathComponent, "f1.json")
+        XCTAssertEqual(r.ruleSets.count, 2)
+        expectOneWarning(r, path: "rules[0].paths[0]")
+        XCTAssertEqual(r.warnings[0].file?.lastPathComponent, "f1.json")
+        XCTAssertEqual(r.allRules.first { $0.rule.id == "a.r" }?.expandedPaths, [env.home + "/.a/cache"])
+        XCTAssertEqual(r.allRules.first { $0.rule.id == "b.r" }?.expandedPaths, [])
         XCTAssertEqual(r.protectPatterns, [env.home + "/.shared/**"])
     }
 
@@ -160,7 +171,8 @@ final class RuleValidatorTests: XCTestCase {
             XCTAssertEqual(rec.calls, [[escaped]], home)
             XCTAssertEqual(r.protectPatterns, [escaped], home)
             // The rule targets the protected folder, so it must be rejected even with glob chars in home.
-            XCTAssertEqual(r.errors.map(\.kind), [.protectedPathTarget], home)
+            XCTAssertEqual(r.warnings.map(\.kind), [.protectedPathTarget], home)
+            XCTAssertEqual(r.errors, [], home)
             try FileManager.default.removeItem(at: tmp.url.appendingPathComponent("w"))
         }
     }
@@ -169,8 +181,9 @@ final class RuleValidatorTests: XCTestCase {
         let file = RuleFixtures.file(protect: #"["~/.secret/**"]"#, rules: [RuleFixtures.rule(paths: #"["~/.ssh"]"#)])
         let other = RuleFixtures.file(tool: "o", rules: [RuleFixtures.rule(id: "o.r", paths: #"["~/.secret/cache"]"#)])
         let r = try load([file, other])
-        XCTAssertTrue(r.ruleSets.isEmpty)
-        XCTAssertEqual(r.errors.map(\.kind), [.protectedPathTarget, .protectedPathTarget])
+        XCTAssertEqual(r.allRules.flatMap(\.expandedPaths), [])
+        XCTAssertEqual(r.warnings.map(\.kind), [.protectedPathTarget, .protectedPathTarget])
+        XCTAssertEqual(r.errors, [])
         XCTAssertEqual(r.protectPatterns, [env.home + "/.secret/**"])
         try FileManager.default.removeItem(at: tmp.url.appendingPathComponent("user"))
         // also when the file is dropped for a duplicate id

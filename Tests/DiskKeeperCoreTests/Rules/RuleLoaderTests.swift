@@ -49,14 +49,18 @@ final class RuleLoaderTests: XCTestCase {
         XCTAssertEqual(r.errors[0].source, .user)
     }
 
-    func testAllOrNothingPerFile() throws {
+    func testProtectedPathDropsOnlyThatPath() throws {
         let good = RuleFixtures.rule(id: "a.good", paths: #"["~/.a/x"]"#)
         let bad = RuleFixtures.rule(id: "a.bad", paths: #"["~/.ssh"]"#)
         try write("user", "a.json", RuleFixtures.file(tool: "a", rules: [good, bad]))
         let r = loader().load()
-        XCTAssertTrue(r.ruleSets.isEmpty)
-        XCTAssertEqual(r.errors.map(\.kind), [.protectedPathTarget])
-        XCTAssertEqual(r.errors[0].jsonPath, "rules[1].paths[0]")
+        XCTAssertEqual(r.errors, [])
+        XCTAssertEqual(r.ruleSets.count, 1)
+        XCTAssertEqual(r.allRules.map(\.rule.id), ["a.good", "a.bad"])
+        XCTAssertEqual(r.allRules[0].expandedPaths.count, 1)
+        XCTAssertEqual(r.allRules[1].expandedPaths, [])
+        XCTAssertEqual(r.warnings.map(\.kind), [.protectedPathTarget])
+        XCTAssertEqual(r.warnings[0].jsonPath, "rules[1].paths[0]")
     }
 
     func testDuplicateRuleIDLaterFileRejected() throws {
