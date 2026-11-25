@@ -61,3 +61,9 @@ docs/PLAN.md
 ```
 
 CI (`.github/workflows/ci.yml`) builds and tests on a GitHub-hosted macOS runner for every PR.
+
+## Releasing
+
+Tagged releases (`vX.Y.Z`) are built, Developer ID signed, notarized and published as a DMG by
+`.github/workflows/release.yml`; without Apple secrets they fall back to an unsigned draft release.
+See [docs/RELEASING.md](docs/RELEASING.md) for owner setup, dry runs and troubleshooting.
