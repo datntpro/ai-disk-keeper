@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "tool": {
+    "id": "gemini",
+    "name": "Gemini / Antigravity",
+    "docs": "https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/configuration.md"
+  },
+  "protect": [
+    "$APP_SUPPORT/Antigravity/User/globalStorage/**",
+    "$APP_SUPPORT/Antigravity/User/*.json",
+    "$APP_SUPPORT/Antigravity/User/snippets/**",
+    "$APP_SUPPORT/Antigravity/User/profiles/**",
+    "$APP_SUPPORT/Antigravity/Cookies*",
+    "$APP_SUPPORT/Antigravity/Local Storage/**",
+    "$APP_SUPPORT/Antigravity/Session Storage/**",
+    "$APP_SUPPORT/Antigravity/IndexedDB/**",
+    "$APP_SUPPORT/Antigravity/Local State",
+    "$APP_SUPPORT/Antigravity/Preferences",
+    "~/.gemini/*.json",
+    "~/.gemini/.env",
+    "~/.gemini/config/**",
+    "~/.gemini/antigravity/conversation_summaries.db*",
+    "~/.gemini/antigravity/*.pbtxt",
+    "~/.gemini/antigravity/installation_id",
+    "~/.gemini/antigravity/conversations/**",
+    "~/.gemini/antigravity/brain/**",
+    "~/.gemini/antigravity/daemon/**",
+    "~/.gemini/commands/**",
+    "~/.gemini/extensions/**"
+  ],
+  "rules": [
+    {
+      "id": "gemini.cli-tmp",
+      "title": "Gemini CLI project data",
+      "category": "aiToolData",
+      "paths": [
+        "~/.gemini/tmp"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "directory"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 7
+          },
+          "tier": "keep"
+        },
+        {
+          "if": {
+            "olderThanDays": 30
+          },
+          "tier": "safe"
+        }
+      ],
+      "explanation": "Per-project chat checkpoints, logs and shell history from Gemini CLI. Deleting removes `/chat resume` checkpoints for that project. Projects touched in the last 7 days are kept.",
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "gemini.antigravity-cache",
+      "title": "Antigravity cache",
+      "category": "aiToolData",
+      "paths": [
+        "~/.gemini/antigravity/cache"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "safe",
+      "explanation": "Cached data used by Antigravity; recreated as needed.",
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "gemini.antigravity-crashes",
+      "title": "Antigravity crash reports",
+      "category": "systemJunk",
+      "paths": [
+        "~/.gemini/antigravity/crashes"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "safe",
+      "explanation": "Crash reports written by Antigravity. Safe to delete.",
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "gemini.antigravity-electron-cache",
+      "title": "Antigravity web caches",
+      "category": "aiToolData",
+      "paths": [
+        "$APP_SUPPORT/Antigravity/Cache",
+        "$APP_SUPPORT/Antigravity/Code Cache",
+        "$APP_SUPPORT/Antigravity/GPUCache",
+        "$APP_SUPPORT/Antigravity/CachedData",
+        "$APP_SUPPORT/Antigravity/DawnGraphiteCache",
+        "$APP_SUPPORT/Antigravity/DawnWebGPUCache",
+        "$APP_SUPPORT/Antigravity/GraphiteDawnCache",
+        "$APP_SUPPORT/Antigravity/Shared Dictionary"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "safe",
+      "explanation": "Antigravity is an Electron app; these are Chromium HTTP, code, GPU and shader caches. They are rebuilt automatically when the app starts.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.google.antigravity"
+      }
+    },
+    {
+      "id": "gemini.antigravity-logs",
+      "title": "Antigravity app logs",
+      "category": "systemJunk",
+      "paths": [
+        "$APP_SUPPORT/Antigravity/logs"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Diagnostic logs written by Antigravity. Safe to delete; new logs are created as it runs. Logs from the last day are kept in case the app is running.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.google.antigravity"
+      }
+    },
+    {
+      "id": "gemini.antigravity-workspace-storage",
+      "title": "Antigravity workspace state",
+      "category": "aiToolData",
+      "paths": [
+        "$APP_SUPPORT/Antigravity/User/workspaceStorage"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "directory"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 14
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Per-workspace state for one folder opened in Antigravity (chat history, editor state, indexes). Deleting it loses that workspace's chat history and open-editor state; folders touched in the last 14 days are kept.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.google.antigravity"
+      }
+    }
+  ]
+}
