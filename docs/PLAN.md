@@ -202,6 +202,8 @@ paths intersect protected paths. Full reference: `docs/rules.md` (T03).
    `~/.gemini/oauth_creds.json`, `~/.ssh`, `~/.aws`, Keychains, `.env*`, keys…), plus anything
    outside `~` and `$TMPDIR`. Applied at scan time and again as the last gate before any action,
    after resolving symlinks and `..`.
+   Implemented in [`Safety/ProtectedPaths.swift`](../Sources/DiskKeeperCore/Safety/ProtectedPaths.swift);
+   table and semantics in [docs/protected-paths.md](protected-paths.md).
 4. **Git-state-aware worktrees** (T13/T14) — Safe only if merged into the default branch, clean,
    no untracked files, no stash, upstream up to date, not the main worktree, not the current
    working dir of a running agent. The explanation names every reason it isn't Safe.
