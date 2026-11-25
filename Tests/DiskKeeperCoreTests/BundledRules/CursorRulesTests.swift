@@ -58,6 +58,15 @@ final class CursorRulesTests: XCTestCase {
         XCTAssertEqual(r.item("\(app)/User/workspaceStorage/ws-old")?.requiresAppQuit, bundle)
     }
 
+    func testAppLogsRequireQuit() async throws {
+        let fx = try FixtureHome()
+        try populate(fx)
+        let r = try await OtherToolRules.run(f, fx)
+        let logs = r.items.filter { $0.ruleID == "cursor.app-logs" }
+        XCTAssertFalse(logs.isEmpty)
+        for l in logs { XCTAssertEqual(l.requiresAppQuit, "com.todesktop.230313mzl4w4u92") }
+    }
+
     func testCursorProtectedFilesNeverItems() async throws {
         try await OtherToolRules.assertProtected(f, files: [
             "\(app)/User/globalStorage/state.vscdb", "\(app)/User/globalStorage/x/y", "\(app)/User/settings.json",

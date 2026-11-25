@@ -44,6 +44,8 @@ final class CopilotRulesTests: XCTestCase {
         try await OtherToolRules.assertProtected(f, files: [
             "\(code)/User/globalStorage/state.vscdb", "\(code)/User/globalStorage/state.vscdb.backup", "\(code)/User/settings.json",
             "\(insiders)/User/globalStorage/state.vscdb", "\(insiders)/User/settings.json",
+            "\(code)/User/workspaceStorage/abc/chatSessions/s.json", "\(code)/User/workspaceStorage/abc/chatEditingSessions/e/x",
+            "\(insiders)/User/workspaceStorage/zzz/chatSessions/s.json",
             ".config/github-copilot/hosts.json", ".config/github-copilot/apps.json",
         ])
     }

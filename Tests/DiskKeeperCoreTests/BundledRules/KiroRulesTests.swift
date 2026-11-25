@@ -63,6 +63,15 @@ final class KiroRulesTests: XCTestCase {
         XCTAssertEqual(r.tier("\(app)/User/workspaceStorage/ws-new"), .keep)
     }
 
+    func testAppLogsRequireQuit() async throws {
+        let fx = try FixtureHome()
+        try populate(fx)
+        let r = try await OtherToolRules.run(f, fx)
+        let logs = r.items.filter { $0.ruleID == "kiro.app-logs" }
+        XCTAssertFalse(logs.isEmpty)
+        for l in logs { XCTAssertEqual(l.requiresAppQuit, "dev.kiro.desktop") }
+    }
+
     func testKiroModelIsModelWeightsReview() async throws {
         let fx = try FixtureHome()
         try populate(fx)
@@ -89,6 +98,18 @@ final class KiroRulesTests: XCTestCase {
             "\(app)/Session Storage/1", "\(app)/IndexedDB/d/1", "\(app)/Local State", "\(app)/Preferences",
             "\(crew)/Cookies", "\(crew)/Local Storage/l/1", "\(crew)/Preferences",
         ])
+    }
+
+    func testRuleTitlesAreUniqueAndCased() throws {
+        let fx = try FixtureHome()
+        let loaded = RuleLoader(environment: fx.env, bundledRulesDirectory: CoreResources.rulesDirectoryURL,
+                                userRulesDirectory: nil, guardFactory: ScanGuard.loaderFactory(environment: fx.env)).load()
+        for tool in ["kiro", "orca"] {
+            let rules = loaded.allRules.filter { $0.tool.rawValue == tool }.map(\.rule)
+            XCTAssertEqual(Set(rules.map(\.title)).count, rules.count, "duplicate titles in \(tool)")
+            for r in rules { XCTAssertFalse(r.explanation.contains("kirocrew-desktop is"), r.id)
+                             XCTAssertFalse(r.explanation.hasPrefix("orca is"), r.id) }
+        }
     }
 
     func testKiroDoesNotTargetKiroRoots() async throws {

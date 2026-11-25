@@ -43,7 +43,7 @@
         "kind": "self"
       },
       "tier": "safe",
-      "explanation": "orca is an Electron app; these are Chromium HTTP, code, GPU and shader caches. They are rebuilt automatically when the app starts.",
+      "explanation": "Orca is an Electron app; these are Chromium HTTP, code, GPU and shader caches. They are rebuilt automatically when the app starts.",
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.stablyai.orca"

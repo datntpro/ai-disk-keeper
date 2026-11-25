@@ -42,7 +42,7 @@
   "rules": [
     {
       "id": "kiro.logs",
-      "title": "Kiro logs",
+      "title": "Kiro agent logs",
       "category": "systemJunk",
       "paths": [
         "~/.kiro/logs"
@@ -92,7 +92,7 @@
     },
     {
       "id": "kiro.app-logs",
-      "title": "Kiro logs",
+      "title": "Kiro app logs",
       "category": "systemJunk",
       "paths": [
         "$APP_SUPPORT/Kiro/logs"
@@ -112,7 +112,8 @@
       ],
       "explanation": "Diagnostic logs written by Kiro. Safe to delete; new logs are created as it runs. Logs from the last day are kept in case the app is running.",
       "cleanup": {
-        "method": "trash"
+        "method": "trash",
+        "requiresAppQuit": "dev.kiro.desktop"
       }
     },
     {
@@ -219,7 +220,7 @@
         "kind": "self"
       },
       "tier": "safe",
-      "explanation": "kirocrew-desktop is an Electron app; these are Chromium HTTP, code, GPU and shader caches. They are rebuilt automatically when the app starts.",
+      "explanation": "Kiro Crew is an Electron app; these are Chromium HTTP, code, GPU and shader caches. They are rebuilt automatically when the app starts.",
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.amazon.kiro.crew"

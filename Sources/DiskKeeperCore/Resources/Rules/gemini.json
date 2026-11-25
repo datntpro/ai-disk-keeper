@@ -22,6 +22,9 @@
     "~/.gemini/antigravity/conversation_summaries.db*",
     "~/.gemini/antigravity/*.pbtxt",
     "~/.gemini/antigravity/installation_id",
+    "~/.gemini/antigravity/conversations/**",
+    "~/.gemini/antigravity/brain/**",
+    "~/.gemini/antigravity/daemon/**",
     "~/.gemini/commands/**",
     "~/.gemini/extensions/**"
   ],
@@ -115,7 +118,7 @@
     },
     {
       "id": "gemini.antigravity-logs",
-      "title": "Antigravity logs",
+      "title": "Antigravity app logs",
       "category": "systemJunk",
       "paths": [
         "$APP_SUPPORT/Antigravity/logs"
@@ -135,7 +138,8 @@
       ],
       "explanation": "Diagnostic logs written by Antigravity. Safe to delete; new logs are created as it runs. Logs from the last day are kept in case the app is running.",
       "cleanup": {
-        "method": "trash"
+        "method": "trash",
+        "requiresAppQuit": "com.google.antigravity"
       }
     },
     {

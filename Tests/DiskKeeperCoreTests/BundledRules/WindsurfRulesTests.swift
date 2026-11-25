@@ -51,10 +51,19 @@ final class WindsurfRulesTests: XCTestCase {
         XCTAssertEqual(r.tier("\(app)/User/workspaceStorage/ws-new"), .keep)
     }
 
+    func testAppLogsRequireQuit() async throws {
+        let fx = try FixtureHome()
+        try populate(fx)
+        let r = try await OtherToolRules.run(f, fx)
+        let logs = r.items.filter { $0.ruleID == "windsurf.app-logs" }
+        XCTAssertFalse(logs.isEmpty)
+        for l in logs { XCTAssertEqual(l.requiresAppQuit, "com.exafunction.windsurf") }
+    }
+
     func testWindsurfProtectedFilesNeverItems() async throws {
         try await OtherToolRules.assertProtected(f, files: [
             ".codeium/windsurf/memories/m.pb", ".codeium/windsurf/mcp_config.json", ".codeium/windsurf/global_rules.md",
-            ".codeium/config.json", "\(app)/User/globalStorage/state.vscdb", "\(app)/User/settings.json",
+            ".codeium/config.json", ".codeium/windsurf/user_settings.pb", "\(app)/User/globalStorage/state.vscdb", "\(app)/User/settings.json",
             "\(app)/Cookies", "\(app)/Local Storage/l/1", "\(app)/Session Storage/1", "\(app)/IndexedDB/d/1",
             "\(app)/Local State", "\(app)/Preferences",
         ])

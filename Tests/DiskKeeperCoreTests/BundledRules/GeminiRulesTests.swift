@@ -59,11 +59,21 @@ final class GeminiRulesTests: XCTestCase {
         XCTAssertEqual(r.tier("\(app)/User/workspaceStorage/ws-new"), .keep)
     }
 
+    func testAppLogsRequireQuit() async throws {
+        let fx = try FixtureHome()
+        try populate(fx)
+        let r = try await OtherToolRules.run(f, fx)
+        let logs = r.items.filter { $0.ruleID == "gemini.antigravity-logs" }
+        XCTAssertFalse(logs.isEmpty)
+        for l in logs { XCTAssertEqual(l.requiresAppQuit, "com.google.antigravity") }
+    }
+
     func testGeminiProtectedFilesNeverItems() async throws {
         try await OtherToolRules.assertProtected(f, files: [
             ".gemini/oauth_creds.json", ".gemini/settings.json", ".gemini/.env", ".gemini/config/mcp_config.json",
             ".gemini/antigravity/conversation_summaries.db", ".gemini/antigravity/conversation_summaries.db-wal",
             ".gemini/antigravity/a.pbtxt", ".gemini/antigravity/installation_id",
+            ".gemini/antigravity/conversations/c.pb", ".gemini/antigravity/brain/b/x", ".gemini/antigravity/daemon/d",
             ".gemini/commands/c.toml", ".gemini/extensions/e/x",
             "\(app)/User/globalStorage/state.vscdb", "\(app)/User/settings.json", "\(app)/User/snippets/s.json",
             "\(app)/User/profiles/p/x", "\(app)/Cookies", "\(app)/Local Storage/leveldb/1", "\(app)/Session Storage/1",

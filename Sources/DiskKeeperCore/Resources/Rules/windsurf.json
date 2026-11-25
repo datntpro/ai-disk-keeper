@@ -19,7 +19,8 @@
     "~/.codeium/windsurf/memories/**",
     "~/.codeium/windsurf/mcp_config.json",
     "~/.codeium/windsurf/global_rules.md",
-    "~/.codeium/*.json"
+    "~/.codeium/*.json",
+    "~/.codeium/windsurf/*.pb"
   ],
   "rules": [
     {
@@ -48,7 +49,7 @@
     },
     {
       "id": "windsurf.app-logs",
-      "title": "Windsurf logs",
+      "title": "Windsurf app logs",
       "category": "systemJunk",
       "paths": [
         "$APP_SUPPORT/Windsurf/logs"
@@ -68,7 +69,8 @@
       ],
       "explanation": "Diagnostic logs written by Windsurf. Safe to delete; new logs are created as it runs. Logs from the last day are kept in case the app is running.",
       "cleanup": {
-        "method": "trash"
+        "method": "trash",
+        "requiresAppQuit": "com.exafunction.windsurf"
       }
     },
     {

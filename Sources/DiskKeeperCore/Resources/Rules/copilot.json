@@ -10,7 +10,11 @@
     "$APP_SUPPORT/Code/User/*.json",
     "$APP_SUPPORT/Code - Insiders/User/globalStorage/state.vscdb*",
     "$APP_SUPPORT/Code - Insiders/User/*.json",
-    "~/.config/github-copilot/**"
+    "~/.config/github-copilot/**",
+    "$APP_SUPPORT/Code/User/workspaceStorage/*/chatSessions/**",
+    "$APP_SUPPORT/Code/User/workspaceStorage/*/chatEditingSessions/**",
+    "$APP_SUPPORT/Code - Insiders/User/workspaceStorage/*/chatSessions/**",
+    "$APP_SUPPORT/Code - Insiders/User/workspaceStorage/*/chatEditingSessions/**"
   ],
   "rules": [
     {
@@ -35,7 +39,7 @@
           "tier": "keep"
         }
       ],
-      "explanation": "Copilot Chat's data for one workspace (chat sessions, local code index). Deleting removes that workspace's chat history; the index is rebuilt. Workspaces touched in the last 14 days are kept.",
+      "explanation": "Copilot Chat extension data for one workspace (local code index, buffered tool output). Rebuilt as needed; VS Code keeps your chat list separately. Workspaces touched in the last 14 days are kept.",
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.microsoft.VSCode"
@@ -63,7 +67,7 @@
           "tier": "keep"
         }
       ],
-      "explanation": "Copilot Chat's data for one workspace (chat sessions, local code index). Deleting removes that workspace's chat history; the index is rebuilt. Workspaces touched in the last 14 days are kept.",
+      "explanation": "Copilot Chat extension data for one workspace (local code index, buffered tool output). Rebuilt as needed; VS Code keeps your chat list separately. Workspaces touched in the last 14 days are kept.",
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.microsoft.VSCodeInsiders"
