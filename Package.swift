@@ -15,10 +15,16 @@ let package = Package(
             resources: [.copy("Resources/Rules")],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
-        // SwiftUI app (window + menu bar). Thin layer over DiskKeeperCore.
+        // SwiftUI views and view models. A library so view models are testable without importing an executable.
+        .target(
+            name: "AIDiskKeeperUI",
+            dependencies: ["DiskKeeperCore"],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
+        ),
+        // SwiftUI app entry (window + menu bar). Thin layer over AIDiskKeeperUI.
         .executableTarget(
             name: "AIDiskKeeper",
-            dependencies: ["DiskKeeperCore"],
+            dependencies: ["DiskKeeperCore", "AIDiskKeeperUI"],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
         // Developer-only read-only scan CLI (`swift run adk-scan`). Not a product; never shipped in the app.
@@ -31,6 +37,11 @@ let package = Package(
         .testTarget(
             name: "DiskKeeperCoreTests",
             dependencies: ["DiskKeeperCore"]
+        ),
+        .testTarget(
+            name: "AIDiskKeeperUITests",
+            dependencies: ["AIDiskKeeperUI", "DiskKeeperCore"],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
     ]
 )

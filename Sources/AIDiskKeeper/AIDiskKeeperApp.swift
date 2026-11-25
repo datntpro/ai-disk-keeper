@@ -1,25 +1,22 @@
-import DiskKeeperCore
+import AIDiskKeeperUI
+import AppKit
 import SwiftUI
 
-struct AIDiskKeeperApp: App {
-    var body: some Scene {
-        WindowGroup("AI Disk Keeper") {
-            ContentView()
-        }
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // Brings the window to the front under `swift run` (no bundle).
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate()
     }
 }
 
-struct ContentView: View {
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "externaldrive.badge.checkmark")
-                .font(.system(size: 48))
-            Text("AI Disk Keeper")
-                .font(.title)
-            Text("Scaffold build \(DiskKeeperCore.version). Scanning arrives in M1.")
-                .foregroundStyle(.secondary)
+struct AIDiskKeeperApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
+    @State private var env = AppEnvironment.live()
+
+    var body: some Scene {
+        WindowGroup("AI Disk Keeper") {
+            RootView(env: env)
         }
-        .padding(40)
-        .frame(minWidth: 480, minHeight: 320)
     }
 }
