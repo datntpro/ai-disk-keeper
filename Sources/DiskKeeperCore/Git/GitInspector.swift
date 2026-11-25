@@ -426,14 +426,18 @@ public final class GitInspector: Sendable {
 
         // Submodules: recurse (unpushed commits and dirty state inside them)
         var subStates: [GitState]?
+        var uninspectedCount = 0
         if let entries = index.value, !isBare {
             var subs: [GitState] = []
             var dirtyPaths = Set(status.value?.dirtySubmodulePaths ?? [])
+            var uninspected = 0
             for e in entries where e.isGitlink {
                 let sub = path.appendingPathComponent(e.path, isDirectory: true)
                 guard FileManager.default.fileExists(atPath: sub.path + "/.git") else { continue }  // not initialized
                 guard depth < Self.maxSubmoduleDepth else {
                     failures.append(.init(probe: .submodules, kind: .failed, message: "\(e.path): nesting too deep"))
+                    uninspected += 1
+                    dirtyPaths.insert(e.path)
                     continue
                 }
                 do {
@@ -444,10 +448,12 @@ public final class GitInspector: Sendable {
                     throw CancellationError()
                 } catch {
                     failures.append(.init(probe: .submodules, kind: .failed, message: "\(e.path): \(error)"))
+                    uninspected += 1
                     dirtyPaths.insert(e.path)
                 }
             }
             subStates = subs
+            uninspectedCount = uninspected
             workingTree?.submodulesDirty = dirtyPaths.count
         }
 
@@ -483,7 +489,8 @@ public final class GitInspector: Sendable {
             defaultBranch: defaultB.value ?? nil, isMergedIntoDefault: merged, lastCommit: last.value ?? nil,
             operationInProgress: op, indexLockPresent: fm.fileExists(atPath: gitDir + "/index.lock"),
             worktreeLock: lock, isShallow: disc.isShallow, probeFailures: failures,
-            ignored: ignoredR.value, hiddenFromStatus: hidden, submodules: subStates, topLevelMismatch: mismatch)
+            ignored: ignoredR.value, hiddenFromStatus: hidden, submodules: subStates, topLevelMismatch: mismatch,
+            uninspectedSubmodules: uninspectedCount)
     }
 
     private func discoveryCall(_ args: [String], _ path: URL) async throws -> ProcessResult {

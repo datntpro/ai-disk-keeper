@@ -189,6 +189,31 @@ final class GitHardeningTests: XCTestCase {
         XCTAssertTrue(top.anySubmoduleUnpushedOrDirty)
     }
 
+    func testUninspectableSubmoduleIsNotSafe() {
+        var top = GitState(path: "/t", kind: .mainWorktree, gitDir: "/g", commonDir: "/g", submodules: [])
+        XCTAssertFalse(top.anySubmoduleUnpushedOrDirty)
+        top.uninspectedSubmodules = 1
+        XCTAssertTrue(top.anySubmoduleUnpushedOrDirty)
+    }
+
+    func testSubmoduleThatFailsInspectionIsCounted() async throws {
+        let fx = try GitFixture()
+        let subOrigin = try fx.makeBareRemote("sub-origin.git")
+        let subsrc = try fx.makeRepo("subsrc")
+        try fx.addRemote(subsrc, subOrigin)
+        try fx.push(subsrc, "main", setUpstream: true)
+        let (repo, _) = try fx.makeRepoWithOrigin("sup")
+        try fx.git(["submodule", "add", "-q", subOrigin.path, "sub"], in: repo)
+        try fx.git(["commit", "-q", "-m", "add sub"], in: repo)
+        // Corrupt the submodule: its .git file points nowhere, so inspecting it throws.
+        try "gitdir: /nonexistent/modules/sub\n".write(
+            to: repo.appendingPathComponent("sub/.git"), atomically: true, encoding: .utf8)
+        let s = try await fx.inspector().inspect(repo)
+        XCTAssertEqual(s.uninspectedSubmodules, 1)
+        XCTAssertTrue(s.anySubmoduleUnpushedOrDirty)
+        XCTAssertTrue(s.probeFailures.contains { $0.probe == .submodules })
+    }
+
     // F6: core.worktree redirect
     func testCoreWorktreeRedirectIsFlagged() async throws {
         let fx = try GitFixture()

@@ -82,7 +82,10 @@ public struct GitState: Sendable, Hashable, Codable {
         public init(reason: String?) { self.reason = reason }
     }
 
-    /// Ignored (gitignored) content that `status` does not show. Ignored files are NOT regenerable
+    /// Ignored (gitignored) content that `status` does not show.
+    /// Failure semantics: if the ignored probe fails or times out, `ignored` is nil (or its precious
+    /// list may be incomplete) and a `probeFailures` entry with probe `.ignored` is added. An output
+    /// truncation sets `isLowerBound`. T14 must treat nil `ignored` or any `.ignored` failure as unknown ⇒ not Safe. Ignored files are NOT regenerable
     /// by definition: `.env`, `*.pem`, local data. T14: any `preciousPaths` ⇒ at most Review;
     /// `unclassifiedPaths` non-empty ⇒ not Safe unless the user's rules say otherwise.
     public struct IgnoredSummary: Sendable, Hashable, Codable {
@@ -146,11 +149,14 @@ public struct GitState: Sendable, Hashable, Codable {
     public var submodules: [GitState]?
     /// `topLevel` is not the inspected path (core.worktree redirect or not a root): status describes elsewhere.
     public var topLevelMismatch: Bool
+    /// Initialized submodules that could not be inspected (error, or nesting too deep). Unknown ⇒ not safe.
+    public var uninspectedSubmodules: Int = 0
 
-    /// True when any (nested) submodule has commits on no remote, a dirty tree, or unknown state.
+    /// True when any (nested) submodule has commits on no remote, a dirty tree, or unknown state
+    /// (including submodules that failed inspection, see `uninspectedSubmodules`).
     /// The facts above describe only this repo, so T14 must check this before calling it Safe.
     public var anySubmoduleUnpushedOrDirty: Bool {
-        (submodules ?? []).contains { sub in
+        uninspectedSubmodules > 0 || (submodules ?? []).contains { sub in
             (sub.commitsNotOnAnyRemote?.value ?? 0) > 0 || sub.workingTree?.isClean != true
                 || sub.anySubmoduleUnpushedOrDirty
         }
@@ -165,8 +171,9 @@ public struct GitState: Sendable, Hashable, Codable {
         indexLockPresent: Bool = false, worktreeLock: WorktreeLock? = nil, isShallow: Bool? = nil,
         probeFailures: [GitProbeFailure] = [], ignored: IgnoredSummary? = nil,
         hiddenFromStatus: HiddenFromStatus? = nil, submodules: [GitState]? = nil,
-        topLevelMismatch: Bool = false
+        topLevelMismatch: Bool = false, uninspectedSubmodules: Int = 0
     ) {
+        self.uninspectedSubmodules = uninspectedSubmodules
         self.ignored = ignored
         self.hiddenFromStatus = hiddenFromStatus
         self.submodules = submodules
