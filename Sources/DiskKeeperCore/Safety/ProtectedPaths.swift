@@ -337,6 +337,14 @@ public struct ProtectedPaths: Sendable {
         .init("GEMINI.md", "agent instructions"),
         .init(".credentials.json", "credentials"),
         .init(".git", "git repository data"),
+        // Media libraries are protected packages wherever the user keeps them (M4 invariant 17).
+        .init("*.photoslibrary", "Photos library"),
+        .init("*.photolibrary", "iPhoto library"),
+        .init("*.musiclibrary", "Music library"),
+        .init("*.tvlibrary", "TV library"),
+        .init("*.aplibrary", "Aperture library"),
+        .init("*.imovielibrary", "iMovie library"),
+        .init("*.fcpbundle", "Final Cut Pro library"),
     ]
 
     public static let systemRoots: [String] = [
