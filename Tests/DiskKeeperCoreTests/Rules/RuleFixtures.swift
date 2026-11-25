@@ -24,9 +24,8 @@ enum RuleFixtures {
                 for p in [home + "/.ssh", home + "/.claude.json"] where under(p) {
                     return GuardDenial(scope: .pathItself, message: "protected: \(p)")
                 }
-                for e in extra {
-                    let prefix = e.hasSuffix("/**") ? String(e.dropLast(3)) : e
-                    if under(prefix) { return GuardDenial(scope: .pathItself, message: "protected by rule: \(e)") }
+                for e in extra where globMatchesPathOrBelow(e, path) {
+                    return GuardDenial(scope: .pathItself, message: "protected by rule: \(e)")
                 }
                 for p in [home + "/.claude/projects", home, tmp, "/private/tmp"] where path == p {
                     return GuardDenial(scope: .containerOnly, message: "container only: \(p)")
@@ -34,6 +33,31 @@ enum RuleFixtures {
                 return nil
             }
         }
+    }
+
+    /// Interprets `pattern` as a glob with `\` escapes (as the real guard does): `*`/`?`/`[..]` do not cross "/",
+    /// a trailing `/**` also covers the base itself. True if `path` equals or is below a match.
+    static func globMatchesPathOrBelow(_ pattern: String, _ path: String) -> Bool {
+        var base = pattern
+        if base.hasSuffix("/**") { base = String(base.dropLast(3)) }
+        var regex = "^"
+        var chars = Array(base)[...]
+        while let c = chars.popFirst() {
+            switch c {
+            case "\\": if let n = chars.popFirst() { regex += NSRegularExpression.escapedPattern(for: String(n)) }
+            case "*": regex += "[^/]*"
+            case "?": regex += "[^/]"
+            case "[":
+                var cls = "["
+                if chars.first == "!" { chars.removeFirst(); cls += "^" }
+                while let n = chars.popFirst(), n != "]" { cls += n == "\\" ? "\\\\" : String(n) }
+                regex += cls + "]"
+            default: regex += NSRegularExpression.escapedPattern(for: String(c))
+            }
+        }
+        regex += "(/.*)?$"
+        guard let re = try? NSRegularExpression(pattern: regex) else { return false }
+        return re.firstMatch(in: path, range: NSRange(path.startIndex..., in: path)) != nil
     }
 
     static func environment(_ tmp: TemporaryDirectory, variables: [String: String] = [:]) -> PathEnvironment {

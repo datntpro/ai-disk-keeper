@@ -11,13 +11,22 @@ public enum RuleValidator {
             RuleLoadError(kind: kind, file: fileURL, source: source, jsonPath: path, message: message)
         }
 
+        let roots = allowedRoots(env)
+        // A protect pattern whose literal prefix is a root (or above one) would protect everything under it
+        // (`~/**`, `~/*`, `$TMPDIR/**`, `/private/tmp`, ...) and, being a global union, disable other rules.
         for (j, t) in file.protect.enumerated() {
-            if case .path(let p) = t.expand(in: env), p == env.home || p == env.temporaryDirectory {
-                return err(.invalidProtectPattern, "protect[\(j)]", "'\(t.raw)' would protect everything under it")
+            guard let (prefix, nextGlob) = t.literalPrefix(in: env) else { continue }
+            let norm = aliasNormalized(prefix)
+            // Above a root: any glob below could cover it. At a root: only a wildcard-only component
+            // (`*`, `**`, `?`) or no component at all covers everything; `keep-*` or `.[ab]x` do not.
+            let wildcardOnly = nextGlob.map { $0.allSatisfy { "*?".contains($0) } } ?? true
+            let above = roots.contains(where: { $0.hasPrefix(norm + "/") })
+            let atRoot = roots.contains(norm)
+            if above || (atRoot && wildcardOnly) {
+                return err(.invalidProtectPattern, "protect[\(j)]",
+                           "'\(t.raw)' is too broad: it would protect everything under \(prefix)")
             }
         }
-
-        let roots = allowedRoots(env)
         for (i, rule) in file.rules.enumerated() {
             let base = "rules[\(i)]"
             if let problem = idProblem(rule.id, tool: file.tool.id) {

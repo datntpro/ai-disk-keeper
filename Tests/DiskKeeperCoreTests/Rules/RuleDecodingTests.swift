@@ -36,6 +36,21 @@ final class RuleDecodingTests: XCTestCase {
         }
     }
 
+    func testDuplicateKeysRejected() {
+        let r = RuleFixtures.rule()
+        expectError(RuleFixtures.file(rules: [r]).replacingOccurrences(of: #""schemaVersion": 1,"#, with: #""schemaVersion": 1, "schemaVersion": 1,"#),
+                    .duplicateKey, path: "", contains: "schemaVersion")
+        let dupTier = r.replacingOccurrences(of: #""tier": "safe""#, with: #""tier": "review", "tier": "safe""#)
+        expectError(RuleFixtures.file(rules: [dupTier]), .duplicateKey, path: "rules[0]", contains: "tier")
+        // escaped spelling of the same key counts as a duplicate
+        let esc = r.replacingOccurrences(of: #""tier": "safe""#, with: #""tier": "review", "t\u0069er": "safe""#)
+        expectError(RuleFixtures.file(rules: [esc]), .duplicateKey, path: "rules[0]")
+        let nested = RuleFixtures.rule(match: #"{"kind":"self","kind":"self"}"#)
+        expectError(RuleFixtures.file(rules: [nested]), .duplicateKey, path: "rules[0].match")
+        // same key in different objects is fine
+        XCTAssertNoThrow(try validate(RuleFixtures.file(rules: [r, RuleFixtures.rule(id: "t.q")])).get())
+    }
+
     func testUnknownTopLevelKeyRejected() {
         expectError(#"{"schemaVersion":1,"tool":{"id":"t","name":"T"},"rules":[\#(RuleFixtures.rule())],"bogus":1}"#,
                     .unknownKey, path: "", contains: "bogus")

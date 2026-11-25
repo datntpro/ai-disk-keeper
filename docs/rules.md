@@ -13,7 +13,7 @@ files are skipped; symlinks are followed for user rules only). At most 200 files
 The rule *format* lives in this document; [`rules.schema.json`](rules.schema.json) is a JSON Schema
 (draft 2020-12) for editor support only. **The Swift loader is the validator of record.**
 
-Files are strict JSON (no comments, no trailing commas). **Every object rejects unknown keys.** A file is
+Files are strict JSON (no comments, no trailing commas). **Every object rejects unknown keys and duplicate keys.** A file is
 accepted or rejected as a whole: one bad rule rejects the file, and the other files still load.
 
 ## File
@@ -36,7 +36,7 @@ accepted or rejected as a whole: one bad rule rejects the file, and the other fi
 | `match` | object | yes | see Match |
 | `project` | object | no | `{ "from": … }`, one of `none` (default), `claudeProjectDirName`, `itemName`, `parentOfItem` |
 | `tier` | string | yes | `safe`, `review` or `keep` |
-| `tierWhen` | [object] | no | ≤ 8 entries; the first matching entry wins; none matching → `tier` |
+| `tierWhen` | [object] | no | ≤ 8 entries; of the entries that match, the most restrictive tier wins (see Tiers); none matching → `tier` |
 | `explanation` | string | yes | 1–1000 chars. Shown to the user: what it is, what you lose, whether it regenerates |
 | `cleanup` | object | no | default `{ "method": "trash" }` |
 
@@ -65,7 +65,17 @@ must be strictly inside one of them; `children`/`find` may use the root itself a
 (`$TMPDIR`, `/private/tmp`).
 
 Protect templates use the same grammar but allow globs in components (`settings*.json`) and `**` as the
-final component only (`~/.claude/skills/**`).
+final component only (`~/.claude/skills/**`). They are handed to the protected-path guard as glob patterns;
+the parts that come from the machine (home directory, temp directory, `${VAR}` values) are
+backslash-escaped (`\ * ? [ ]`), so a home such as `/Users/a[1]` stays literal. `RuleLoadResult.protectPatterns`
+holds these escaped patterns.
+
+A protect pattern that would cover a whole root, or an ancestor of one (`~/**`, `~/*`, `$HOME/*`,
+`$TMPDIR/**`, `/private/tmp`, `/tmp/**`, …), is rejected as `invalidProtectPattern`: patterns from all files
+are merged, so one over-broad pattern would disable every other rule.
+
+Environment values must be absolute, without `.`/`..` components and without control characters, otherwise
+they count as unset; repeated slashes in a value are collapsed.
 
 ### Match
 
@@ -80,13 +90,17 @@ final component only (`~/.claude/skills/**`).
 `type` is `directory`, `file` or `any`.
 
 **Globs** match one path component: `*`, `?`, `[abc]`, `[a-z]`, `[!x]`, and `\` to escape. Matching is
-case-insensitive and Unicode-normalization-insensitive. `/`, `**`, empty patterns, unclosed `[`, empty
+case-insensitive and Unicode-normalization-insensitive; `?` and `[...]` match one whole character (`é` is one
+character, precomposed or decomposed). `/`, `**`, empty patterns, unclosed `[`, empty
 classes, reversed ranges and a trailing `\` are rejected.
 
 ### Tiers
 
-`tier` is the default risk tier. `tierWhen` entries are `{ "if": {…}, "tier": … }`, checked in order; the first
-entry whose condition holds decides the tier. A condition is an object with at least one of these keys; all
+`tier` is the default risk tier, used when no `tierWhen` entry matches. `tierWhen` entries are
+`{ "if": {…}, "tier": … }`. **The most restrictive matching entry wins, regardless of order**:
+protect > keep > review > safe. (Protection comes first because the protected-path guard rejects rules aimed at
+protected paths at load time, before any tier is evaluated.) For example `[{ "if": {"newerThanDays": 7},
+"tier": "keep" }, { "if": {"sizeOverMB": 1}, "tier": "safe" }]` gives `keep` to a fresh large item. A condition is an object with at least one of these keys; all
 the keys present must hold (AND):
 
 | key | holds when |
@@ -249,6 +263,7 @@ A rejected file produces a `RuleLoadError` carrying the file, the JSON path and 
 | `invalidJSON` | not valid JSON (comments and trailing commas included) |
 | `unsupportedSchemaVersion` | unsupported schemaVersion 2 |
 | `unknownKey` | unknown key 'foo' (at `rules[0].match`) |
+| `duplicateKey` | duplicate key 'tier' (an object repeats a key; JSON tools disagree on which value wins) |
 | `missingKey` | missing required key 'explanation' (at `rules[0]`) |
 | `typeMismatch` | a value has the wrong JSON type |
 | `invalidValue` | a value is out of range or not allowed (bad enum value, `depth` 4, `gitState`, model weights as Safe, …) |
@@ -258,12 +273,14 @@ A rejected file produces a `RuleLoadError` carrying the file, the JSON path and 
 | `duplicateRuleID` | rule id 'x.y' is already defined (bundled rules win over user rules) |
 | `pathOutsideAllowedRoots` | /etc/x is outside the home directory, the temporary directory and /private/tmp |
 | `protectedPathTarget` | `<path>`: the protected-path guard refuses it |
-| `invalidProtectPattern` | a protect pattern such as `~` that would protect everything |
+| `invalidProtectPattern` | a protect pattern such as `~/**` or `/private/tmp` that would protect a whole root |
 | `guardUnavailable` | the protected-path guard couldn't be built; **no rules are loaded** (fails closed) |
 
 ## Safety
 
 - Rules can only add protection: `protect` patterns are added to the built-in denylist, never removed from it.
+- Protection is fail-safe: the `protect` patterns of a file that is structurally valid are kept even when the
+  file's rules are later rejected (for example for targeting a protected path).
 - Rules can't target anything outside the home directory, `$TMPDIR` and `/private/tmp`.
 - A rule path that the protected-path guard refuses rejects the whole file. For `children`/`find` rules a
   container that is only an *ancestor* of protected data (for example `~/.claude/projects`) is allowed, and each

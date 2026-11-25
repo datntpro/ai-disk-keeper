@@ -164,7 +164,31 @@ final class RuleLoaderTests: XCTestCase {
         for _ in 0..<5 { XCTAssertEqual(loader(bundled: true).load().ruleSets.map(\.file), first.ruleSets.map(\.file)) }
     }
 
+    func testBundledFixtureDirectoryLoadsCleanly() throws {
+        for (i, ex) in RuleFixtures.docExamples.enumerated() { try write("bundled", "\(i)-\(ex.name).json", ex.json) }
+        let real = PathEnvironment(home: "/Users/me", temporaryDirectory: "/var/folders/ab/T", variables: [:])
+        let loader = RuleFixtures.loader(real, bundled: tmp.url.appendingPathComponent("bundled"))
+        let r = loader.load()
+        XCTAssertTrue(r.errors.isEmpty, "\(r.errors)")
+        XCTAssertEqual(r.ruleSets.count, RuleFixtures.docExamples.count)
+        XCTAssertTrue(r.ruleSets.allSatisfy { $0.source == .bundled })
+        XCTAssertFalse(r.allRules.isEmpty)
+
+        try write("bundled", "99-bad.json", #"{"schemaVersion":1,"tool":{"id":"bad","name":"B"},"rules":[],"x":1}"#)
+        try write("elsewhere", "t.json", valid("zz"))
+        try tmp.symlink("bundled/98-link.json", to: tmp.path("elsewhere/t.json"))
+        let r2 = loader.load()
+        XCTAssertEqual(r2.ruleSets.count, RuleFixtures.docExamples.count)   // the symlink is skipped
+        XCTAssertEqual(r2.errors.count, 1)
+        XCTAssertEqual(r2.errors[0].source, .bundled)
+        XCTAssertEqual(r2.errors[0].file?.lastPathComponent, "99-bad.json")
+    }
+
     func testBundledRulesDirectoryLoadsCleanly() {
+        var isDir: ObjCBool = false
+        let dir = CoreResources.rulesDirectoryURL
+        XCTAssertTrue(dir.map { FileManager.default.fileExists(atPath: $0.path, isDirectory: &isDir) } ?? false)
+        XCTAssertTrue(isDir.boolValue)
         // CoreResources, not Bundle.module: that is how this repo locates its resource bundle.
         let r = RuleLoader(environment: env, bundledRulesDirectory: CoreResources.rulesDirectoryURL,
                            guardFactory: RuleFixtures.guardFactory(env: env)).load()

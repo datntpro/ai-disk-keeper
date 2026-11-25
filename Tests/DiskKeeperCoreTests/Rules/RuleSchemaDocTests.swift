@@ -52,6 +52,21 @@ final class RuleSchemaDocTests: XCTestCase {
         XCTAssertEqual(union, RuleMatch.allKeys)
     }
 
+    func testSchemaRequiredKeysAndCleanupConditionals() throws {
+        let schema = try loadSchema()
+        let defs = try XCTUnwrap(schema["$defs"] as? [String: Any])
+        XCTAssertEqual(Set(try XCTUnwrap(schema["required"] as? [String])), ["schemaVersion", "tool", "rules"])
+        let rule = try XCTUnwrap(defs["rule"] as? [String: Any])
+        XCTAssertEqual(Set(try XCTUnwrap(rule["required"] as? [String])),
+                       ["id", "title", "category", "paths", "match", "tier", "explanation"])
+        let variants = try XCTUnwrap((defs["match"] as? [String: Any])?["oneOf"] as? [[String: Any]])
+        XCTAssertEqual(Set(try XCTUnwrap(variants[2]["required"] as? [String])), ["kind", "name", "marker", "maxDepth"])
+        let cleanup = try XCTUnwrap(defs["cleanup"] as? [String: Any])
+        XCTAssertEqual(try XCTUnwrap(cleanup["required"] as? [String]), ["method"])
+        let allOf = try XCTUnwrap(cleanup["allOf"] as? [[String: Any]])
+        XCTAssertEqual(allOf.count, 2, "cleanup needs if/then for trash|none and toolCommand")
+    }
+
     func testSchemaEnumsMatchSwiftEnums() throws {
         let defs = try XCTUnwrap(try loadSchema()["$defs"] as? [String: Any])
         let rule = try XCTUnwrap(defs["rule"] as? [String: Any])

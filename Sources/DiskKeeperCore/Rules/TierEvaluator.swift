@@ -15,13 +15,18 @@ public struct ItemFacts: Sendable, Hashable {
 }
 
 public enum TierEvaluator {
-    /// First matching `tierWhen` wins, else `rule.tier`. `matchedIndex` is the matched condition's index.
+    /// Most-restrictive-wins: among the `tierWhen` entries whose condition holds, the most cautious tier
+    /// wins (keep > review > safe); order never matters. With no match the rule's `tier` applies.
+    /// (Protected paths outrank every tier; the loader enforces that with the guard, before any evaluation.)
+    /// `matchedIndex` is the first entry that has the winning tier.
     public static func evaluate(
         _ rule: ScannerRule, facts: ItemFacts, now: Date
     ) -> (tier: RiskTier, matchedIndex: Int?) {
+        var best: (tier: RiskTier, index: Int)?
         for (i, when) in rule.tierWhen.enumerated() where holds(when.condition, facts: facts, now: now) {
-            return (when.tier, i)
+            if best == nil || when.tier > best!.tier { best = (when.tier, i) }
         }
+        if let best { return (best.tier, best.index) }
         return (rule.tier, nil)
     }
 

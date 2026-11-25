@@ -110,6 +110,25 @@ final class PathTemplateTests: XCTestCase {
         assertRejects("~/[abc", globs: true)
     }
 
+    func testExpandPatternEscapesMachineDerivedParts() throws {
+        let weird = PathEnvironment(home: "/Users/a[1]*?b", temporaryDirectory: "/T/x", variables: ["X": "/v/[a", "Y": "/y\\z"])
+        func pat(_ raw: String) throws -> PathExpansion { try PathTemplate(raw, allowGlobs: true).expandPattern(in: weird) }
+        XCTAssertEqual(try pat("~/.foo/**"), .path(#"/Users/a\[1\]\*\?b/.foo/**"#))
+        XCTAssertEqual(try pat("$APP_SUPPORT/x/y*.json"), .path(#"/Users/a\[1\]\*\?b/Library/Application Support/x/y*.json"#))
+        XCTAssertEqual(try pat("${X}/**"), .path(#"/v/\[a/**"#))
+        XCTAssertEqual(try pat("${Y}/a"), .path(#"/y\\z/a"#))
+        // the template's own globs (also in a fallback's components) stay unescaped
+        XCTAssertEqual(try pat("${NOPE:-~/.c*}/s"), .path(#"/Users/a\[1\]\*\?b/.c*/s"#))
+        // plain expansion is untouched
+        XCTAssertEqual(try PathTemplate("~/.foo").expand(in: weird), .path("/Users/a[1]*?b/.foo"))
+    }
+
+    func testEnvValueIsLexicallyCleaned() throws {
+        XCTAssertEqual(try expand("${V}/c", vars: ["V": "/Users/me///x//"]), .path("/Users/me/x/c"))
+        XCTAssertEqual(try expand("${V}/c", vars: ["V": "/a\nb"]), .unavailable(reason: "V is not set"))
+        XCTAssertEqual(try expand("${V}/c", vars: ["V": "//"]), .unavailable(reason: "V is not set"))
+    }
+
     func testCodableIsSingleString() throws {
         let t = try JSONDecoder().decode(PathTemplate.self, from: Data(#""~/a""#.utf8))
         XCTAssertEqual(t.raw, "~/a")

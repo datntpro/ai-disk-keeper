@@ -37,6 +37,20 @@ final class RuleGlobTests: XCTestCase {
         XCTAssertTrue(try g("caf*").matches(nfd))
     }
 
+    func testQuestionAndClassMatchWholeCharacters() throws {
+        let e = "\u{00E9}", decomposed = "e\u{0301}"
+        for name in ["caf\(e)", "caf\(decomposed)"] {
+            XCTAssertTrue(try g("caf?").matches(name), name)
+            XCTAssertTrue(try g("[\(e)]").matches(name.dropFirst(3).description), name)
+            XCTAssertTrue(try g("[!e]").matches(name.dropFirst(3).description), name)
+        }
+        XCTAssertFalse(try g("[\(e)]x").matches("ex"))
+        XCTAssertFalse(try g("[\(e)]").matches("e"))
+        XCTAssertTrue(try g("[\(decomposed)]").matches(e))
+        XCTAssertFalse(try g("caf?").matches("caf\(e)\(e)"))
+        XCTAssertTrue(try g("[\u{00E0}-\u{00FF}]").matches(e))
+    }
+
     func testRejects() {
         let cases: [(String, String)] = [
             ("", "empty"), ("a/b", "'/'"), ("**", "'**'"), ("ab[abc", "unclosed '[' at position 3"),

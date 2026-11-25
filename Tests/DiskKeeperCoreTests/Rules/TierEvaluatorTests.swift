@@ -15,19 +15,33 @@ final class TierEvaluatorTests: XCTestCase {
                   existingMarkers: markers)
     }
 
-    func testFirstMatchWins() throws {
+    func testMostRestrictiveWins() throws {
         let r = try rule(tierWhen: #"[{"if": {"newerThanDays": 7}, "tier": "keep"}, {"if": {"olderThanDays": 30}, "tier": "safe"}, {"if": {"newerThanDays": 100}, "tier": "keep"}]"#)
-        XCTAssertEqual(TierEvaluator.evaluate(r, facts: facts(ageDays: 1), now: now).tier, .keep)
-        XCTAssertEqual(TierEvaluator.evaluate(r, facts: facts(ageDays: 1), now: now).matchedIndex, 0)
-        let old = TierEvaluator.evaluate(r, facts: facts(ageDays: 40), now: now)
-        XCTAssertEqual(old.tier, .safe)
-        XCTAssertEqual(old.matchedIndex, 1)
-        let mid = TierEvaluator.evaluate(r, facts: facts(ageDays: 20), now: now)
+        let fresh = TierEvaluator.evaluate(r, facts: facts(ageDays: 1), now: now)
+        XCTAssertEqual(fresh.tier, .keep)
+        XCTAssertEqual(fresh.matchedIndex, 0)
+        // 40 days: entries 1 (safe) and 2 (keep) both match; keep wins, first entry with that tier reported.
+        let mid = TierEvaluator.evaluate(r, facts: facts(ageDays: 40), now: now)
         XCTAssertEqual(mid.tier, .keep)
         XCTAssertEqual(mid.matchedIndex, 2)
+        // Only the "safe" entry matches.
+        let old = TierEvaluator.evaluate(r, facts: facts(ageDays: 500), now: now)
+        XCTAssertEqual(old.tier, .safe)
+        XCTAssertEqual(old.matchedIndex, 1)
         let none = TierEvaluator.evaluate(r, facts: facts(ageDays: nil), now: now)
         XCTAssertEqual(none.tier, .review)
         XCTAssertNil(none.matchedIndex)
+    }
+
+    func testEntryOrderNeverMatters() throws {
+        let safeFirst = try rule(tierWhen: #"[{"if": {"sizeOverMB": 1}, "tier": "safe"}, {"if": {"newerThanDays": 7}, "tier": "keep"}]"#)
+        let keepFirst = try rule(tierWhen: #"[{"if": {"newerThanDays": 7}, "tier": "keep"}, {"if": {"sizeOverMB": 1}, "tier": "safe"}]"#)
+        let f = facts(ageDays: 1, size: 5_000_000)
+        XCTAssertEqual(TierEvaluator.evaluate(safeFirst, facts: f, now: now).tier, .keep)
+        XCTAssertEqual(TierEvaluator.evaluate(keepFirst, facts: f, now: now).tier, .keep)
+        // keep > review > safe among matches
+        let mixed = try rule(tierWhen: #"[{"if": {"sizeOverMB": 1}, "tier": "safe"}, {"if": {"sizeOverMB": 2}, "tier": "review"}]"#)
+        XCTAssertEqual(TierEvaluator.evaluate(mixed, facts: f, now: now).tier, .review)
     }
 
     func testStrictBoundaries() throws {

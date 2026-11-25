@@ -19,22 +19,22 @@ public struct RuleGlob: Sendable, Hashable, Codable, CustomStringConvertible {
     fileprivate enum Element: Sendable, Hashable {
         case star
         case any
-        case literal(Unicode.Scalar)
-        case set(negated: Bool, ranges: [ClosedRange<UInt32>])
+        case literal(Character)
+        case set(negated: Bool, ranges: [ClosedRange<Character>])
     }
 
     public init(_ pattern: String) throws(RuleGlobError) {
         func fail(_ m: String) -> RuleGlobError { RuleGlobError(pattern: pattern, message: m) }
         guard !pattern.isEmpty else { throw fail("empty pattern") }
-        // Columns are reported on the original text (1-based, in Unicode scalars).
-        let original = Array(pattern.unicodeScalars)
-        if original.contains("/") { throw fail("'/' is not allowed (a glob matches one path component)") }
-        if original.contains("\0") { throw fail("NUL is not allowed") }
+        if pattern.unicodeScalars.contains("/") { throw fail("'/' is not allowed (a glob matches one path component)") }
+        if pattern.unicodeScalars.contains("\0") { throw fail("NUL is not allowed") }
         if pattern.contains("**") { throw fail("'**' is not allowed in a name glob") }
 
-        func fold(_ s: Unicode.Scalar) -> [Unicode.Scalar] {
-            Array(String(Character(s)).lowercased().decomposedStringWithCanonicalMapping.unicodeScalars)
-        }
+        // Everything works on Characters (grapheme clusters), so "é" is one unit whether it is written
+        // precomposed or decomposed (Character equality is canonical equivalence). Columns are 1-based.
+        let original = Array(pattern)
+        func fold(_ c: Character) -> [Character] { Array(String(c).lowercased()) }
+        func foldOne(_ c: Character) -> Character { fold(c).first ?? c }
 
         var out: [Element] = []
         var i = 0
@@ -52,7 +52,7 @@ public struct RuleGlob: Sendable, Hashable, Codable, CustomStringConvertible {
                 i += 1
                 var negated = false
                 if i < original.count, original[i] == "!" { negated = true; i += 1 }
-                var ranges: [ClosedRange<UInt32>] = []
+                var ranges: [ClosedRange<Character>] = []
                 var closed = false
                 while i < original.count {
                     var lo = original[i]
@@ -73,17 +73,15 @@ public struct RuleGlob: Sendable, Hashable, Codable, CustomStringConvertible {
                         }
                         i += 2
                     }
-                    let l = fold(lo).first ?? lo, h = fold(hi).first ?? hi
-                    guard l.value <= h.value else {
+                    let l = foldOne(lo), h = foldOne(hi)
+                    guard l <= h else {
                         throw fail("reversed range '\(lo)-\(hi)' at position \(start + 1)")
                     }
-                    ranges.append(l.value...h.value)
+                    ranges.append(l...h)
                 }
                 guard closed else { throw fail("unclosed '[' at position \(start + 1)") }
                 guard !ranges.isEmpty else { throw fail("empty class at position \(start + 1)") }
                 out.append(.set(negated: negated, ranges: ranges))
-            case "]":
-                out.append(.literal(c)); i += 1
             default:
                 out.append(contentsOf: fold(c).map { .literal($0) })
                 i += 1
@@ -108,9 +106,10 @@ public struct RuleGlob: Sendable, Hashable, Codable, CustomStringConvertible {
 
     public var description: String { pattern }
 
-    /// Case-insensitive, normalization-insensitive match of one path component.
+    /// Case-insensitive, normalization-insensitive match of one path component. `?` and `[...]` consume one
+    /// whole character (`é` is one character, precomposed or not). Ranges compare characters in Unicode order.
     public func matches(_ name: String) -> Bool {
-        let text = Array(name.lowercased().decomposedStringWithCanonicalMapping.unicodeScalars)
+        let text = Array(name.lowercased())
         var p = 0, t = 0
         var starP = -1, starT = 0
         while t < text.count {
@@ -123,7 +122,7 @@ public struct RuleGlob: Sendable, Hashable, Codable, CustomStringConvertible {
                 case .literal(let s) where s == text[t]:
                     p += 1; t += 1; continue
                 case .set(let negated, let ranges):
-                    let hit = ranges.contains { $0.contains(text[t].value) }
+                    let hit = ranges.contains { $0.contains(text[t]) }
                     if hit != negated { p += 1; t += 1; continue }
                 default: break
                 }

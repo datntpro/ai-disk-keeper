@@ -132,8 +132,52 @@ final class RuleValidatorTests: XCTestCase {
         XCTAssertEqual(r.protectPatterns, [env.home + "/.shared/**"])
     }
 
-    func testOverbroadProtectPatternRejected() throws {
-        let file = RuleFixtures.file(protect: #"["~"]"#, rules: [RuleFixtures.rule()])
-        expectOne(try load([file]), .invalidProtectPattern, path: "protect[0]")
+    func testOverbroadProtectPatternsRejected() throws {
+        for pattern in ["~", "~/**", "~/*", "$HOME/*", "$TMPDIR", "$TMPDIR/**", "/private/tmp", "/tmp/**", "/tmp",
+                        "${X}/**"] {
+            let file = RuleFixtures.file(protect: #"["\#(pattern)"]"#, rules: [RuleFixtures.rule()])
+            expectOne(try load([file], variables: ["X": env.home]), .invalidProtectPattern, path: "protect[0]")
+            try FileManager.default.removeItem(at: tmp.url.appendingPathComponent("user"))
+        }
+        for pattern in ["~/.foo/**", "~/.claude/settings*.json", "$TMPDIR/keep-*", "/private/tmp/keep/**", "~/.[a-b]x"] {
+            let file = RuleFixtures.file(protect: #"["\#(pattern)"]"#, rules: [RuleFixtures.rule()])
+            let r = try load([file])
+            XCTAssertTrue(r.errors.isEmpty, "\(pattern): \(r.errors)")
+            try FileManager.default.removeItem(at: tmp.url.appendingPathComponent("user"))
+        }
+    }
+
+    func testProtectPatternsAreGlobEscapedAndStillEnforced() throws {
+        for home in ["/Users/a[1]", "/Users/a*b", "/Users/a?b", "/Users/a**b"] {
+            let rec = PatternRecorder()
+            let weird = PathEnvironment(home: home, temporaryDirectory: "/T", variables: [:])
+            let file = RuleFixtures.file(protect: #"["~/.foo/**"]"#, rules: [RuleFixtures.rule(paths: #"["~/.foo/cache"]"#)])
+            try tmp.file("w/f.json", contents: Data(file.utf8))
+            let r = RuleFixtures.loader(weird, user: tmp.url.appendingPathComponent("w"), recorder: rec).load()
+            let escaped = home.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "*", with: "\\*")
+                .replacingOccurrences(of: "?", with: "\\?").replacingOccurrences(of: "[", with: "\\[")
+                .replacingOccurrences(of: "]", with: "\\]") + "/.foo/**"
+            XCTAssertEqual(rec.calls, [[escaped]], home)
+            XCTAssertEqual(r.protectPatterns, [escaped], home)
+            // The rule targets the protected folder, so it must be rejected even with glob chars in home.
+            XCTAssertEqual(r.errors.map(\.kind), [.protectedPathTarget], home)
+            try FileManager.default.removeItem(at: tmp.url.appendingPathComponent("w"))
+        }
+    }
+
+    func testProtectPatternsSurviveRejectionOfTheirFile() throws {
+        let file = RuleFixtures.file(protect: #"["~/.secret/**"]"#, rules: [RuleFixtures.rule(paths: #"["~/.ssh"]"#)])
+        let other = RuleFixtures.file(tool: "o", rules: [RuleFixtures.rule(id: "o.r", paths: #"["~/.secret/cache"]"#)])
+        let r = try load([file, other])
+        XCTAssertTrue(r.ruleSets.isEmpty)
+        XCTAssertEqual(r.errors.map(\.kind), [.protectedPathTarget, .protectedPathTarget])
+        XCTAssertEqual(r.protectPatterns, [env.home + "/.secret/**"])
+        try FileManager.default.removeItem(at: tmp.url.appendingPathComponent("user"))
+        // also when the file is dropped for a duplicate id
+        let a = RuleFixtures.file(tool: "d", rules: [RuleFixtures.rule(id: "d.r", paths: #"["~/.d/x"]"#)])
+        let b = RuleFixtures.file(tool: "d", protect: #"["~/.keepme/**"]"#, rules: [RuleFixtures.rule(id: "d.r", paths: #"["~/.d/y"]"#)])
+        let r2 = try load([a, b])
+        XCTAssertEqual(r2.errors.map(\.kind), [.duplicateRuleID])
+        XCTAssertEqual(r2.protectPatterns, [env.home + "/.keepme/**"])
     }
 }

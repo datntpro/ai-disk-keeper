@@ -7,7 +7,7 @@ public enum RuleSource: String, Sendable, Hashable, Codable { case bundled, user
 public struct RuleLoadError: Error, Sendable, Hashable, CustomStringConvertible {
     public enum Kind: String, Sendable, Hashable, Codable, CaseIterable {
         case unreadableDirectory, unreadableFile, fileTooLarge, tooManyFiles, invalidJSON, unsupportedSchemaVersion,
-             unknownKey, missingKey, typeMismatch, invalidValue, invalidGlob, invalidPathTemplate,
+             unknownKey, duplicateKey, missingKey, typeMismatch, invalidValue, invalidGlob, invalidPathTemplate,
              invalidRuleID, duplicateRuleID, pathOutsideAllowedRoots, protectedPathTarget, invalidProtectPattern,
              guardUnavailable
     }

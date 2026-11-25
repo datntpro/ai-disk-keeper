@@ -197,32 +197,71 @@ public struct PathTemplate: Sendable, Hashable, Codable, CustomStringConvertible
     // MARK: Expansion
 
     public func expand(in env: PathEnvironment) -> PathExpansion {
-        guard let base = PathTemplate.expandRoot(root, env: env) else {
+        expand(in: env, escapeRoot: false)
+    }
+
+    /// For protect templates: the expansion as a *glob pattern*. The parts that come from the machine
+    /// (home, temp dir, `${VAR}` values) are backslash-escaped (`\ * ? [ ]`) so a home like `/Users/a[1]` stays
+    /// literal; the template's own components keep their globs.
+    public func expandPattern(in env: PathEnvironment) -> PathExpansion {
+        expand(in: env, escapeRoot: true)
+    }
+
+    /// The glob-free leading part of the expansion (root + components before the first glob component) and
+    /// that first glob component, if any. `nil` if the template is unavailable. Used to judge how broad a
+    /// protect pattern is.
+    func literalPrefix(in env: PathEnvironment) -> (prefix: String, nextGlob: String?)? {
+        guard let base = PathTemplate.expandRoot(root, env: env, escape: false) else { return nil }
+        func isGlob(_ c: String) -> Bool { c.contains(where: { "*?[]".contains($0) }) }
+        let literal = components.prefix { !isGlob($0) }
+        let next = components.dropFirst(literal.count).first
+        return (([base] + literal).joined(separator: "/"), next)
+    }
+
+    private func expand(in env: PathEnvironment, escapeRoot: Bool) -> PathExpansion {
+        guard let base = PathTemplate.expandRoot(root, env: env, escape: escapeRoot) else {
             if case .variable(let name, _) = root { return .unavailable(reason: "\(name) is not set") }
             return .unavailable(reason: "cannot expand \(raw)")
         }
-        return .path(([base] + components).joined(separator: "/").replacingOccurrences(of: "//", with: "/"))
+        return .path(([base] + components).joined(separator: "/"))
     }
 
-    private static func expandRoot(_ root: Root, env: PathEnvironment) -> String? {
+    /// Escapes glob metacharacters (`\ * ? [ ]`).
+    /// TODO: switch to `ProtectedPaths.escapeGlob` once T04 (PR #34) is merged. The two MUST keep the same
+    /// character set; this copy exists only so T03 stays compile-independent of T04.
+    static func escapeGlob(_ literal: String) -> String {
+        var out = ""
+        for ch in literal {
+            if "\\*?[]".contains(ch) { out.append("\\") }
+            out.append(ch)
+        }
+        return out
+    }
+
+    /// A `${VAR}` value is usable if it is absolute, has no `.`/`..` components and no control characters.
+    /// Returned lexically cleaned (empty components dropped, no trailing "/").
+    private static func cleanVariableValue(_ value: String) -> String? {
+        guard value.hasPrefix("/"),
+              !value.unicodeScalars.contains(where: { $0.value < 0x20 || $0.value == 0x7F }) else { return nil }
+        let comps = value.split(separator: "/", omittingEmptySubsequences: true)
+        guard !comps.isEmpty, !comps.contains(".."), !comps.contains(".") else { return nil }
+        return "/" + comps.joined(separator: "/")
+    }
+
+    private static func expandRoot(_ root: Root, env: PathEnvironment, escape: Bool) -> String? {
+        func machine(_ s: String) -> String { escape ? escapeGlob(s) : s }
         switch root {
-        case .home: return env.home
-        case .tmp: return env.temporaryDirectory
-        case .appSupport: return env.applicationSupport
-        case .caches: return env.caches
-        case .logs: return env.logs
-        case .containers: return env.containers
-        case .groupContainers: return env.groupContainers
+        case .home: return machine(env.home)
+        case .tmp: return machine(env.temporaryDirectory)
+        case .appSupport: return machine(env.applicationSupport)
+        case .caches: return machine(env.caches)
+        case .logs: return machine(env.logs)
+        case .containers: return machine(env.containers)
+        case .groupContainers: return machine(env.groupContainers)
         case .literal(let s): return s
         case .variable(let name, let fallback):
-            if let value = env.variables[name] {
-                let trimmed = PathEnvironment.trimTrailingSlashes(value)
-                let comps = trimmed.split(separator: "/", omittingEmptySubsequences: false)
-                if value.hasPrefix("/"), trimmed != "/", !comps.contains(".."), !comps.contains(".") {
-                    return trimmed
-                }
-            }
-            guard let fallback, let base = expandRoot(fallback.root, env: env) else { return nil }
+            if let value = env.variables[name], let clean = cleanVariableValue(value) { return machine(clean) }
+            guard let fallback, let base = expandRoot(fallback.root, env: env, escape: escape) else { return nil }
             return ([base] + fallback.components).joined(separator: "/")
         }
     }

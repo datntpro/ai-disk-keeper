@@ -19,7 +19,7 @@ public struct RuleSet: Sendable, Hashable {
     public let source: RuleSource
     public let file: URL
     public let tool: ToolInfo
-    /// This file's `protect` templates, expanded to absolute patterns.
+    /// This file's `protect` templates as glob patterns (machine-derived parts escaped).
     public let protectPatterns: [String]
     public let rules: [ResolvedRule]
 }
@@ -27,10 +27,13 @@ public struct RuleSet: Sendable, Hashable {
 public struct RuleLoadResult: Sendable {
     public let ruleSets: [RuleSet]
     public let errors: [RuleLoadError]
+    /// Union of the protect patterns (glob patterns whose machine-derived parts are backslash-escaped) of
+    /// every file that decoded and passed structural validation, **including files later rejected** (for a
+    /// protected target or a duplicate id). Protection is fail-safe: a mistake elsewhere in a file never
+    /// removes the protection it asked for. This is what the scanner must feed to the real guard.
+    public let protectPatterns: [String]
 
     public var allRules: [ResolvedRule] { ruleSets.flatMap(\.rules) }
-    /// Union of all loaded files' protect patterns, for building the real `ProtectedPaths`.
-    public var protectPatterns: [String] { ruleSets.flatMap(\.protectPatterns) }
 }
 
 /// What the injected guard says about a path.
@@ -55,8 +58,10 @@ public struct GuardDenial: Sendable, Hashable {
 /// `RuleLoadError`; a bad file is rejected as a whole and never blocks the others. Synchronous and does
 /// blocking file IO, so call it off the main actor. A value type with no shared state, hence thread-safe.
 public struct RuleLoader: Sendable {
-    /// Called once per load with every protect pattern from files that decoded cleanly. Returns a checker
-    /// that gives a denial for a protected absolute path, or nil if allowed. May throw (bad pattern).
+    /// Called once per load with every protect pattern from files that decoded and passed structural
+    /// validation. The patterns use the protected-path glob grammar; the parts that come from the machine
+    /// (home, temp dir, env values) are backslash-escaped, so `/Users/a[1]` stays literal. Returns a checker
+    /// that gives a denial for a protected absolute path (which is NOT escaped), or nil if allowed. May throw.
     public typealias GuardFactory = @Sendable (_ additionalProtectPatterns: [String]) throws
         -> @Sendable (String) -> GuardDenial?
 
@@ -87,6 +92,11 @@ public struct RuleLoader: Sendable {
                 kind: .fileTooLarge, file: file, source: source,
                 message: "file is \(data.count) bytes; the limit is \(Self.maxFileBytes)"))
         }
+        if let dup = DuplicateKeyScanner.firstDuplicate(in: data) {
+            return .failure(RuleLoadError(
+                kind: .duplicateKey, file: file, source: source, jsonPath: dup.path,
+                message: "duplicate key '\(dup.key)' (JSON tools disagree on which value wins)"))
+        }
         let decoded: RuleFile
         do {
             let decoder = JSONDecoder()
@@ -107,7 +117,8 @@ public struct RuleLoader: Sendable {
 
     public func load() -> RuleLoadResult {
         var errors: [RuleLoadError] = []
-        var accepted: [(file: URL, source: RuleSource, rules: RuleFile)] = []
+        var accepted: [(file: URL, source: RuleSource, rules: RuleFile, protect: [String])] = []
+        var allProtect: [String] = []
         var seenIDs = Set<String>()
 
         var candidates: [(URL, RuleSource)] = []
@@ -127,6 +138,11 @@ public struct RuleLoader: Sendable {
             case .success(let f): file = f
             case .failure(let e): errors.append(e); continue
             }
+            let protect = file.protect.compactMap { t -> String? in
+                if case .path(let p) = t.expandPattern(in: environment) { return p }
+                return nil
+            }
+            allProtect += protect   // kept even if the file is rejected below (fail-safe)
             var local = Set<String>()
             var duplicate: RuleLoadError?
             for (i, rule) in file.rules.enumerated() where !local.insert(rule.id).inserted || seenIDs.contains(rule.id) {
@@ -137,28 +153,21 @@ public struct RuleLoader: Sendable {
             }
             if let duplicate { errors.append(duplicate); continue }
             seenIDs.formUnion(local)
-            accepted.append((url, source, file))
+            accepted.append((url, source, file, protect))
         }
 
-        // Expand protect patterns, then build the guard from the union. Fail closed.
-        let protectPerFile = accepted.map { entry in
-            entry.rules.protect.compactMap { t -> String? in
-                if case .path(let p) = t.expand(in: environment) { return p }
-                return nil
-            }
-        }
         let check: @Sendable (String) -> GuardDenial?
         do {
-            check = try guardFactory(protectPerFile.flatMap { $0 })
+            check = try guardFactory(allProtect)
         } catch {
             errors.append(RuleLoadError(
                 kind: .guardUnavailable, file: nil, source: nil,
                 message: "protected-path guard unavailable, no rules loaded: \(error)"))
-            return RuleLoadResult(ruleSets: [], errors: errors)
+            return RuleLoadResult(ruleSets: [], errors: errors, protectPatterns: allProtect)
         }
 
         var ruleSets: [RuleSet] = []
-        for (index, entry) in accepted.enumerated() {
+        for entry in accepted {
             var resolved: [ResolvedRule] = []
             var rejection: RuleLoadError?
             outer: for (i, rule) in entry.rules.rules.enumerated() {
@@ -184,9 +193,9 @@ public struct RuleLoader: Sendable {
             if let rejection { errors.append(rejection); continue }
             ruleSets.append(RuleSet(
                 source: entry.source, file: entry.file, tool: entry.rules.tool,
-                protectPatterns: protectPerFile[index], rules: resolved))
+                protectPatterns: entry.protect, rules: resolved))
         }
-        return RuleLoadResult(ruleSets: ruleSets, errors: errors)
+        return RuleLoadResult(ruleSets: ruleSets, errors: errors, protectPatterns: allProtect)
     }
 
     // MARK: File access
