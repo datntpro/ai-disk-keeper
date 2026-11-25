@@ -219,8 +219,20 @@ enum GitPorcelain {
         ".parcel-cache", ".angular", ".svelte-kit", ".dart_tool", "*.o", "*.class", "*.tsbuildinfo",
     ]
 
-    private static func matches(_ name: String, _ pats: [String]) -> Bool {
-        pats.contains { fnmatch($0, name, 0) == 0 }
+    private static func matches(_ name: String, _ pats: [String], casefold: Bool = false) -> Bool {
+        pats.contains { fnmatch($0, name, casefold ? FNM_CASEFOLD : 0) == 0 }
+    }
+
+    /// Pathspecs for `ls-files --others --ignored`, to find precious files inside ignored (collapsed)
+    /// directories such as `dist/prod.pem` or `node_modules/pkg/.env`.
+    static let preciousPathspecs: [String] =
+        preciousPatterns.map { ":(glob,icase)**/\($0)" } + preciousDirNames.sorted().map { ":(glob,icase)**/\($0)/**" }
+
+    /// Merge precious paths found by the pathspec probe, de-duplicated and capped.
+    static func mergePrecious(_ base: [String], _ extra: [String], cap: Int = 100) -> [String] {
+        var out = base
+        for e in extra where out.count < cap && !out.contains(e) { out.append(e) }
+        return out
     }
 
     /// `paths`: output of `ls-files --others --ignored --directory` (dirs end with `/`).
@@ -229,7 +241,7 @@ enum GitPorcelain {
         var other: [String] = []
         for p in paths {
             let comps = p.split(separator: "/").map(String.init)
-            let isPrecious = comps.contains { matches($0, preciousPatterns) || preciousDirNames.contains($0) }
+            let isPrecious = comps.contains { matches($0, preciousPatterns, casefold: true) || preciousDirNames.contains($0.lowercased()) }
             if isPrecious {
                 if precious.count < cap { precious.append(p) }
             } else if !comps.contains(where: { matches($0, regenerable) }) {
@@ -254,11 +266,21 @@ enum GitPorcelain {
         return names
     }
 
-    static func filterNeutralizingArguments(_ names: [String]) -> [String] {
-        names.flatMap { n in
-            ["-c", "filter.\(n).clean=", "-c", "filter.\(n).smudge=", "-c", "filter.\(n).process=",
-             "-c", "filter.\(n).required=false"]
+    /// Neutralizers as GIT_CONFIG_COUNT/KEY_n/VALUE_n env pairs (git ≥ 2.31). Unlike `-c`, the key is never
+    /// split at `=`, so a driver named `x=y` is covered too.
+    static func filterNeutralizingEnvironment(_ names: [String]) -> [String: String] {
+        guard !names.isEmpty else { return [:] }
+        var env: [String: String] = [:]
+        var i = 0
+        for n in names {
+            for (v, value) in [("clean", ""), ("smudge", ""), ("process", ""), ("required", "false")] {
+                env["GIT_CONFIG_KEY_\(i)"] = "filter.\(n).\(v)"
+                env["GIT_CONFIG_VALUE_\(i)"] = value
+                i += 1
+            }
         }
+        env["GIT_CONFIG_COUNT"] = String(i)
+        return env
     }
 
     // MARK: helpers

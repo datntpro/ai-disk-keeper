@@ -24,7 +24,7 @@ final class GitHardeningTests: XCTestCase {
         let s = try await fx.inspector().inspect(repo)
         XCTAssertEqual(s.workingTree?.isClean, true)
         let ig = try XCTUnwrap(s.ignored)
-        XCTAssertEqual(Set(ig.preciousPaths), [".env", "server.pem", "data/"])
+        XCTAssertEqual(Set(ig.preciousPaths), [".env", "server.pem", "data/", "data/irreplaceable.db"])
         XCTAssertEqual(ig.count, 4)
         XCTAssertEqual(ig.unclassifiedPaths, [])
     }
@@ -130,7 +130,63 @@ final class GitHardeningTests: XCTestCase {
     func testFilterNameParsingAndArguments() {
         let d = Data("filter.lfs.clean\0filter.lfs.smudge\0filter.a.b.process\0filter.broken\0".utf8)
         XCTAssertEqual(GitPorcelain.parseFilterNames(d), ["lfs", "a.b"])
-        XCTAssertTrue(GitPorcelain.filterNeutralizingArguments(["x"]).contains("filter.x.process="))
+        let env = GitPorcelain.filterNeutralizingEnvironment(["x=y"])
+        XCTAssertEqual(env["GIT_CONFIG_COUNT"], "4")
+        XCTAssertEqual(Set(env.filter { $0.key.hasPrefix("GIT_CONFIG_KEY_") }.values),
+                       ["filter.x=y.clean", "filter.x=y.smudge", "filter.x=y.process", "filter.x=y.required"])
+        XCTAssertEqual(GitPorcelain.parseFilterNames(Data("filter.x=y.process\0".utf8)), ["x=y"])
+    }
+
+    // R1: a filter name containing '=' must still be neutralized
+    func testFilterNameContainingEqualsDoesNotExecute() async throws {
+        let fx = try GitFixture()
+        let repo = try fx.makeRepo("r")
+        try fx.commit(repo, file: "f.txt", msg: "f", content: "hello\n")
+        try fx.commit(repo, file: ".gitattributes", msg: "attr", content: "* filter=x=y\n")
+        let m = fx.root.path + "/pwned-eq"
+        let cfgPath = repo.path + "/.git/config"
+        let old = try String(contentsOfFile: cfgPath, encoding: .utf8)
+        try (old + "\n[filter \"x=y\"]\n\tprocess = /usr/bin/touch \(m)\n\tclean = /usr/bin/touch \(m)-clean\n").write(
+            toFile: cfgPath, atomically: true, encoding: .utf8)
+        try fx.tmp.setMTime("r/f.txt", Date().addingTimeInterval(-3600))
+        _ = try await fx.inspector().inspect(repo)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: m))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: m + "-clean"))
+    }
+
+    // R2 + N1: secrets inside ignored "regenerable" dirs, any case
+    func testPreciousFilesInsideIgnoredRegenerableDirsAreReported() async throws {
+        let fx = try GitFixture()
+        let repo = try cleanPushedRepo(fx)
+        try fx.commit(repo, file: ".gitignore", msg: "ign", content: "node_modules/\ndist/\nbuild/\nout/\n.venv/\n.ENVRC\n.ENV\n")
+        for f in ["node_modules/pkg/.env", "dist/prod.pem", "build/id_ed25519", "out/customers.sqlite", ".venv/.env", "dist/Server.PEM"] {
+            let u = repo.appendingPathComponent(f)
+            try FileManager.default.createDirectory(at: u.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try fx.write(repo, f)
+        }
+        try fx.write(repo, ".ENV")
+        try fx.write(repo, "dist/harmless.js")
+        let s = try await fx.inspector().inspect(repo)
+        let precious = Set(try XCTUnwrap(s.ignored).preciousPaths)
+        for f in ["node_modules/pkg/.env", "dist/prod.pem", "build/id_ed25519", "out/customers.sqlite", ".venv/.env", "dist/Server.PEM", ".ENV"] {
+            XCTAssertTrue(precious.contains(f), "missing \(f) in \(precious)")
+        }
+        XCTAssertFalse(precious.contains("dist/harmless.js"))
+        XCTAssertEqual(s.ignored?.unclassifiedPaths, [])
+    }
+
+    func testAnySubmoduleUnpushedOrDirty() {
+        let clean = GitState(
+            path: "/s", kind: .submodule, gitDir: "/g", commonDir: "/g",
+            commitsNotOnAnyRemote: .init(value: 0, isCapped: false), workingTree: .init())
+        var unpushed = clean
+        unpushed.commitsNotOnAnyRemote = .init(value: 1, isCapped: false)
+        var top = GitState(path: "/t", kind: .mainWorktree, gitDir: "/g", commonDir: "/g", submodules: [clean])
+        XCTAssertFalse(top.anySubmoduleUnpushedOrDirty)
+        var mid = clean
+        mid.submodules = [unpushed]
+        top.submodules = [mid]
+        XCTAssertTrue(top.anySubmoduleUnpushedOrDirty)
     }
 
     // F6: core.worktree redirect

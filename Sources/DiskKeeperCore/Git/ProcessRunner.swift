@@ -288,10 +288,8 @@ final class RunningProcess: @unchecked Sendable {
             return (cont, s.handles, s.reason)
         }
         guard let cont else { return }
-        for h in handles {
-            h.readabilityHandler = nil
-            try? h.close()
-        }
+        // Only drop the handlers; the handles close on dealloc (closing under a mid-read block could raise).
+        for h in handles { h.readabilityHandler = nil }
         cont.resume(throwing: reason == .cancelled ? CancellationError() as Error : Timeout.timedOut)
     }
 

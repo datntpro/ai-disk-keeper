@@ -147,6 +147,15 @@ public struct GitState: Sendable, Hashable, Codable {
     /// `topLevel` is not the inspected path (core.worktree redirect or not a root): status describes elsewhere.
     public var topLevelMismatch: Bool
 
+    /// True when any (nested) submodule has commits on no remote, a dirty tree, or unknown state.
+    /// The facts above describe only this repo, so T14 must check this before calling it Safe.
+    public var anySubmoduleUnpushedOrDirty: Bool {
+        (submodules ?? []).contains { sub in
+            (sub.commitsNotOnAnyRemote?.value ?? 0) > 0 || sub.workingTree?.isClean != true
+                || sub.anySubmoduleUnpushedOrDirty
+        }
+    }
+
     public init(
         path: String, kind: Kind, topLevel: String? = nil, gitDir: String, commonDir: String,
         head: Head? = nil, upstream: Upstream? = nil, hasRemotes: Bool? = nil,

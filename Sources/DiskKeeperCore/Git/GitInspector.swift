@@ -31,8 +31,8 @@ public final class GitInspector: Sendable {
         func store(_ p: Prepared) { prepared = p }
     }
 
-    /// Per-repository `-c filter.<name>.*=` neutralizers, applied to every git call of one inspection.
-    @TaskLocal static var extraConfigArgs: [String] = []
+    /// Per-repository `filter.<name>.*` neutralizers (GIT_CONFIG_* env), applied to every git call of one inspection.
+    @TaskLocal static var extraConfigEnv: [String: String] = [:]
     static let maxSubmoduleDepth = 3
     static let hiddenFileCheckCap = 500
 
@@ -204,15 +204,17 @@ public final class GitInspector: Sendable {
     func runGit(_ args: [String], in path: URL, timeout: Duration? = nil) async throws -> ProcessResult {
         let prep = try await prepare()
         let argv = configuration.rawMode
-            ? args : Self.baseArguments(excludesFile: prep.excludesFile) + Self.extraConfigArgs + ["-C", path.path] + args
-        let env = Self.makeEnvironment(
+            ? args : Self.baseArguments(excludesFile: prep.excludesFile) + ["-C", path.path] + args
+        var env = Self.makeEnvironment(
             home: configuration.homeDirectory, ceiling: Self.realpathOfParent(path))
+        env.merge(Self.extraConfigEnv) { _, new in new }
+        let finalEnv = env
         let t = timeout ?? configuration.defaultTimeout
         let cwd = configuration.rawMode ? path : URL(fileURLWithPath: "/")
         do {
             return try await limited {
                 try await self.runner.run(
-                    executable: prep.git, arguments: argv, environment: env,
+                    executable: prep.git, arguments: argv, environment: finalEnv,
                     currentDirectory: cwd, timeout: t)
             }
         } catch ProcessRunnerError.launchFailed {
@@ -321,12 +323,12 @@ public final class GitInspector: Sendable {
             .filters, ["config", "-z", "--name-only", "--get-regexp", "^filter\\."], in: path,
             okStatuses: [0, 1])
         if let fr, ff == nil { filterNames = GitPorcelain.parseFilterNames(fr.stdout) } else if let ff { failures.append(ff) }
-        let filterArgs = GitPorcelain.filterNeutralizingArguments(filterNames)
+        let filterEnv = GitPorcelain.filterNeutralizingEnvironment(filterNames)
         if ff != nil {
             // Cannot enumerate drivers: refuse to run anything that could execute one.
             throw GitInspectorError.gitFailed("cannot enumerate filter drivers: \(ff!.message)")
         }
-        return try await Self.$extraConfigArgs.withValue(filterArgs) {
+        return try await Self.$extraConfigEnv.withValue(filterEnv) {
             try await self.finishInspect(
                 path, depth: depth, gitDir: gitDir, commonDir: commonDir, kind: kind, topLevel: topLevel,
                 disc: disc, failures: failures)
@@ -661,12 +663,25 @@ public final class GitInspector: Sendable {
         var names = GitPorcelain.splitNUL(r.stdout)
         if r.stdoutTruncated, !names.isEmpty { names.removeLast() }
         let c = GitPorcelain.classifyIgnored(names)
+        // `--directory` hides what is inside ignored dirs (dist/prod.pem, node_modules/.env): list precious files explicitly.
+        let (x, xf) = try await probe(
+            .ignored,
+            ["ls-files", "-z", "--others", "--ignored", "--exclude-standard", "--"] + GitPorcelain.preciousPathspecs,
+            in: path, timeout: configuration.statusTimeout)
+        var extra: [String] = []
+        if let x, xf == nil {
+            extra = GitPorcelain.splitNUL(x.stdout)
+            if x.stdoutTruncated, !extra.isEmpty { extra.removeLast() }
+        }
+        var failure: GitProbeFailure? = xf
+        if failure == nil, r.stdoutTruncated || (x?.stdoutTruncated ?? false) {
+            failure = .init(probe: .ignored, kind: .outputTruncated, message: "ignored listing truncated")
+        }
         return .init(
             value: .init(
-                count: names.count, isLowerBound: r.stdoutTruncated, preciousPaths: c.precious,
-                unclassifiedPaths: c.unclassified),
-            failure: r.stdoutTruncated
-                ? .init(probe: .ignored, kind: .outputTruncated, message: "ignored listing truncated") : nil)
+                count: names.count, isLowerBound: r.stdoutTruncated,
+                preciousPaths: GitPorcelain.mergePrecious(c.precious, extra), unclassifiedPaths: c.unclassified),
+            failure: failure)
     }
 
     /// Counts assume-unchanged / skip-worktree entries and compares their on-disk content with the index.
