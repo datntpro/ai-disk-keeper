@@ -21,8 +21,9 @@ final class FileSizerBenchmarkTests: XCTestCase {
     }
 
     func testBenchmarkRealPaths() throws {
-        let raw = try XCTUnwrap(ProcessInfo.processInfo.environment["DISKKEEPER_BENCH_PATHS"],
-                                "set DISKKEEPER_BENCH_PATHS")
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["DISKKEEPER_BENCH_PATHS"] != nil,
+                          "set DISKKEEPER_BENCH_PATHS")
+        let raw = ProcessInfo.processInfo.environment["DISKKEEPER_BENCH_PATHS"] ?? ""
         let sizer = FileSizer()
         for p in raw.split(separator: ":").map(String.init) {
             let t0 = ContinuousClock.now

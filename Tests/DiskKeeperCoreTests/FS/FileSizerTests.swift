@@ -243,8 +243,8 @@ final class FileSizerTests: XCTestCase {
         let root = tmp.url.appendingPathComponent("tree")
         let def = try size(root)
         XCTAssertEqual(def.skippedMountPoints.count, 1)
-        XCTAssertEqual(def.skippedMountPoints.first.map { URL(fileURLWithPath: $0).standardizedFileURL.path },
-                       mountPoint)
+        // standardizedFileURL may strip /private, so compare by suffix.
+        XCTAssertTrue(def.skippedMountPoints.first?.hasSuffix("/tree/mnt") ?? false)
         XCTAssertLessThan(def.logicalBytes, 1_048_576)
 
         let crossed = try size(root, .init(crossVolumes: true))
