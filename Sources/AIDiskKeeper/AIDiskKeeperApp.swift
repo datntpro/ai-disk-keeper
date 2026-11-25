@@ -18,5 +18,6 @@ struct AIDiskKeeperApp: App {
         WindowGroup("AI Disk Keeper") {
             RootView(env: env)
         }
+        .commands { ScanCommands() }
     }
 }
