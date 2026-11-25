@@ -51,6 +51,26 @@ final class RuleGlobTests: XCTestCase {
         XCTAssertTrue(try g("[\u{00E0}-\u{00FF}]").matches(e))
     }
 
+    func testMatchesEitherBlocksSupersetOfBothMatchers() throws {
+        // A combining mark / ZWJ fuses with the preceding literal into one Character, so the whole-character
+        // matcher alone would stop matching names the scalar-wise matcher catches (and vice versa for ?/[..]).
+        let rows: [(pattern: String, name: String)] = [
+            ("id_rsa*", "id_rsa\u{301}"), ("id_rsa*", "id_rsa\u{200D}"), ("id_rsa*", "id_rsa\u{200D}_old"),
+            (".env.*", ".env.\u{301}"), ("settings*.json", "settings\u{301}.json"), (".claude.json*", ".claude.json\u{301}"),
+        ]
+        for (pattern, name) in rows {
+            let glob = try g(pattern)
+            XCTAssertTrue(glob.matchesScalarwise(name), "scalar \(pattern) vs \(name.debugDescription)")
+            XCTAssertTrue(glob.matchesEither(name), "either \(pattern) vs \(name.debugDescription)")
+        }
+        XCTAssertFalse(try g("id_rsa*").matches("id_rsa\u{301}"), "documents why matches() alone is not enough")
+        // The whole-character improvement is kept by matchesEither.
+        XCTAssertTrue(try g("r?").matchesEither("re\u{301}"))
+        XCTAssertTrue(try g("r?").matchesEither("r\u{1F1FA}\u{1F1F8}"))
+        XCTAssertFalse(try g("r?").matchesScalarwise("re\u{301}"))
+        XCTAssertFalse(try g("abc").matchesEither("abd"))
+    }
+
     func testRejects() {
         let cases: [(String, String)] = [
             ("", "empty"), ("a/b", "'/'"), ("**", "'**'"), ("ab[abc", "unclosed '[' at position 3"),

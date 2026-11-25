@@ -129,6 +129,41 @@ final class PathTemplateTests: XCTestCase {
         XCTAssertEqual(try expand("${V}/c", vars: ["V": "//"]), .unavailable(reason: "V is not set"))
     }
 
+    func testSlashFollowedByCombiningMarkIsStillASeparator() throws {
+        // "/" + U+0301 is ONE Character in Swift, but the filesystem splits on the "/" byte.
+        let mark = "\u{301}"
+        assertRejects("~/a/../\(mark)", "..")             // ".." must not hide inside a fused Character
+        assertRejects("~/a/./\(mark)")
+        assertRejects("~/a/\(mark)/..", "..")
+        XCTAssertEqual(try expand("~/a/\(mark)"), .path("/H/a/\(mark)"))
+        XCTAssertEqual(try expand("~/a/\(mark)/b"), .path("/H/a/\(mark)/b"))
+        assertRejects("~/a/\(mark)/", "trailing")
+        assertRejects("~\(mark)/a")                        // a different root token, not "~"
+        // forbidden / glob characters followed by a mark are still those characters
+        assertRejects("~/a$\(mark)b", "forbidden")
+        assertRejects("~/a~\(mark)b", "forbidden")
+        assertRejects("~/a*\(mark)", "glob")
+        assertRejects("~/a[\(mark)b]", "glob")
+        assertRejects("~/a**\(mark)", globs: true)
+        assertRejects("${V}\(mark)/x")
+        XCTAssertEqual(try expand("${V:-~/a/\(mark)}/b"), .path("/H/a/\(mark)/b"))
+    }
+
+    func testEnvValueWithMarkedSeparatorIsNotTrusted() throws {
+        let mark = "\u{301}"
+        // ".." hidden behind a fused separator must still count as a ".." component.
+        XCTAssertEqual(try expand("${V}/c", vars: ["V": "/a/../\(mark)"]), .unavailable(reason: "V is not set"))
+        XCTAssertEqual(try expand("${V}/c", vars: ["V": "/a/./\(mark)x"]), .unavailable(reason: "V is not set"))
+        XCTAssertEqual(try expand("${V}/c", vars: ["V": "/a/\(mark)x"]), .path("/a/\(mark)x/c"))
+    }
+
+    func testEscapeGlobEscapesMetacharactersFollowedByMarks() throws {
+        let mark = "\u{301}"
+        let weird = PathEnvironment(home: "/Users/a[\(mark)b*\(mark)", temporaryDirectory: "/T", variables: [:])
+        let pattern = try PathTemplate("~/.x/**", allowGlobs: true).expandPattern(in: weird)
+        XCTAssertEqual(pattern, .path("/Users/a\\[\(mark)b\\*\(mark)/.x/**"))
+    }
+
     func testCodableIsSingleString() throws {
         let t = try JSONDecoder().decode(PathTemplate.self, from: Data(#""~/a""#.utf8))
         XCTAssertEqual(t.raw, "~/a")

@@ -124,7 +124,9 @@ public struct RuleCleanup: Sendable, Hashable {
 
 /// An entry name usable as a sibling/child marker: non-empty, no `/`, not `.`/`..`.
 func isValidEntryName(_ s: String) -> Bool {
-    !s.isEmpty && !s.contains("/") && !s.contains("\0") && s != "." && s != ".."
+    let scalars = s.unicodeScalars   // scalars: "/" + combining mark is still a separator for the filesystem
+    return !scalars.isEmpty && !scalars.contains("/") && !scalars.contains("\0")
+        && !scalars.elementsEqual(".".unicodeScalars) && !scalars.elementsEqual("..".unicodeScalars)
 }
 
 private func invalid<K: CodingKey>(

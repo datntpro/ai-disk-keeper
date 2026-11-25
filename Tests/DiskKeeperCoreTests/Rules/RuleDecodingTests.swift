@@ -170,6 +170,15 @@ final class RuleDecodingTests: XCTestCase {
                     .unknownKey, path: "rules[0].cleanup", contains: "arguments")
     }
 
+    func testMarkerWithMarkedSlashRejected() {
+        for bad in ["a/\u{301}b", "/\u{301}", "\u{0}"] {
+            let m = RuleFixtures.rule(match: #"{"kind":"find","name":"x","marker":"\#(bad.unicodeScalars.map { $0 == "\u{0}" ? "\\u0000" : String($0) }.joined())","maxDepth":2}"#)
+            expectError(RuleFixtures.file(rules: [m]), .invalidValue, path: "rules[0].match.marker")
+        }
+        XCTAssertFalse(isValidEntryName("a/\u{301}"))
+        XCTAssertTrue(isValidEntryName("\u{301}x"))
+    }
+
     func testBundleIDAndDocsURL() {
         for bad in ["nodots", "a..b", "a.b c"] {
             let c = #"{"method":"trash","requiresAppQuit":"\#(bad)"}"#

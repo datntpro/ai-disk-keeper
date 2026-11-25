@@ -91,11 +91,11 @@ public struct PathTemplate: Sendable, Hashable, Codable, CustomStringConvertible
         func fail(_ message: String) -> PathTemplateError { PathTemplateError(template: raw, message: message) }
         guard !raw.isEmpty else { throw fail("empty path template") }
         guard raw.utf8.count <= 1024 else { throw fail("path template longer than 1024 bytes") }
-        guard !raw.hasSuffix("/") else { throw fail("trailing '/' is not allowed") }
+        guard raw.unicodeScalars.last != "/" else { throw fail("trailing '/' is not allowed") }
 
-        let (root, rest): (Root, Substring)
+        let (root, rest): (Root, Scalars)
         do {
-            (root, rest) = try PathTemplate.parseRoot(Substring(raw), allowVariable: true, allowGlobs: allowGlobs)
+            (root, rest) = try PathTemplate.parseRoot(Scalars(Array(raw.unicodeScalars)), allowVariable: true, allowGlobs: allowGlobs)
         } catch let f as Failure {
             throw fail(f.message)
         } catch { throw fail("invalid path template") }
@@ -133,65 +133,88 @@ public struct PathTemplate: Sendable, Hashable, Codable, CustomStringConvertible
         ("/private/tmp", .literal("/private/tmp")), ("/tmp", .literal("/tmp")),
     ]
 
-    private static func parseRoot(_ s: Substring, allowVariable: Bool, allowGlobs: Bool) throws -> (Root, Substring) {
-        if s.hasPrefix("${") {
+    // Parsing works on Unicode scalars, never on Characters: a combining mark after "/" (or after `$`, `*`, `}`,
+    // ...) would otherwise fuse with it into one Character and slip past the separator and forbidden-character
+    // checks, while the filesystem still splits on the "/" byte.
+    private typealias Scalars = ArraySlice<Unicode.Scalar>
+
+    private static func text(_ s: Scalars) -> String {
+        var v = String.UnicodeScalarView()
+        v.append(contentsOf: s)
+        return String(v)
+    }
+
+    private static func hasPrefix(_ s: Scalars, _ p: String) -> Bool { s.starts(with: p.unicodeScalars) }
+
+    private static func parseRoot(_ s: Scalars, allowVariable: Bool, allowGlobs: Bool) throws -> (Root, Scalars) {
+        if hasPrefix(s, "${") {
             guard allowVariable else { throw Failure("nested ${...} is not allowed in a fallback") }
             guard let close = s.firstIndex(of: "}") else { throw Failure("unclosed '${'") }
-            let inner = s[s.index(s.startIndex, offsetBy: 2)..<close]
-            let after = s[s.index(after: close)...]
-            guard after.isEmpty || after.hasPrefix("/") else { throw Failure("expected '/' after '}'") }
-            let name: Substring
+            let inner = s[(s.startIndex + 2)..<close]
+            let after = s[(close + 1)...]
+            guard after.isEmpty || after.first == "/" else { throw Failure("expected '/' after '}'") }
+            let name: Scalars
             var fallback: FallbackBody?
-            if let sep = inner.range(of: ":-") {
-                name = inner[inner.startIndex..<sep.lowerBound]
-                let fb = inner[sep.upperBound...]
-                guard !fb.isEmpty else { throw Failure("empty fallback in ${\(name):-}") }
+            if let sep = (inner.startIndex..<max(inner.startIndex, inner.endIndex - 1)).first(where: {
+                inner[$0] == ":" && inner[$0 + 1] == "-"
+            }) {
+                name = inner[inner.startIndex..<sep]
+                let fb = inner[(sep + 2)...]
+                guard !fb.isEmpty else { throw Failure("empty fallback in ${\(text(name)):-}") }
                 let (fbRoot, fbRest) = try parseRoot(fb, allowVariable: false, allowGlobs: allowGlobs)
                 fallback = FallbackBody(root: fbRoot, components: try parseComponents(fbRest, allowGlobs: allowGlobs))
             } else {
                 name = inner
             }
             guard isValidVariableName(name) else {
-                throw Failure("invalid variable name '\(name)' (expected [A-Z_][A-Z0-9_]{0,63})")
+                throw Failure("invalid variable name '\(text(name))' (expected [A-Z_][A-Z0-9_]{0,63})")
             }
-            return (.variable(name: String(name), fallback: fallback), after)
+            return (.variable(name: text(name), fallback: fallback), after)
         }
-        for (token, root) in fixedRoots where s.hasPrefix(token) {
-            let after = s.dropFirst(token.count)
-            if after.isEmpty || after.hasPrefix("/") { return (root, after) }
+        for (token, root) in fixedRoots where hasPrefix(s, token) {
+            let after = s.dropFirst(token.unicodeScalars.count)
+            if after.isEmpty || after.first == "/" { return (root, after) }
         }
         throw Failure(rootError)
     }
 
-    private static func isValidVariableName(_ s: Substring) -> Bool {
-        guard let first = s.utf8.first, s.utf8.count <= 64 else { return false }
-        func upper(_ b: UInt8) -> Bool { b >= 0x41 && b <= 0x5A }
+    private static func isValidVariableName(_ s: Scalars) -> Bool {
+        guard let first = s.first?.value, s.count <= 64 else { return false }
+        func upper(_ b: UInt32) -> Bool { b >= 0x41 && b <= 0x5A }
         guard upper(first) || first == 0x5F else { return false }
-        return s.utf8.allSatisfy { upper($0) || $0 == 0x5F || ($0 >= 0x30 && $0 <= 0x39) }
+        return s.allSatisfy { upper($0.value) || $0.value == 0x5F || ($0.value >= 0x30 && $0.value <= 0x39) }
     }
 
     /// `rest` is empty or starts with "/".
-    private static func parseComponents(_ rest: Substring, allowGlobs: Bool) throws -> [String] {
+    private static func parseComponents(_ rest: Scalars, allowGlobs: Bool) throws -> [String] {
         guard !rest.isEmpty else { return [] }
-        let parts = rest.dropFirst().split(separator: "/", omittingEmptySubsequences: false).map(String.init)
-        for (i, part) in parts.enumerated() {
-            guard !part.isEmpty else { throw Failure("empty path component") }
-            guard part != ".", part != ".." else { throw Failure("'.' and '..' components are not allowed") }
-            if part.contains(where: { $0 == "$" || $0 == "~" || $0 == "\0" || $0 == "\\" }) {
+        let parts = rest.dropFirst().split(separator: "/", omittingEmptySubsequences: false)
+        for (i, scalars) in parts.enumerated() {
+            let part = text(scalars)
+            guard !scalars.isEmpty else { throw Failure("empty path component") }
+            guard part.unicodeScalars.elementsEqual(".".unicodeScalars) == false,
+                  part.unicodeScalars.elementsEqual("..".unicodeScalars) == false else {
+                throw Failure("'.' and '..' components are not allowed")
+            }
+            if scalars.contains(where: { $0 == "$" || $0 == "~" || $0 == "\0" || $0 == "\\" }) {
                 throw Failure("component '\(part)' contains a forbidden character ($ ~ \\ or NUL)")
             }
-            if part.contains(where: { "*?[]".contains($0) }) {
+            if scalars.contains(where: { "*?[]".unicodeScalars.contains($0) }) {
                 guard allowGlobs else { throw Failure("glob characters are not allowed in paths: '\(part)'") }
-                if part == "**" {
+                if scalars.elementsEqual("**".unicodeScalars) {
                     guard i == parts.count - 1 else { throw Failure("'**' is only allowed as the final component") }
-                } else if part.contains("**") {
+                } else if part.contains("**") || scalars.starts(with: "**".unicodeScalars) || hasStarStar(scalars) {
                     throw Failure("'**' must be a whole component: '\(part)'")
                 } else {
                     do { _ = try RuleGlob(part) } catch { throw Failure(error.message) }
                 }
             }
         }
-        return parts
+        return parts.map(text)
+    }
+
+    private static func hasStarStar(_ s: Scalars) -> Bool {
+        zip(s, s.dropFirst()).contains { $0 == "*" && $1 == "*" }
     }
 
     // MARK: Expansion
@@ -212,7 +235,7 @@ public struct PathTemplate: Sendable, Hashable, Codable, CustomStringConvertible
     /// protect pattern is.
     func literalPrefix(in env: PathEnvironment) -> (prefix: String, nextGlob: String?)? {
         guard let base = PathTemplate.expandRoot(root, env: env, escape: false) else { return nil }
-        func isGlob(_ c: String) -> Bool { c.contains(where: { "*?[]".contains($0) }) }
+        func isGlob(_ c: String) -> Bool { c.unicodeScalars.contains(where: { "*?[]".unicodeScalars.contains($0) }) }
         let literal = components.prefix { !isGlob($0) }
         let next = components.dropFirst(literal.count).first
         return (([base] + literal).joined(separator: "/"), next)
@@ -230,22 +253,24 @@ public struct PathTemplate: Sendable, Hashable, Codable, CustomStringConvertible
     /// TODO: switch to `ProtectedPaths.escapeGlob` once T04 (PR #34) is merged. The two MUST keep the same
     /// character set; this copy exists only so T03 stays compile-independent of T04.
     static func escapeGlob(_ literal: String) -> String {
-        var out = ""
-        for ch in literal {
-            if "\\*?[]".contains(ch) { out.append("\\") }
-            out.append(ch)
+        var out = String.UnicodeScalarView()
+        for sc in literal.unicodeScalars {   // scalars: "[" + combining mark must still be escaped
+            if "\\*?[]".unicodeScalars.contains(sc) { out.append("\\") }
+            out.append(sc)
         }
-        return out
+        return String(out)
     }
 
     /// A `${VAR}` value is usable if it is absolute, has no `.`/`..` components and no control characters.
     /// Returned lexically cleaned (empty components dropped, no trailing "/").
     private static func cleanVariableValue(_ value: String) -> String? {
-        guard value.hasPrefix("/"),
-              !value.unicodeScalars.contains(where: { $0.value < 0x20 || $0.value == 0x7F }) else { return nil }
-        let comps = value.split(separator: "/", omittingEmptySubsequences: true)
-        guard !comps.isEmpty, !comps.contains(".."), !comps.contains(".") else { return nil }
-        return "/" + comps.joined(separator: "/")
+        let scalars = value.unicodeScalars
+        guard scalars.first == "/", !scalars.contains(where: { $0.value < 0x20 || $0.value == 0x7F }) else { return nil }
+        let comps = scalars.split(separator: "/", omittingEmptySubsequences: true)   // scalars, not Characters
+        guard !comps.isEmpty,
+              !comps.contains(where: { $0.elementsEqual("..".unicodeScalars) || $0.elementsEqual(".".unicodeScalars) })
+        else { return nil }
+        return comps.map { String(String.UnicodeScalarView($0)) }.reduce("") { $0 + "/" + $1 }
     }
 
     private static func expandRoot(_ root: Root, env: PathEnvironment, escape: Bool) -> String? {

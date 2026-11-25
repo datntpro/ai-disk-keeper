@@ -14,7 +14,12 @@ public struct RuleGlobError: Error, Sendable, Hashable, CustomStringConvertible 
 /// case-insensitive and Unicode-normalization-insensitive. (Not `fnmatch`: that is byte-wise.)
 public struct RuleGlob: Sendable, Hashable, Codable, CustomStringConvertible {
     public let pattern: String
-    private let elements: [Element]
+    /// Whole-character program (grapheme clusters; `?`/`[..]` consume one visible character).
+    private let characterProgram: [Element]
+    /// Scalar program over the lowercased NFD form (every `?`/`[..]` consumes one Unicode scalar). nil when the
+    /// pattern has no scalar-wise reading (e.g. a class range over precomposed letters); then only the
+    /// whole-character matcher applies.
+    private let scalarProgram: [Element]?
 
     fileprivate enum Element: Sendable, Hashable {
         case star
@@ -28,12 +33,29 @@ public struct RuleGlob: Sendable, Hashable, Codable, CustomStringConvertible {
         guard !pattern.isEmpty else { throw fail("empty pattern") }
         if pattern.unicodeScalars.contains("/") { throw fail("'/' is not allowed (a glob matches one path component)") }
         if pattern.unicodeScalars.contains("\0") { throw fail("NUL is not allowed") }
-        if pattern.contains("**") { throw fail("'**' is not allowed in a name glob") }
+        if pattern.unicodeScalars.starts(with: "**".unicodeScalars) || pattern.contains("**")
+            || RuleGlob.hasStarStar(pattern) { throw fail("'**' is not allowed in a name glob") }
 
-        // Everything works on Characters (grapheme clusters), so "é" is one unit whether it is written
-        // precomposed or decomposed (Character equality is canonical equivalence). Columns are 1-based.
-        let original = Array(pattern)
-        func fold(_ c: Character) -> [Character] { Array(String(c).lowercased()) }
+        self.pattern = pattern
+        // The whole-character program is authoritative for syntax errors; the scalar program is best effort.
+        characterProgram = try RuleGlob.compile(Array(pattern), pattern: pattern) { Array(String($0).lowercased()) }
+        scalarProgram = try? RuleGlob.compile(RuleGlob.scalarUnits(pattern), pattern: pattern) { [$0] }
+    }
+
+    private static func hasStarStar(_ s: String) -> Bool {
+        zip(s.unicodeScalars, s.unicodeScalars.dropFirst()).contains { $0 == "*" && $1 == "*" }
+    }
+
+    /// Lowercased, canonically decomposed scalars, each wrapped as a one-scalar Character.
+    private static func scalarUnits(_ s: String) -> [Character] {
+        s.lowercased().decomposedStringWithCanonicalMapping.unicodeScalars.map(Character.init)
+    }
+
+    /// Columns are 1-based, in units of the program being compiled.
+    private static func compile(
+        _ original: [Character], pattern: String, fold: (Character) -> [Character]
+    ) throws(RuleGlobError) -> [Element] {
+        func fail(_ m: String) -> RuleGlobError { RuleGlobError(pattern: pattern, message: m) }
         func foldOne(_ c: Character) -> Character { fold(c).first ?? c }
 
         var out: [Element] = []
@@ -87,8 +109,7 @@ public struct RuleGlob: Sendable, Hashable, Codable, CustomStringConvertible {
                 i += 1
             }
         }
-        self.pattern = pattern
-        self.elements = out
+        return out
     }
 
     public init(from decoder: Decoder) throws {
@@ -108,8 +129,23 @@ public struct RuleGlob: Sendable, Hashable, Codable, CustomStringConvertible {
 
     /// Case-insensitive, normalization-insensitive match of one path component. `?` and `[...]` consume one
     /// whole character (`é` is one character, precomposed or not). Ranges compare characters in Unicode order.
+    ///
+    /// Use this for *selecting* things. For anything that *excludes or protects*, use ``matchesEither(_:)``.
     public func matches(_ name: String) -> Bool {
-        let text = Array(name.lowercased())
+        RuleGlob.run(characterProgram, Array(name.lowercased()))
+    }
+
+    /// Same pattern, but `?`/`[...]` consume one Unicode scalar of the NFD form (the pre-character behaviour).
+    public func matchesScalarwise(_ name: String) -> Bool {
+        scalarProgram.map { RuleGlob.run($0, RuleGlob.scalarUnits(name)) } ?? false
+    }
+
+    /// True if the whole-character OR the scalar-wise matcher matches. A name with a combining mark or ZWJ
+    /// next to a literal fuses into a different character (`id_rsa` + U+0301), so one matcher alone can
+    /// narrow what the other catches; exclusion/protection must block the superset of both.
+    public func matchesEither(_ name: String) -> Bool { matches(name) || matchesScalarwise(name) }
+
+    private static func run(_ elements: [Element], _ text: [Character]) -> Bool {
         var p = 0, t = 0
         var starP = -1, starT = 0
         while t < text.count {

@@ -20,7 +20,7 @@ public enum RuleValidator {
             // Above a root: any glob below could cover it. At a root: only a wildcard-only component
             // (`*`, `**`, `?`) or no component at all covers everything; `keep-*` or `.[ab]x` do not.
             let wildcardOnly = nextGlob.map { $0.allSatisfy { "*?".contains($0) } } ?? true
-            let above = roots.contains(where: { $0.hasPrefix(norm + "/") })
+            let above = roots.contains(where: { hasScalarPrefix($0, norm + "/") })
             let atRoot = roots.contains(norm)
             if above || (atRoot && wildcardOnly) {
                 return err(.invalidProtectPattern, "protect[\(j)]",
@@ -50,7 +50,7 @@ public enum RuleValidator {
             for (j, t) in rule.paths.enumerated() {
                 guard case .path(let p) = t.expand(in: env) else { continue }
                 let norm = aliasNormalized(p)
-                guard let root = roots.first(where: { norm == $0 || norm.hasPrefix($0 + "/") }) else {
+                guard let root = roots.first(where: { norm == $0 || hasScalarPrefix(norm, $0 + "/") }) else {
                     return err(.pathOutsideAllowedRoots, "\(base).paths[\(j)]",
                                "\(p) is outside the home directory, the temporary directory and /private/tmp")
                 }
@@ -79,9 +79,14 @@ public enum RuleValidator {
         [env.home, env.temporaryDirectory, "/private/tmp"].map(aliasNormalized)
     }
 
+    /// Prefix test on Unicode scalars, so "/" + combining mark can't hide a path separator.
+    static func hasScalarPrefix(_ s: String, _ prefix: String) -> Bool {
+        s.unicodeScalars.starts(with: prefix.unicodeScalars)
+    }
+
     /// `/tmp` is an alias of `/private/tmp`, `/var` of `/private/var`.
     static func aliasNormalized(_ path: String) -> String {
-        for alias in ["/tmp", "/var"] where path == alias || path.hasPrefix(alias + "/") {
+        for alias in ["/tmp", "/var"] where path == alias || hasScalarPrefix(path, alias + "/") {
             return "/private" + path
         }
         return path

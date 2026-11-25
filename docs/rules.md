@@ -91,7 +91,12 @@ they count as unset; repeated slashes in a value are collapsed.
 
 **Globs** match one path component: `*`, `?`, `[abc]`, `[a-z]`, `[!x]`, and `\` to escape. Matching is
 case-insensitive and Unicode-normalization-insensitive; `?` and `[...]` match one whole character (`é` is one
-character, precomposed or decomposed). `/`, `**`, empty patterns, unclosed `[`, empty
+character, precomposed or decomposed).
+Paths and globs are split on Unicode *scalars*, never on grapheme clusters: a combining mark right after `/`
+does not hide the separator. Because a combining mark or ZWJ next to a literal fuses into a different
+character, `RuleGlob.matches` (whole characters) can miss names that the scalar-wise matcher catches. Code that
+uses a glob to *exclude* or *protect* (`exclude` lists) must call `matchesEither`, which is true if either
+matcher matches; only code that *selects* items uses `matches`. `/`, `**`, empty patterns, unclosed `[`, empty
 classes, reversed ranges and a trailing `\` are rejected.
 
 ### Tiers
