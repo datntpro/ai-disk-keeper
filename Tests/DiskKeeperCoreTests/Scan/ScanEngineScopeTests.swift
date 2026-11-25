@@ -63,4 +63,17 @@ final class ScanEngineScopeTests: XCTestCase {
         XCTAssertEqual(all, ["t", "u"])
         XCTAssertEqual(some, ["u"])
     }
+
+    func testExcludedViaSymlinkedSpellingDropsItem() async throws {
+        let dir = fixture.abs("logs")
+        try fixture.file("logs/a.log", bytes: 10)
+        try fixture.file("logs/b.log", bytes: 10)
+        let link = try fixture.symlink("loglink", to: dir)
+        let engine = try ScanEngine.makeDefault(
+            environment: fixture.env, bundledRulesDirectory: rulesDir.url,
+            extraScanners: [ExampleScanner(directory: dir)], maxConcurrentSizing: 2,
+            scope: ScanScope(excludedPaths: [link + "/a.log"]))
+        let items = EngineKit.items(await EngineKit.collect(try await engine.scan()))
+        XCTAssertEqual(items.map(\.displayName), ["b.log"])
+    }
 }

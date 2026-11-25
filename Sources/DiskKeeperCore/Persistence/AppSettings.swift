@@ -45,7 +45,8 @@ public struct AppSettings: Codable, Sendable, Hashable {
     public func scanScope(environment: PathEnvironment) -> ScanScope {
         ScanScope(excludedPaths: Self.dedupe(excludedPaths.map { Self.expand($0, environment) }),
                   disabledTools: disabledTools,
-                  projectRoots: Self.dedupe(projectRoots.map { Self.expand($0, environment) }))
+                  projectRoots: Self.dedupe(projectRoots.map { Self.expand($0, environment) }
+                      .filter { Self.isInsideHome($0, environment) }))
     }
 
     // MARK: Editing
@@ -113,6 +114,22 @@ public struct AppSettings: Codable, Sendable, Hashable {
         if path == home { return "~" }
         if path.hasPrefix(home + "/") { return "~" + path.dropFirst(home.count) }
         return path
+    }
+
+    /// Removes stored project roots that are not absolute or are outside home; returns what was removed.
+    @discardableResult
+    public mutating func dropInvalidProjectRoots(environment: PathEnvironment) -> [String] {
+        let bad = projectRoots.filter { !Self.isInsideHome(Self.expand($0, environment), environment) }
+        projectRoots.removeAll { bad.contains($0) }
+        return bad
+    }
+
+    /// Roots from a hand-edited file are untrusted: absolute and inside home, or dropped.
+    static func isInsideHome(_ path: String, _ env: PathEnvironment) -> Bool {
+        guard PathNormalization.isAbsolute(path) else { return false }
+        let home = PathCanonicalizer.key(env.home).components
+        let key = PathCanonicalizer.key(path).components
+        return key.count >= home.count && key.prefix(home.count) == home[...]
     }
 
     private static func dedupe(_ paths: [String]) -> [String] {

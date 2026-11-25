@@ -43,6 +43,7 @@ public struct OnboardingView: View {
             HStack {
                 Spacer()
                 Button("Not now") { onboarding.finish(startScan: false); dismiss() }
+                    .keyboardShortcut(.cancelAction)
                 Button("Start first scan") { onboarding.finish(startScan: true); dismiss() }
                     .keyboardShortcut(.defaultAction)
             }

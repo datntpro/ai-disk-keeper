@@ -68,4 +68,10 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertEqual(s.projectRoots, AppSettings.defaultProjectRoots)
         XCTAssertTrue(s.excludedPaths.isEmpty)
     }
+
+    func testHandEditedProjectRootsOutsideHomeAreDropped() {
+        var s = AppSettings.defaults
+        s.projectRoots = ["/", "/opt/x", "relative", "~/ok", "~/../etc"]
+        XCTAssertEqual(s.scanScope(environment: env).projectRoots, ["/Users/tester/ok"])
+    }
 }

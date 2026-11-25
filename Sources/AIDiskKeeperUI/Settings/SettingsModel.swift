@@ -35,7 +35,13 @@ public final class SettingsModel {
 
     public init(store: SettingsStore, environment: PathEnvironment, availableTools: [ToolChoice] = [],
                 probe: @escaping @Sendable () -> FullDiskAccessStatus) {
-        let (loaded, warning) = store.load()
+        var (loaded, warning) = store.load()
+        let bad = loaded.dropInvalidProjectRoots(environment: environment)
+        if !bad.isEmpty {
+            warning = warning ?? ScanWarning(
+                kind: .other, path: store.fileURL.path,
+                message: "Ignored project folders outside your home folder: \(bad.joined(separator: ", ")).")
+        }
         self.store = store
         self.environment = environment
         self.settings = loaded

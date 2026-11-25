@@ -7,11 +7,11 @@ final class OnboardingModelTests: XCTestCase {
     private var dir: URL!
     private let env = PathEnvironment(home: "/Users/tester", temporaryDirectory: "/tmp")
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         dir = FileManager.default.temporaryDirectory.appendingPathComponent("OnboardingModelTests-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
     }
-    override func tearDown() { try? FileManager.default.removeItem(at: dir) }
+    override func tearDown() async throws { try? FileManager.default.removeItem(at: dir) }
 
     private func settings() -> SettingsModel {
         SettingsModel(store: SettingsStore(fileURL: dir.appendingPathComponent("s.json")), environment: env,

@@ -7,11 +7,11 @@ final class SettingsModelTests: XCTestCase {
     private var dir: URL!
     private let env = PathEnvironment(home: "/Users/tester", temporaryDirectory: "/tmp")
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         dir = FileManager.default.temporaryDirectory.appendingPathComponent("SettingsModelTests-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
     }
-    override func tearDown() { try? FileManager.default.removeItem(at: dir) }
+    override func tearDown() async throws { try? FileManager.default.removeItem(at: dir) }
 
     private func makeModel(fda: FullDiskAccessStatus = .notGranted) -> SettingsModel {
         SettingsModel(store: SettingsStore(fileURL: dir.appendingPathComponent("settings.json")), environment: env,
@@ -69,5 +69,13 @@ final class SettingsModelTests: XCTestCase {
     func testFdaStatusRefresh() {
         XCTAssertEqual(makeModel(fda: .granted).fdaStatus, .granted)
         XCTAssertEqual(makeModel(fda: .notGranted).fdaStatus, .notGranted)
+    }
+
+    func testProjectRootsOutsideHomeInFileAreDroppedWithWarning() throws {
+        let url = dir.appendingPathComponent("settings.json")
+        try Data(#"{"schemaVersion":1,"projectRoots":["/","~/ok"]}"#.utf8).write(to: url)
+        let m = makeModel()
+        XCTAssertEqual(m.settings.projectRoots, ["~/ok"])
+        XCTAssertNotNil(m.loadWarning)
     }
 }

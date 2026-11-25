@@ -33,4 +33,29 @@ final class ScanScopeTests: XCTestCase {
         XCTAssertFalse(s.allows(item("/a", tool: "t")))
         XCTAssertTrue(s.allows(item("/a", tool: "u")))
     }
+
+    func testSymlinkVariantsOfExcludedPathsAreHonoured() throws {
+        let tmp = try TemporaryDirectory()
+        try tmp.dir("real/projects/app")
+        try tmp.symlink("link", to: tmp.path("real"))
+        // exclude the real path, item via the link
+        let a = ScanScope(excludedPaths: [tmp.path("real/projects/app")])
+        XCTAssertFalse(a.allows(item(tmp.path("link/projects/app"))))
+        XCTAssertFalse(a.allows(item(tmp.path("link/projects"))), "containing item via link")
+        XCTAssertFalse(a.allows(item(tmp.path("link/projects/app/sub/new"))), "not-yet-existing tail")
+        XCTAssertTrue(a.allows(item(tmp.path("link/projects/other"))))
+        // exclude via the link, item at the real path
+        let b = ScanScope(excludedPaths: [tmp.path("link/projects/app")])
+        XCTAssertFalse(b.allows(item(tmp.path("real/projects/app"))))
+        XCTAssertTrue(b.allows(item(tmp.path("real/projects/other"))))
+    }
+
+    func testPrivateAliasWithSymlinkedTmp() throws {
+        let tmp = try TemporaryDirectory()   // resolved /private/var/... path
+        try tmp.dir("x/y")
+        let s = ScanScope(excludedPaths: [tmp.path("x")])
+        // the unresolved /var spelling of the same directory
+        let aliased = tmp.path("x/y").replacingOccurrences(of: "/private/var", with: "/var")
+        XCTAssertFalse(s.allows(item(aliased)))
+    }
 }
