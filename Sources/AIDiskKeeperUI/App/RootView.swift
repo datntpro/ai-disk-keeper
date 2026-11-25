@@ -39,7 +39,7 @@ public struct RootView: View {
                     .accessibilityLabel(loc("toolbar.details.a11y", "Toggle detail pane"))
             }
         }
-        .frame(minWidth: 900, minHeight: 540)
+        .frame(minWidth: 1040, minHeight: 540)
         .focusedSceneValue(\.scanActions, ScanActions(
             canStart: !scan.isScanning, canStop: scan.phase == .scanning || scan.phase == .starting,
             start: { scan.startScan() }, stop: { scan.cancelScan() }))

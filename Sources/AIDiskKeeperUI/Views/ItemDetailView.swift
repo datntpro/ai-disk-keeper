@@ -11,7 +11,7 @@ struct ItemDetailView: View {
                     Text(item.displayName).font(.title2.weight(.semibold)).textSelection(.enabled)
                     let s = TierStyle.style(for: item.tier)
                     TierBadge(tier: item.tier)
-                    if let id = item.requiresAppQuit { QuitAppNote(bundleID: id) }
+                    if item.isSelectable, let id = item.requiresAppQuit { QuitAppNote(bundleID: id) }
                     Text(s.longExplanation).font(.callout).foregroundStyle(.secondary)
                     section(loc("detail.why", "Why this tier")) { Text(item.explanation) }
                     section(loc("detail.size", "Size")) {

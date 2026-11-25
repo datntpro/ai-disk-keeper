@@ -23,7 +23,7 @@ struct QuitAppNote: View {
         let name = AppNameResolver.name(forBundleID: bundleID)
         VStack(alignment: .leading, spacing: 4) {
             QuitAppBadge(bundleID: bundleID)
-            Text(loc("quit.note", "\(name) is using this. Quit \(name) yourself, then click Re-check before cleaning. AI Disk Keeper never quits other apps for you."))
+            Text(loc("quit.note", "Quit \(name) before cleaning this. AI Disk Keeper never quits other apps for you."))
                 .font(.callout).fixedSize(horizontal: false, vertical: true)
         }
         .padding(10).frame(maxWidth: .infinity, alignment: .leading)

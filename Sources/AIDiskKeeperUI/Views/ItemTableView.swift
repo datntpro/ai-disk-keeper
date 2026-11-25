@@ -36,7 +36,7 @@ struct ItemTableView: View {
                 TableColumn(loc("column.name", "Name"), sortUsing: ItemSortComparator(key: .name, order: .forward)) { item in
                     HStack(spacing: 6) {
                         Text(item.nameWithProject).lineLimit(1)
-                        if let bundleID = item.requiresAppQuit { QuitAppBadge(bundleID: bundleID) }
+                        if item.isSelectable, let bundleID = item.requiresAppQuit { QuitAppBadge(bundleID: bundleID) }
                     }
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel(item.a11yLabel)

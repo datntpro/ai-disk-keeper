@@ -18,6 +18,7 @@ struct AIDiskKeeperApp: App {
         WindowGroup("AI Disk Keeper") {
             RootView(env: env)
         }
+        .defaultSize(width: 1200, height: 760)
         .commands { ScanCommands() }
     }
 }

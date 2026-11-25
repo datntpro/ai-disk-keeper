@@ -22,7 +22,9 @@ struct OverviewView<Slot: View>: View {
                         }
                         Spacer()
                         if let d = scan.lastScanFinishedAt, !scan.isScanning {
-                            Text(loc("overview.lastScan", "Last scan \(Formatting.relative(d))")).font(.caption).foregroundStyle(.secondary)
+                            TimelineView(.periodic(from: .now, by: 30)) { _ in
+                                Text(loc("overview.lastScan", "Last scan \(Formatting.relative(d))")).font(.caption).foregroundStyle(.secondary)
+                            }
                         }
                     }
                     HStack(alignment: .top, spacing: 12) {
@@ -42,6 +44,7 @@ struct OverviewView<Slot: View>: View {
                             HStack {
                                 Text(item.displayName).lineLimit(1)
                                 TierBadge(tier: item.tier)
+                                if item.isSelectable, let id = item.requiresAppQuit { QuitAppBadge(bundleID: id) }
                                 Spacer()
                                 Text(Formatting.bytes(item.sizeAllocated)).monospacedDigit().foregroundStyle(.secondary)
                             }
