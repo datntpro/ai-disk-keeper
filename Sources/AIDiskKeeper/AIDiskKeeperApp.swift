@@ -20,5 +20,6 @@ struct AIDiskKeeperApp: App {
         }
         .defaultSize(width: 1200, height: 760)
         .commands { ScanCommands() }
+        Settings { SettingsView(model: env.settings) }
     }
 }

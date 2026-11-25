@@ -52,6 +52,11 @@ public struct RootView: View {
         .onChange(of: scan.scanGeneration) { _, _ in inspectedID = nil }
         .onChange(of: scan.phase) { _, phase in announce(phase) }
         .onExitCommand { if scan.isScanning { scan.cancelScan() } }
+        .sheet(isPresented: Binding(get: { !env.settings.settings.hasCompletedOnboarding }, set: { _ in })) {
+            OnboardingView(settings: env.settings,
+                           onboarding: OnboardingModel(settings: env.settings) { scan.startScan() },
+                           dismiss: {})
+        }
     }
 
     @ViewBuilder private var content: some View {

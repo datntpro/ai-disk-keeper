@@ -11,8 +11,11 @@ struct WarningsView: View {
                 if !group.isEmpty {
                     Section(loc("warnings.section", "\(title(kind)) (\(group.count))")) {
                         if kind == .permissionDenied || kind == .needsFullDiskAccess {
-                            Text(loc("warnings.fdaHint", "Grant Full Disk Access to include these (see Settings)."))
-                                .font(.callout).foregroundStyle(.secondary)
+                            HStack {
+                                Text(loc("warnings.fdaHint", "Grant Full Disk Access to include these."))
+                                    .font(.callout).foregroundStyle(.secondary)
+                                SettingsLink { Text(loc("warnings.openSettings", "Open Settings")) }
+                            }
                         }
                         ForEach(Array(group.enumerated()), id: \.offset) { _, w in
                             VStack(alignment: .leading, spacing: 2) {
