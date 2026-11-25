@@ -25,32 +25,86 @@ final class CleanupExecuteTests: CleanupTestCase {
         for l in lines { XCTAssertNoThrow(try DiskKeeperJSON.makeDecoder().decode(AuditRecord.self, from: Data(l.utf8))) }
     }
 
-    private func tampered(_ plan: CleanupPlan, _ edit: (inout [String: Any]) -> Void) throws -> CleanupPlan {
-        let data = try DiskKeeperJSON.makeEncoder().encode(plan)
-        var obj = try JSONSerialization.jsonObject(with: data) as! [String: Any]
-        var entries = obj["entries"] as! [[String: Any]]
-        var e = entries[0]
-        var item = e["item"] as! [String: Any]
-        edit(&item)
-        e["item"] = item; e["blockers"] = []
-        entries[0] = e; obj["entries"] = entries
-        return try DiskKeeperJSON.makeDecoder().decode(CleanupPlan.self, from: JSONSerialization.data(withJSONObject: obj))
+    private func expectThrow(_ engine: CleanupEngine, _ plan: CleanupPlan, _ expected: CleanupError,
+                             file: StaticString = #filePath, line: UInt = #line) async {
+        do { _ = try await engine.execute(plan); XCTFail("did not throw", file: file, line: line) }
+        catch { XCTAssertEqual(error as? CleanupError, expected, file: file, line: line) }
     }
 
-    func testKeepAndProtectedRefusedAtExecuteEvenIfPlanTampered() async throws {
+    /// Spec change (coordinator decision): a modified plan is refused outright, before anything is touched.
+    func testTamperedPlanIsRefusedBeforeAnyAction() async throws {
         try fx.file("home/cache/a/f", bytes: 100); try fx.file("home/.ssh/x", bytes: 100)
         let engine = try makeEngine()
         let plan = await engine.plan([try item("home/cache/a")])
-        let keep = try tampered(plan) { $0["tier"] = "keep" }
-        var report = try await engine.execute(keep)
-        XCTAssertEqual(skippedCodes(report.results[0].outcome), ["keepTier"])
-        XCTAssertTrue(exists("home/cache/a/f"))
+        let e = plan.entries[0]
 
-        let plan2 = await engine.plan([try item("home/cache/a")])
-        let prot = try tampered(plan2) { $0["path"] = self.fx.path("home/.ssh/x") }
-        report = try await engine.execute(prot)
-        XCTAssertTrue(skippedCodes(report.results[0].outcome).contains("protectedPath"))
-        XCTAssertTrue(exists("home/.ssh/x")); XCTAssertTrue(trashContents().isEmpty)
+        var keepItem = e.item; keepItem.tier = .keep
+        let keep = CleanupPlan(id: plan.id, createdAt: plan.createdAt, entries: [
+            CleanupPlanEntry(item: keepItem, action: e.action, blockers: [], fingerprint: e.fingerprint)])
+        await expectThrow(engine, keep, .planModified)
+
+        let protectedItem = try item("home/.ssh/x")
+        let prot = CleanupPlan(id: plan.id, createdAt: plan.createdAt, entries: [
+            CleanupPlanEntry(item: protectedItem, action: e.action, blockers: [], fingerprint: e.fingerprint)])
+        await expectThrow(engine, prot, .planModified)
+        XCTAssertTrue(exists("home/cache/a/f")); XCTAssertTrue(exists("home/.ssh/x"))
+        XCTAssertTrue(trashContents().isEmpty)
+
+        // The genuine plan still runs (a refused plan is not consumed).
+        let report = try await engine.execute(plan)
+        guard case .trashed = report.results[0].outcome else { return XCTFail("\(report.results[0].outcome)") }
+    }
+
+    func testForgedEntryForUnplannedPathIsRefused() async throws {
+        try fx.file("home/cache/a", bytes: 10); try fx.file("home/projects/app/src/main.c", bytes: 10)
+        let engine = try makeEngine()
+        let plan = await engine.plan([try item("home/cache/a")])
+        let forged = CleanupPlan(id: plan.id, createdAt: plan.createdAt, entries: [
+            CleanupPlanEntry(item: try item("home/projects/app/src"), action: .trash, blockers: [], fingerprint: nil)])
+        await expectThrow(engine, forged, .planModified)
+        XCTAssertTrue(exists("home/projects/app/src/main.c")); XCTAssertTrue(trashContents().isEmpty)
+    }
+
+    func testClearedPlanBlockersAreRefused() async throws {
+        try fx.file("home/cache/a/b", bytes: 10)
+        let engine = try makeEngine()
+        let a = try item("home/cache/a"), b = try item("home/cache/a/b")
+        let plan = await engine.plan([a, b])
+        XCTAssertFalse(plan.entries[1].isExecutable)
+        let cleared = CleanupPlan(id: plan.id, createdAt: plan.createdAt, entries: [
+            plan.entries[0],
+            CleanupPlanEntry(item: b, action: .trash, blockers: [], fingerprint: plan.entries[1].fingerprint)])
+        await expectThrow(engine, cleared, .planModified)
+        XCTAssertTrue(exists("home/cache/a/b"))
+    }
+
+    func testConcurrentExecutesAreSerializedAndEveryTrashIsAudited() async throws {
+        let engine = try makeEngine()
+        try fx.file("solo/f", bytes: 10)
+        var many: [ScanItem] = []
+        for i in 0..<40 { try fx.file("home/cache/m\(i)/f", bytes: 10); many.append(try item("home/cache/m\(i)")) }
+        try fx.file("home/cache/solo/f", bytes: 10)
+        let short = await engine.plan([try item("home/cache/solo")])
+        let long = await engine.plan(many)
+        async let r1 = engine.execute(long)
+        async let r2 = engine.execute(short)
+        let (a, b) = try await (r1, r2)
+        let trashed = (a.results + b.results).filter { if case .trashed = $0.outcome { true } else { false } }
+        XCTAssertEqual(trashed.count, 41)
+        XCTAssertNil(a.auditFailure); XCTAssertNil(b.auditFailure)
+        let records = try AuditLog.read(auditURL)
+        XCTAssertEqual(records.filter { $0.result == "trashed" }.count, 41)
+        XCTAssertEqual(trashContents().count, 41)
+    }
+
+    func testClockSetBackExpiresPlan() async throws {
+        try fx.file("home/cache/a", bytes: 10)
+        let clock = Clock()
+        let engine = try makeEngine(now: { clock.now() })
+        let plan = await engine.plan([try item("home/cache/a")])
+        clock.advance(-7 * 86_400)
+        await expectThrow(engine, plan, .planExpired)
+        XCTAssertTrue(exists("home/cache/a"))
     }
 
     func testModifiedAfterScanSkippedChangedSinceScan() async throws {

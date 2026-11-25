@@ -9,8 +9,15 @@ public actor CleanupEngine {
     private let remover: any ItemRemover
     private let options: CleanupOptions
     private let now: @Sendable () -> Date
-    private var issued: [UUID: Date] = [:]
+    private struct Issued {
+        let plan: CleanupPlan
+        let monotonic: ContinuousClock.Instant
+    }
+    private var issued: [UUID: Issued] = [:]
     private var executed: Set<UUID> = []
+    /// `execute` is serialized: an actor is reentrant across `await`, and runs share one audit log.
+    private var isExecuting = false
+    private var waiters: [CheckedContinuation<Void, Never>] = []
 
     public init(pathGuard: ProtectedPaths,
                 auditLog: AuditLog,
@@ -87,7 +94,7 @@ public actor CleanupEngine {
             CleanupPlanEntry(item: items[$0], action: action, blockers: blockers[$0], fingerprint: fingerprints[$0])
         }
         let plan = CleanupPlan(createdAt: now(), entries: entries)
-        issued[plan.id] = plan.createdAt
+        issued[plan.id] = Issued(plan: plan, monotonic: ContinuousClock.now)
         return plan
     }
 
@@ -102,12 +109,24 @@ public actor CleanupEngine {
     /// unknown/used/expired or the audit log can't be opened. Otherwise never throws.
     public func execute(_ plan: CleanupPlan,
                         progress: (@Sendable (CleanupProgress) -> Void)? = nil) async throws -> CleanupReport {
-        guard let createdAt = issued[plan.id] else {
+        guard let entry0 = issued[plan.id] else {
             throw executed.contains(plan.id) ? CleanupError.planAlreadyExecuted : CleanupError.unknownPlan
         }
-        if now().timeIntervalSince(createdAt) > options.planLifetime { throw CleanupError.planExpired }
+        // Only exactly what `plan()` returned (and the user confirmed) may run.
+        guard plan == entry0.plan else { throw CleanupError.planModified }
+        // Expired by wall clock, by monotonic clock, or issued "in the future" (clock set back).
+        let age = now().timeIntervalSince(entry0.plan.createdAt)
+        let monotonicAge = entry0.monotonic.duration(to: ContinuousClock.now)
+        let monotonicSeconds = Double(monotonicAge.components.seconds)
+            + Double(monotonicAge.components.attoseconds) / 1e18
+        if age < 0 || age > options.planLifetime || monotonicSeconds > options.planLifetime {
+            throw CleanupError.planExpired
+        }
         issued[plan.id] = nil
         executed.insert(plan.id)
+
+        await acquireRunSlot()
+        defer { releaseRunSlot() }
 
         do { try await auditLog.open() } catch { throw CleanupError.auditLogUnavailable("\(error)") }
 
@@ -139,6 +158,15 @@ public actor CleanupEngine {
         await auditLog.close()
         return CleanupReport(planID: plan.id, startedAt: startedAt, finishedAt: now(), results: results,
                              wasCancelled: wasCancelled, auditFailure: auditFailure)
+    }
+
+    private func acquireRunSlot() async {
+        if !isExecuting { isExecuting = true; return }
+        await withCheckedContinuation { waiters.append($0) }
+    }
+
+    private func releaseRunSlot() {
+        if waiters.isEmpty { isExecuting = false } else { waiters.removeFirst().resume() }
     }
 
     private func run(_ entry: CleanupPlanEntry) async -> (CleanupOutcome, String?) {

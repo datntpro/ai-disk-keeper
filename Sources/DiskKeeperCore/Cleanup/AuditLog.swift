@@ -48,6 +48,8 @@ public enum AuditLogError: Error, Equatable {
 public actor AuditLog {
     private let fileURL: URL
     private var fd: Int32 = -1
+    /// Open/close are reference-counted so one holder cannot close the file under another.
+    private var openCount = 0
     private var failAfter: Int?
     private var appended = 0
 
@@ -62,7 +64,7 @@ public actor AuditLog {
     func _failAfter(_ n: Int) { failAfter = n; appended = 0 }
 
     func open() throws {
-        if fd >= 0 { return }
+        if fd >= 0 { openCount += 1; return }
         let parent = fileURL.deletingLastPathComponent().path
         var st = stat()
         if lstat(parent, &st) != 0 {
@@ -76,6 +78,7 @@ public actor AuditLog {
         let handle = Darwin.open(fileURL.path, O_WRONLY | O_APPEND | O_CREAT | O_NOFOLLOW | O_CLOEXEC, 0o600)
         guard handle >= 0 else { throw AuditLogError.posix("open \(fileURL.path)", errno) }
         fd = handle
+        openCount = 1
     }
 
     func append(_ record: AuditRecord) throws {
@@ -99,6 +102,8 @@ public actor AuditLog {
     }
 
     func close() {
+        openCount = max(0, openCount - 1)
+        guard openCount == 0 else { return }
         if fd >= 0 { _ = Darwin.close(fd) }
         fd = -1
     }

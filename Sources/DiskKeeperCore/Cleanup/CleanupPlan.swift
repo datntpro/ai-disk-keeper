@@ -133,5 +133,7 @@ public enum CleanupError: Error, Equatable {
     case unknownPlan
     case planAlreadyExecuted
     case planExpired
+    /// The plan passed to `execute` differs from the one `plan()` returned.
+    case planModified
     case auditLogUnavailable(String)
 }
