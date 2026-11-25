@@ -1,0 +1,229 @@
+{
+  "schemaVersion": 1,
+  "tool": {
+    "id": "kiro",
+    "name": "Kiro",
+    "docs": "https://kiro.dev/docs"
+  },
+  "protect": [
+    "$APP_SUPPORT/Kiro/User/globalStorage/**",
+    "$APP_SUPPORT/Kiro/User/*.json",
+    "$APP_SUPPORT/Kiro/User/snippets/**",
+    "$APP_SUPPORT/Kiro/User/profiles/**",
+    "$APP_SUPPORT/Kiro/Cookies*",
+    "$APP_SUPPORT/Kiro/Local Storage/**",
+    "$APP_SUPPORT/Kiro/Session Storage/**",
+    "$APP_SUPPORT/Kiro/IndexedDB/**",
+    "$APP_SUPPORT/Kiro/Local State",
+    "$APP_SUPPORT/Kiro/Preferences",
+    "$APP_SUPPORT/kirocrew-desktop/User/globalStorage/**",
+    "$APP_SUPPORT/kirocrew-desktop/User/*.json",
+    "$APP_SUPPORT/kirocrew-desktop/User/snippets/**",
+    "$APP_SUPPORT/kirocrew-desktop/User/profiles/**",
+    "$APP_SUPPORT/kirocrew-desktop/Cookies*",
+    "$APP_SUPPORT/kirocrew-desktop/Local Storage/**",
+    "$APP_SUPPORT/kirocrew-desktop/Session Storage/**",
+    "$APP_SUPPORT/kirocrew-desktop/IndexedDB/**",
+    "$APP_SUPPORT/kirocrew-desktop/Local State",
+    "$APP_SUPPORT/kirocrew-desktop/Preferences",
+    "~/.kiro/settings/**",
+    "~/.kiro/steering/**",
+    "~/.kiro/agents/**",
+    "~/.kiro/identities/**",
+    "~/.kiro/mates/**",
+    "~/.kiro/powers/**",
+    "~/.kiro/*.json",
+    "~/.kiro/crew-auth-staging/**",
+    "~/.kiro/crew/auth-store-staging/**",
+    "~/.kiro/crew/*.json",
+    "~/.kiro/crew/browser-profile/**",
+    "~/.kiro/crew/browser-harness/venv/**"
+  ],
+  "rules": [
+    {
+      "id": "kiro.logs",
+      "title": "Kiro logs",
+      "category": "systemJunk",
+      "paths": [
+        "~/.kiro/logs"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "directory"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Diagnostic logs written by Kiro. Safe to delete; new logs are created as it runs. Logs from the last day are kept.",
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "kiro.electron-cache",
+      "title": "Kiro web caches",
+      "category": "aiToolData",
+      "paths": [
+        "$APP_SUPPORT/Kiro/Cache",
+        "$APP_SUPPORT/Kiro/Code Cache",
+        "$APP_SUPPORT/Kiro/GPUCache",
+        "$APP_SUPPORT/Kiro/CachedData",
+        "$APP_SUPPORT/Kiro/DawnGraphiteCache",
+        "$APP_SUPPORT/Kiro/DawnWebGPUCache",
+        "$APP_SUPPORT/Kiro/GraphiteDawnCache",
+        "$APP_SUPPORT/Kiro/Shared Dictionary",
+        "$APP_SUPPORT/Kiro/CachedProfilesData"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "safe",
+      "explanation": "Kiro is an Electron app; these are Chromium HTTP, code, GPU and shader caches. They are rebuilt automatically when the app starts.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "dev.kiro.desktop"
+      }
+    },
+    {
+      "id": "kiro.app-logs",
+      "title": "Kiro logs",
+      "category": "systemJunk",
+      "paths": [
+        "$APP_SUPPORT/Kiro/logs"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Diagnostic logs written by Kiro. Safe to delete; new logs are created as it runs. Logs from the last day are kept in case the app is running.",
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "kiro.workspace-storage",
+      "title": "Kiro workspace state",
+      "category": "aiToolData",
+      "paths": [
+        "$APP_SUPPORT/Kiro/User/workspaceStorage"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "directory"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 14
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Per-workspace state for one folder opened in Kiro (chat history, editor state, indexes). Deleting it loses that workspace's chat history and open-editor state; folders touched in the last 14 days are kept.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "dev.kiro.desktop"
+      }
+    },
+    {
+      "id": "kiro.crew-models",
+      "title": "Kiro Crew local models",
+      "category": "modelWeights",
+      "paths": [
+        "~/.kiro/crew/models"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "*.gguf",
+        "type": "file"
+      },
+      "tier": "review",
+      "explanation": "Local embedding model downloaded by Kiro Crew (~600 MB). Re-downloaded when needed; semantic search is unavailable until then.",
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "kiro.crew-browser",
+      "title": "Kiro Crew browser build",
+      "category": "aiToolData",
+      "paths": [
+        "~/.kiro/crew/browser-harness/chromium"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "explanation": "Chromium build downloaded for Kiro Crew's browser tool. Re-downloaded on next use.",
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "kiro.crew-app-packages",
+      "title": "Kiro Crew downloaded app packages",
+      "category": "aiToolData",
+      "paths": [
+        "~/.kiro/crew/app-adoption"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "*.tar.gz",
+        "type": "file"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 7
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Downloaded app packages used by Kiro Crew. Re-downloaded when needed. Packages from the last 7 days are kept.",
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "kiro.crew-desktop-cache",
+      "title": "Kiro Crew web caches",
+      "category": "aiToolData",
+      "paths": [
+        "$APP_SUPPORT/kirocrew-desktop/Cache",
+        "$APP_SUPPORT/kirocrew-desktop/Code Cache",
+        "$APP_SUPPORT/kirocrew-desktop/GPUCache",
+        "$APP_SUPPORT/kirocrew-desktop/CachedData",
+        "$APP_SUPPORT/kirocrew-desktop/DawnGraphiteCache",
+        "$APP_SUPPORT/kirocrew-desktop/DawnWebGPUCache",
+        "$APP_SUPPORT/kirocrew-desktop/GraphiteDawnCache",
+        "$APP_SUPPORT/kirocrew-desktop/Shared Dictionary"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "safe",
+      "explanation": "kirocrew-desktop is an Electron app; these are Chromium HTTP, code, GPU and shader caches. They are rebuilt automatically when the app starts.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.amazon.kiro.crew"
+      }
+    }
+  ]
+}

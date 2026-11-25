@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "tool": {
+    "id": "continue",
+    "name": "Continue",
+    "docs": "https://docs.continue.dev/reference"
+  },
+  "protect": [
+    "~/.continue/config.*",
+    "~/.continue/assistants/**",
+    "~/.continue/prompts/**",
+    "~/.continue/rules/**",
+    "~/.continue/mcpServers/**"
+  ],
+  "rules": [
+    {
+      "id": "continue.sessions",
+      "title": "Continue chat sessions",
+      "category": "aiToolData",
+      "paths": [
+        "~/.continue/sessions"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "*.json",
+        "type": "file",
+        "exclude": [
+          "sessions.json"
+        ]
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 7
+          },
+          "tier": "keep"
+        },
+        {
+          "if": {
+            "olderThanDays": 30
+          },
+          "tier": "safe"
+        }
+      ],
+      "explanation": "One saved Continue chat session. Deleting it removes it from the history list; your code is not affected. Sessions from the last 7 days are kept.",
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "continue.index",
+      "title": "Continue codebase index",
+      "category": "aiToolData",
+      "paths": [
+        "~/.continue/index"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "explanation": "Codebase index; rebuilt by re-indexing.",
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "continue.logs",
+      "title": "Continue logs",
+      "category": "systemJunk",
+      "paths": [
+        "~/.continue/logs"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Diagnostic logs written by Continue. Safe to delete. Logs from the last day are kept.",
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "continue.dev-data",
+      "title": "Continue development data",
+      "category": "aiToolData",
+      "paths": [
+        "~/.continue/dev_data"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "explanation": "Local usage and development data recorded by Continue. Deleting it loses that history; it is not needed to run Continue.",
+      "cleanup": {
+        "method": "trash"
+      }
+    }
+  ]
+}

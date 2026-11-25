@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "tool": {
+    "id": "windsurf",
+    "name": "Windsurf",
+    "docs": "https://docs.windsurf.com"
+  },
+  "protect": [
+    "$APP_SUPPORT/Windsurf/User/globalStorage/**",
+    "$APP_SUPPORT/Windsurf/User/*.json",
+    "$APP_SUPPORT/Windsurf/User/snippets/**",
+    "$APP_SUPPORT/Windsurf/User/profiles/**",
+    "$APP_SUPPORT/Windsurf/Cookies*",
+    "$APP_SUPPORT/Windsurf/Local Storage/**",
+    "$APP_SUPPORT/Windsurf/Session Storage/**",
+    "$APP_SUPPORT/Windsurf/IndexedDB/**",
+    "$APP_SUPPORT/Windsurf/Local State",
+    "$APP_SUPPORT/Windsurf/Preferences",
+    "~/.codeium/windsurf/memories/**",
+    "~/.codeium/windsurf/mcp_config.json",
+    "~/.codeium/windsurf/global_rules.md",
+    "~/.codeium/*.json"
+  ],
+  "rules": [
+    {
+      "id": "windsurf.electron-cache",
+      "title": "Windsurf web caches",
+      "category": "aiToolData",
+      "paths": [
+        "$APP_SUPPORT/Windsurf/Cache",
+        "$APP_SUPPORT/Windsurf/Code Cache",
+        "$APP_SUPPORT/Windsurf/GPUCache",
+        "$APP_SUPPORT/Windsurf/CachedData",
+        "$APP_SUPPORT/Windsurf/DawnGraphiteCache",
+        "$APP_SUPPORT/Windsurf/DawnWebGPUCache",
+        "$APP_SUPPORT/Windsurf/GraphiteDawnCache",
+        "$APP_SUPPORT/Windsurf/Shared Dictionary"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "safe",
+      "explanation": "Windsurf is an Electron app; these are Chromium HTTP, code, GPU and shader caches. They are rebuilt automatically when the app starts.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.exafunction.windsurf"
+      }
+    },
+    {
+      "id": "windsurf.app-logs",
+      "title": "Windsurf logs",
+      "category": "systemJunk",
+      "paths": [
+        "$APP_SUPPORT/Windsurf/logs"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "any"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Diagnostic logs written by Windsurf. Safe to delete; new logs are created as it runs. Logs from the last day are kept in case the app is running.",
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "windsurf.workspace-storage",
+      "title": "Windsurf workspace state",
+      "category": "aiToolData",
+      "paths": [
+        "$APP_SUPPORT/Windsurf/User/workspaceStorage"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "directory"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 14
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Per-workspace state for one folder opened in Windsurf (chat history, editor state, indexes). Deleting it loses that workspace's chat history and open-editor state; folders touched in the last 14 days are kept.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.exafunction.windsurf"
+      }
+    },
+    {
+      "id": "windsurf.cascade-history",
+      "title": "Windsurf Cascade conversations",
+      "category": "aiToolData",
+      "paths": [
+        "~/.codeium/windsurf/cascade"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "file"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 7
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Cascade conversation history. Deleting a conversation removes it from Windsurf's chat list; your code is not affected. Conversations from the last 7 days are kept.",
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "windsurf.index",
+      "title": "Windsurf codebase index",
+      "category": "aiToolData",
+      "paths": [
+        "~/.codeium/windsurf/database"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "explanation": "Codebase index; rebuilt by re-indexing, which can take a while.",
+      "cleanup": {
+        "method": "trash"
+      }
+    }
+  ]
+}

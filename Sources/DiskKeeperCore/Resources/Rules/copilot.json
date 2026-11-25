@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "tool": {
+    "id": "copilot",
+    "name": "GitHub Copilot",
+    "docs": "https://code.visualstudio.com/docs/copilot/overview"
+  },
+  "protect": [
+    "$APP_SUPPORT/Code/User/globalStorage/state.vscdb*",
+    "$APP_SUPPORT/Code/User/*.json",
+    "$APP_SUPPORT/Code - Insiders/User/globalStorage/state.vscdb*",
+    "$APP_SUPPORT/Code - Insiders/User/*.json",
+    "~/.config/github-copilot/**"
+  ],
+  "rules": [
+    {
+      "id": "copilot.chat-workspace-data",
+      "title": "Copilot Chat workspace data",
+      "category": "aiToolData",
+      "paths": [
+        "$APP_SUPPORT/Code/User/workspaceStorage"
+      ],
+      "match": {
+        "kind": "children",
+        "depth": 2,
+        "glob": "github.copilot-chat",
+        "type": "directory"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 14
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Copilot Chat's data for one workspace (chat sessions, local code index). Deleting removes that workspace's chat history; the index is rebuilt. Workspaces touched in the last 14 days are kept.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.microsoft.VSCode"
+      }
+    },
+    {
+      "id": "copilot.chat-workspace-data-insiders",
+      "title": "Copilot Chat workspace data (Insiders)",
+      "category": "aiToolData",
+      "paths": [
+        "$APP_SUPPORT/Code - Insiders/User/workspaceStorage"
+      ],
+      "match": {
+        "kind": "children",
+        "depth": 2,
+        "glob": "github.copilot-chat",
+        "type": "directory"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 14
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Copilot Chat's data for one workspace (chat sessions, local code index). Deleting removes that workspace's chat history; the index is rebuilt. Workspaces touched in the last 14 days are kept.",
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.microsoft.VSCodeInsiders"
+      }
+    }
+  ]
+}
