@@ -22,7 +22,7 @@ struct VolumeCapacity: Equatable, Sendable {
 }
 
 /// What the menu bar popover shows, derived from the window's own models (the same instances: storage, care, scan),
-/// plus the 60 s volume poll that feeds the low-space alert. Read-only: nothing here selects, cleans or deletes.
+/// plus the volume poll that feeds the low-space alert (driven by `MonitorScheduler`, every 60 s). Read-only: nothing here selects, cleans or deletes.
 @MainActor @Observable
 final class MenuBarModel {
     let storage: StorageModel
@@ -40,15 +40,11 @@ final class MenuBarModel {
     @ObservationIgnored private let clock: () -> Date
     @ObservationIgnored private let notifier: any LowSpaceNotifying
     @ObservationIgnored private let defaults: UserDefaults
-    @ObservationIgnored private let pollInterval: Duration
     @ObservationIgnored private var monitor: LowSpaceMonitor
     @ObservationIgnored private var lastThreshold: Int?
-    @ObservationIgnored private var pollTask: Task<Void, Never>?
-    @ObservationIgnored private var sleeping = false
-    @ObservationIgnored private var observers: [NSObjectProtocol] = []
 
     init(storage: StorageModel, care: CareScanModel, scan: ScanViewModel, settings: SettingsModel,
-         notifier: any LowSpaceNotifying, defaults: UserDefaults = .standard, pollInterval: Duration = .seconds(60),
+         notifier: any LowSpaceNotifying, defaults: UserDefaults = .standard,
          probe: @escaping @Sendable () -> VolumeCapacity? = VolumeCapacity.live, clock: @escaping () -> Date = Date.init) {
         self.probe = probe
         self.clock = clock
@@ -58,7 +54,6 @@ final class MenuBarModel {
         self.settings = settings
         self.notifier = notifier
         self.defaults = defaults
-        self.pollInterval = pollInterval
         self.monitor = LowSpaceMonitor.load(from: defaults)
     }
 
@@ -156,33 +151,5 @@ final class MenuBarModel {
         let fire = monitor.observe(freeFraction: fraction, threshold: threshold)
         monitor.save(to: defaults)
         if fire { await notifier.notify(freeBytes: free, percent: Int((fraction * 100).rounded())) }
-    }
-
-    /// Polls while the app runs, never faster than `pollInterval`, and pauses while the Mac sleeps.
-    func start() {
-        guard pollTask == nil else { return }
-        let center = NSWorkspace.shared.notificationCenter
-        observers = [
-            center.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.sleeping = true }
-            },
-            center.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.sleeping = false }
-            },
-        ]
-        let interval = pollInterval
-        pollTask = Task { [weak self] in
-            while !Task.isCancelled {
-                if let self, !self.sleeping { await self.tick() }
-                try? await Task.sleep(for: interval)
-            }
-        }
-    }
-
-    func stop() {
-        pollTask?.cancel()
-        pollTask = nil
-        for o in observers { NSWorkspace.shared.notificationCenter.removeObserver(o) }
-        observers = []
     }
 }

@@ -16,7 +16,6 @@ struct GeneralSettingsView: View {
                 }
             }
             languageSection
-            menuBarSection
             FullDiskAccessCard(status: model.fdaStatus, recheck: model.refreshFullDiskAccess)
             Button(loc("settings.general.showWelcome", "Show welcome screen again")) { model.setOnboardingCompleted(false) }
         }
@@ -38,26 +37,6 @@ struct GeneralSettingsView: View {
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if languageChanged, Bundle.main.bundleURL.pathExtension == "app" {
                 Button(loc("settings.general.relaunch", "Relaunch now")) { Self.relaunch() }
-            }
-        }
-    }
-
-    private var menuBarSection: some View {
-        Section(loc("settings.menubar.section", "Menu bar")) {
-            Toggle(loc("settings.menubar.show", "Show in menu bar"), isOn: Binding(
-                get: { model.settings.showMenuBarItem }, set: { model.setShowMenuBarItem($0) }))
-            Toggle(loc("settings.menubar.freeText", "Show free space next to the icon"), isOn: Binding(
-                get: { model.settings.menuBarShowsFreeSpace }, set: { model.setMenuBarShowsFreeSpace($0) }))
-                .disabled(!model.settings.showMenuBarItem)
-            Toggle(loc("settings.menubar.lowSpace", "Alert me when free space is low"), isOn: Binding(
-                get: { model.settings.lowSpaceAlertEnabled }, set: { model.setLowSpaceAlertEnabled($0) }))
-            if model.settings.lowSpaceAlertEnabled {
-                Stepper(loc("settings.menubar.threshold", "Below \(Formatting.count(model.settings.lowSpaceThresholdPercent)) %"),
-                        value: Binding(get: { model.settings.lowSpaceThresholdPercent },
-                                       set: { model.setLowSpaceThresholdPercent($0) }),
-                        in: AppSettings.lowSpaceThresholdRange)
-                Text(loc("settings.menubar.thresholdHelp", "One notification each time free space drops below this level."))
-                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
         }
     }
