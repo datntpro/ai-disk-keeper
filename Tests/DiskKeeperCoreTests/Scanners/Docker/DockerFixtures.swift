@@ -9,6 +9,9 @@ final class DockerWorld: ToolProcessRunning, @unchecked Sendable {
     static let c = String(repeating: "c", count: 64), d = String(repeating: "d", count: 64)
     static let stopped = String(repeating: "e", count: 64), running = String(repeating: "f", count: 64)
     static let anon = String(repeating: "1", count: 64)
+    /// containerd (Docker Desktop 29.x) pull-by-digest image, sanitised from real output: `image ls` shows Repository `example/web`,
+    /// Tag `<none>`; `image inspect` RepoTags is `["example/web@sha256:…"]`; `--filter dangling=true` does not list it.
+    static let digestOnly = String(repeating: "9", count: 64)
 
     private let lock = NSLock()
     private var log: [[String]] = []
@@ -54,6 +57,7 @@ final class DockerWorld: ToolProcessRunning, @unchecked Sendable {
             case "sha256:" + Self.a, "sha256:" + Self.d: return ok("\(id)|null\n")
             case "sha256:" + Self.b: return ok("\(id)|[\"app:1\",\"app:latest\"]\n")
             case "sha256:" + Self.c: return ok("\(id)|[\"web:1\"]\n")
+            case "sha256:" + Self.digestOnly: return ok("\(id)|[\"example/web@\(id)\"]\n")
             default: return fail("No such image")
             }
         case "container inspect":
@@ -73,7 +77,8 @@ final class DockerWorld: ToolProcessRunning, @unchecked Sendable {
      {"ID":"bbbbbbbbbbbb","Repository":"app","Tag":"1","Containers":"0","UniqueSize":"1.5GB","Size":"1.5GB"},
      {"ID":"bbbbbbbbbbbb","Repository":"app","Tag":"latest","Containers":"0","UniqueSize":"1.5GB","Size":"1.5GB"},
      {"ID":"cccccccccccc","Repository":"web","Tag":"1","Containers":"1","UniqueSize":"5MB","Size":"5MB"},
-     {"ID":"dddddddddddd","Repository":"<none>","Tag":"<none>","Containers":"0","UniqueSize":"3MB","Size":"3MB","Extra":"ignored"}],
+     {"ID":"dddddddddddd","Repository":"<none>","Tag":"<none>","Containers":"0","UniqueSize":"3MB","Size":"3MB","Extra":"ignored"},
+     {"ID":"sha256:\(DockerWorld.digestOnly)","Repository":"example/web","Tag":"<none>","Containers":"0","Digest":"","UniqueSize":"N/A","Size":"534MB","SharedSize":"N/A"}],
      "Containers":[{"ID":"eeeeeeeeeeee","Size":"2B (virtual 72.8MB)"},{"ID":"ffffffffffff","Size":"0B"}],
      "Volumes":[{"Name":"\(DockerWorld.anon)","Links":"0","Size":"4MB"},{"Name":"pgdata","Links":"0","Size":"900MB"},{"Name":"inuse","Links":"1","Size":"1MB"}],
      "BuildCache":[{"ID":"x1","InUse":"false","Size":"1MB","LastUsedAt":"2026-11-20 10:00:00 +0000 UTC"},{"ID":"x2","InUse":"false","Size":"2MB"},{"ID":"x3","InUse":"true","Size":"50MB"}]}
@@ -82,7 +87,7 @@ final class DockerWorld: ToolProcessRunning, @unchecked Sendable {
     var imageLs: String {
         [("a", "<none>", "<none>", "2026-11-25 10:00:00 +0000 UTC"), ("b", "app", "1", "2026-11-01 10:00:00 +0000 UTC"),
          ("b", "app", "latest", "2026-11-01 10:00:00 +0000 UTC"), ("c", "web", "1", "2026-11-01 10:00:00 +0000 UTC"),
-         ("d", "<none>", "<none>", "2026-11-27 11:50:00 +0000 UTC")]
+         ("d", "<none>", "<none>", "2026-11-27 11:50:00 +0000 UTC"), ("9", "example/web", "<none>", "2026-11-01 10:00:00 +0000 UTC")]
             .map { #"{"ID":"sha256:\#(String(repeating: $0.0, count: 64))","Repository":"\#($0.1)","Tag":"\#($0.2)","CreatedAt":"\#($0.3)"}"# }
             .joined(separator: "\n")
     }

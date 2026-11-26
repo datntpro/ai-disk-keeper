@@ -17,12 +17,16 @@ struct DockerItemFactory {
         var volumes: [DockerJSON.VolumeRow]
     }
 
-    func items(_ i: Inputs) -> [ScanItem] {
+    func items(_ i: Inputs) -> [ScanItem] { itemsReportingCap(i).items }
+
+    /// The items, and whether the 500-item cap cut any of them.
+    func itemsReportingCap(_ i: Inputs) -> (items: [ScanItem], truncated: Bool) {
         var out = images(i) + containers(i) + volumes(i)
         out.sort { $0.sizeAllocated > $1.sizeAllocated }
-        if out.count > Self.maxItems { out = Array(out.prefix(Self.maxItems)) }
+        let truncated = out.count > Self.maxItems
+        if truncated { out = Array(out.prefix(Self.maxItems)) }
         if let cache = buildCache(i.df) { out.append(cache) }
-        return out
+        return (out, truncated)
     }
 
     // MARK: Images
@@ -40,12 +44,22 @@ struct DockerItemFactory {
                   i.images.map(\.id).filter({ DockerJSON.stripSHA($0).hasPrefix(df.id) }).allSatisfy({ $0 == fullID }) else { continue }
             guard let used = df.containers, used == 0 else { continue }
             let tags = rows.filter { $0.repository != "<none>" && $0.tag != "<none>" }.map { "\($0.repository):\($0.tag)" }
+            // containerd stores pull-by-digest images as Repository `repo`, Tag `<none>`: named, but not dangling.
+            let digestRepos = rows.filter { $0.repository != "<none>" && $0.tag == "<none>" }.map(\.repository)
             let named = Set(tags)
-            // A container that names this image by tag or ID means it is in use even if df lagged behind.
-            if i.containers.contains(where: { c in named.contains(c.image) || (!c.image.isEmpty && short.hasPrefix(c.image)) }) { continue }
+            // A container that names this image by tag or ID (short or full `sha256:`) means it is in use even if df lagged behind.
+            if i.containers.contains(where: { c in
+                let ref = DockerJSON.stripSHA(c.image)
+                return named.contains(c.image) || (!ref.isEmpty && short.hasPrefix(ref))
+            }) { continue }
             let created = rows.compactMap(\.created).min()
             let size = df.size ?? 0
-            if tags.isEmpty {
+            if tags.isEmpty, let repo = digestRepos.sorted().first {
+                guard ArgPattern.dockerImageRef.matches(repo) else { continue }
+                out.append(make(kind: "image", id: fullID, name: "\(repo)@sha256:\(short.prefix(12))", size: size, date: created, tier: .review,
+                                rule: DockerToolCommands.Rule.unusedImage,
+                                method: .toolCommand(command: "docker", arguments: ["image", "rm", fullID])))
+            } else if tags.isEmpty {
                 let old = created.map { now.timeIntervalSince($0) >= Self.freshImage } ?? false
                 out.append(make(kind: "image", id: fullID, name: "Untagged image \(short.prefix(8))", size: size, date: created,
                                 tier: old ? .safe : .review, rule: DockerToolCommands.Rule.dangling,
@@ -70,7 +84,8 @@ struct DockerItemFactory {
             guard ArgPattern.dockerContainerID.matches(c.id) else { continue }
             let matches = i.df.containers.filter { !$0.id.isEmpty && c.id.hasPrefix($0.id) }
             guard matches.count == 1, let df = matches.first else { continue }
-            let name = suffixed(c.image.isEmpty ? c.name : "\(c.name) · \(c.image)")
+            let image = c.image.hasPrefix("sha256:") ? String(DockerJSON.stripSHA(c.image).prefix(12)) : c.image
+            let name = suffixed(image.isEmpty ? c.name : "\(c.name) · \(image)")
             out.append(make(kind: "container", id: c.id, name: name, size: df.size ?? 0, date: c.created, tier: .review,
                             rule: DockerToolCommands.Rule.container,
                             method: .toolCommand(command: "docker", arguments: ["container", "rm", c.id]), plainName: true))

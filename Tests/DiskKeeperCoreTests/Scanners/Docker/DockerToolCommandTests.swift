@@ -170,6 +170,17 @@ final class DockerToolCommandTests: CleanupTestCase {
         XCTAssertEqual(p2.entries[0].blockers.map(\.code), ["inUseByTool"])
     }
 
+    func testDigestOnlyImagePlansExecutableAndRemovesByID() async throws {
+        let id = "sha256:" + DockerWorld.digestOnly
+        let i = try await item(id)
+        let eng = try engine()
+        let plan = await eng.plan([i])
+        XCTAssertTrue(plan.entries[0].isExecutable, "\(plan.entries[0].blockers)")
+        let report = try await eng.execute(plan)
+        guard case .ranCommand = report.results[0].outcome else { return XCTFail("\(report.results[0].outcome)") }
+        XCTAssertEqual(world.destructive, [["image", "rm", id]])
+    }
+
     func testConflictFailsWithReasonAndAuditsStderr() async throws {
         let i = try await item("sha256:" + DockerWorld.a)
         let eng = try engine()

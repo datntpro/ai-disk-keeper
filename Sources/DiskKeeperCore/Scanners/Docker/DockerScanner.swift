@@ -44,12 +44,12 @@ public struct DockerScanner: Scanner {
             }
             let factory = DockerItemFactory(target: status.definition.id, runtimeName: status.definition.displayName,
                                             suffixRuntime: running.count > 1, now: context.now)
-            let all = factory.items(inputs)
+            let (all, truncated) = factory.itemsReportingCap(inputs)
             for item in all {
                 progress.candidatesFound += 1; progress.candidatesSized += 1; progress.bytesFound += item.sizeAllocated
                 await sink.item(item)
             }
-            if inputs.images.count + inputs.containers.count + inputs.volumes.count > DockerItemFactory.maxItems * 2 {
+            if truncated {
                 await sink.warning(ScanWarning(kind: .other, message: "\(status.definition.displayName) has more than \(DockerItemFactory.maxItems) cleanable objects; showing the largest.",
                                                code: .itemCapExceeded(cap: DockerItemFactory.maxItems)))
             }

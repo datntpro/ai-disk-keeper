@@ -42,6 +42,11 @@ final class DockerScannerTests: XCTestCase {
         XCTAssertEqual(tagged.cleanupMethod, .toolCommand(command: "docker", arguments: ["image", "rm", "app:1", "app:latest"]))
         XCTAssertEqual(tagged.displayName, "app:1 (+1 tags)")
         XCTAssertNil(items.first { $0.path.hasSuffix("sha256:" + DockerWorld.c) }, "image used only by a stopped container")
+        // containerd digest-only image: named, never "dangling", never Safe; removed by its ID.
+        let digest = try XCTUnwrap(items.first { $0.path.hasSuffix("sha256:" + DockerWorld.digestOnly) })
+        XCTAssertEqual(digest.tier, .review); XCTAssertEqual(digest.ruleID, DockerToolCommands.Rule.unusedImage)
+        XCTAssertEqual(digest.cleanupMethod, .toolCommand(command: "docker", arguments: ["image", "rm", "sha256:" + DockerWorld.digestOnly]))
+        XCTAssertEqual(digest.displayName, "example/web@sha256:999999999999")
         let container = try XCTUnwrap(one(DockerToolCommands.Rule.container))
         XCTAssertEqual(container.tier, .review); XCTAssertEqual(container.displayName, "old-web · web:1")
         XCTAssertNil(items.first { $0.path.hasSuffix(DockerWorld.running) }, "running container is never an item")
@@ -119,6 +124,29 @@ final class DockerScannerTests: XCTestCase {
         XCTAssertEqual(DockerJSON.parseImages(Data())?.count, 0, "an empty daemon")
         let df = DockerJSON.parseDF(Data(#"{"Images":[{"ID":"abc","Containers":"0","UniqueSize":"N/A","Size":"N/A"}],"Volumes":[],"BuildCache":[]}"#.utf8))
         XCTAssertEqual(df?.images.first?.size, nil)
+    }
+
+    func testContainerUsingImageByFullIDAndShortImageName() {
+        let f = DockerItemFactory(target: "t", runtimeName: "T", suffixRuntime: false, now: Date())
+        let id = String(repeating: "a", count: 64); var df = DockerJSON.DF(); df.images = [.init(id: id, containers: 0, size: 1)]
+        let rows: [DockerJSON.ImageRow] = [.init(id: "sha256:" + id, repository: "<none>", tag: "<none>", created: nil)]
+        let c = DockerJSON.ContainerRow(id: String(repeating: "c", count: 64), name: "x", image: "sha256:" + id, state: "created", created: nil)
+        df.containers = [.init(id: String(repeating: "c", count: 12), size: 0)]
+        let items = f.items(.init(df: df, images: rows, containers: [c], volumes: []))
+        XCTAssertFalse(items.contains { $0.path.hasSuffix("sha256:" + id) }, "a container naming the image by full ID keeps it")
+        XCTAssertEqual(items.first?.displayName, "x · aaaaaaaaaaaa", "sha256 image IDs are shortened to 12 hex")
+    }
+
+    func testItemCapWarnsAbove500() {
+        let f = DockerItemFactory(target: "t", runtimeName: "T", suffixRuntime: false, now: Date())
+        var df = DockerJSON.DF(); var rows: [DockerJSON.ImageRow] = []
+        for n in 0..<501 {
+            let id = String(format: "%064x", n)
+            df.images.append(.init(id: id, containers: 0, size: Int64(n)))
+            rows.append(.init(id: "sha256:" + id, repository: "<none>", tag: "<none>", created: nil))
+        }
+        XCTAssertTrue(f.itemsReportingCap(.init(df: df, images: rows, containers: [], volumes: [])).truncated)
+        XCTAssertFalse(f.itemsReportingCap(.init(df: df, images: Array(rows.prefix(500)), containers: [], volumes: [])).truncated)
     }
 
     func testAmbiguousTruncatedIDSkipsObject() {

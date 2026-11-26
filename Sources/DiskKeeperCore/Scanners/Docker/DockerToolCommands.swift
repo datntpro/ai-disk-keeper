@@ -29,6 +29,8 @@ public enum DockerToolCommands {
                     guard case .toolCommand(_, let args) = item.cleanupMethod, args.count >= 3, args.count <= 10,
                           args[0] == "image", args[1] == "rm" else { return nil }
                     let refs = Array(args.dropFirst(2))
+                    // Digest-only image (containerd): removed by its ID, which names exactly the object scanned.
+                    if refs == [p.id] { return ["image", "rm", p.id] }
                     return refs.allSatisfy({ ArgPattern.dockerImageRef.matches($0) && $0 != p.id }) ? ["image", "rm"] + refs : nil
                 },
                 timeout: .seconds(120), executable: live.executable, environment: live.environment,
@@ -135,10 +137,12 @@ public enum DockerToolCommands {
             let text = String(decoding: inspect.stdout, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
             guard let bar = text.firstIndex(of: "|") else { return [.inUseByTool(detail: "couldn't check the image")] }
             guard String(text[..<bar]) == p.id else { return [.missing] }
-            let tags = (try? JSONSerialization.jsonObject(with: Data(text[text.index(after: bar)...].utf8)) as? [String]) ?? []
+            // `repo@sha256:…` entries are digest references (containerd lists them in RepoTags); they are not tags.
+            let tags = ((try? JSONSerialization.jsonObject(with: Data(text[text.index(after: bar)...].utf8)) as? [String]) ?? [])
+                .filter { !$0.contains("@sha256:") }
             let expected: [String]
             if item.ruleID == Rule.dangling { expected = [] }
-            else if case .toolCommand(_, let args) = item.cleanupMethod { expected = Array(args.dropFirst(2)) }
+            else if case .toolCommand(_, let args) = item.cleanupMethod { expected = Array(args.dropFirst(2)).filter { $0 != p.id } }
             else { expected = [] }
             guard Set(tags) == Set(expected) else { return [.inUseByTool(detail: "tags changed")] }
             guard let users = await probe(conn, ctx, DockerProbe.containersUsingImage(p.id)), !users.timedOut, users.exitStatus == 0 else {

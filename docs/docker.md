@@ -37,7 +37,7 @@ Never: `system|image|container|volume|network prune`, `-f`/`--force` on any `rm`
 
 ## Tiers
 
-Dangling image ≥ 1 h old and unused build cache: **Safe**. Younger dangling image, tagged unused image, stopped container,
+Dangling image (Repository and Tag both `<none>`) ≥ 1 h old and unused build cache: **Safe**. Younger dangling image, tagged unused image, digest-only image (containerd: Tag `<none>` but named `repo@sha256:…`; removed by ID), stopped container,
 unused anonymous or devcontainer-labelled volume: **Review**. Unused named volume: **Keep** (report only). Running, paused or
 restarting containers, and anything in use, are never items. Volumes, containers and tagged images are never Safe.
 Sizes are rounded by docker (3–4 digits) and shared layers may free less than shown: the result says "up to".
@@ -51,6 +51,9 @@ only shows its allocated and maximum size.
 ## Fixtures
 
 Tests use a scripted fake runner and temp-dir layouts with real unix sockets (`Tests/DiskKeeperCoreTests/Scanners/Docker`).
-The JSON is synthesized from docker's documented formats (`docker system df -v --format '{{json .}}'` is one object with `Images`,
-`Containers`, `Volumes`, `BuildCache`); re-record sanitized output from a real runtime in a VM when one is available.
+Verified against real Docker Desktop 4.99 (engine 29.9.3, containerd snapshotter): `system df -v --format '{{json .}}'` is one
+object (`Images`, `Containers`, `Volumes`, `BuildCache`) whose values are all strings (`"Containers":"0"`, `"InUse":"false"`,
+`"1.753GB"`); dates look like `2026-11-26 20:55:29 +0700 +07`. On containerd, `image inspect` `RepoTags` also lists digest
+references (`repo@sha256:…`); revalidation ignores those. Volumes, OrbStack and Colima output is still synthesized from
+docker's documented formats; re-record sanitized output when one is available.
 Tests never run the host's docker or use `DockerRuntimeLayout.live`.
