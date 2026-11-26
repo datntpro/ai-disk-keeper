@@ -3,7 +3,7 @@ import Foundation
 /// Squarified treemap (Bruls, Huizing, van Wijk 2000) over the focus's children, optionally one nested level.
 enum SquarifiedLayout {
     /// Lays out `values` (descending, all > 0, Σ ≈ area(rect)) inside `rect`. Returns one rect per value, in order.
-    /// Strips run along the shorter side; offsets are cumulative so neighbours share exact edges.
+    /// Strips run along the shorter side; offsets are cumulative so neighbours share edges to within 1 ULP.
     static func squarify(values: [Double], in rect: LayoutRect) -> [LayoutRect] {
         var out: [LayoutRect] = []
         out.reserveCapacity(values.count)

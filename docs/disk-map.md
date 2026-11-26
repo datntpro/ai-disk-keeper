@@ -26,7 +26,7 @@ taller than twice the header), and its children are squarified inside; the own-b
 child areas stay proportional to bytes and the gap is left empty. Complexity O(n₁ + Σ n₂).
 
 ## Hit testing — `element(at:)`, `element(for:)`
-Rects are half-open `[x, x+w) × [y, y+h)`: a shared edge belongs to the right/lower element.
+Rects are half-open `[x, x+w) × [y, y+h)`: a shared edge belongs to the right/lower element. Edges are stored as `x`/`width`, so neighbouring tiles agree to within 1 ULP: at an exact corner point `element(at:)` may return the earlier sibling (harmless for UI).
 - Strata: row from `y`, then binary search over that row's x-sorted elements. Row gaps, empty own-bytes space and points
   outside the viewport return nil. O(log n).
 - Tiles: scan level-1 tiles, then that tile's level-2 tiles; the deepest hit wins. Header strips, padding and empty
@@ -40,6 +40,10 @@ node with `isExact = false`. Items outside the tree root are ignored (`unmappedI
 risk tiers propagate to all ancestors; `attributedBytes` is capped at the node's bytes. `itemIDs` are the items whose
 deepest node is exactly this node (for "Review in list"). Ties: first `ItemCategory.allCases` entry, then smallest `ToolID`.
 `ageBucket(_:now:)`: <30 d, <183 d, <365 d, <3·365 d, older, nil → unknown.
+
+## Notes for the UI (T31)
+Aggregate elements always have `isProtected = false` (they merge several nodes and carry no flags): render them neutrally,
+and never read the hatched/protected style from them.
 
 ## Viewer invariant (PLAN invariant 12)
 The map is a viewer. No type in `Map/` stores or creates a `ScanItem` (only `ScanItem.ID` strings) or references cleanup

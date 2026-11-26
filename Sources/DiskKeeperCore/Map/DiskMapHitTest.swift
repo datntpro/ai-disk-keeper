@@ -13,7 +13,9 @@ extension DiskMapLayout {
             let rows = rowStarts.count - 1
             let dy = point.y - viewport.y
             guard dy >= 0 else { return nil }
-            let row = Int(dy / (rowHeight + rowGap))
+            let rowF = dy / (rowHeight + rowGap)
+            guard rowF.isFinite, rowF < Double(rows) else { return nil }   // Int(huge) would trap
+            let row = Int(rowF)
             guard row >= 0, row < rows else { return nil }
             var lo = rowStarts[row], hi = rowStarts[row + 1]     // last element with x <= p.x
             guard lo < hi else { return nil }

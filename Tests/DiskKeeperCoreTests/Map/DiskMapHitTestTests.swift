@@ -26,6 +26,17 @@ final class DiskMapHitTestTests: XCTestCase {
         XCTAssertEqual(l.element(at: LayoutPoint(x: tiny.rect.x + tiny.rect.width / 2, y: tiny.rect.y + 1))?.id, tiny.id)
     }
 
+    func testHugeFiniteCoordinatesDoNotTrap() {
+        let t = MapFix.tree([.file("a", bytes: 10)])
+        let l = DiskMapLayout.strata(tree: t, focus: t.rootNodeID, viewport: vp)
+        for y in [1e300, -1e300, Double.greatestFiniteMagnitude, 1e19, 9.3e18] {
+            XCTAssertNil(l.element(at: LayoutPoint(x: 5, y: y)))
+        }
+        XCTAssertNil(l.element(at: LayoutPoint(x: 5, y: .infinity)))
+        let tiles = DiskMapLayout.tiles(tree: t, focus: t.rootNodeID, viewport: vp)
+        XCTAssertNil(tiles.element(at: LayoutPoint(x: 5, y: 1e300)))
+    }
+
     func testStrataAggregateHit() {
         var kids: [SyntheticNode] = [.file("big", bytes: 1_000_000)]
         for i in 0..<10 { kids.append(.file("s\(i)", bytes: 400)) }
