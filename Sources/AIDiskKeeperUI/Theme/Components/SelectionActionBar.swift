@@ -22,7 +22,7 @@ struct SelectionActionBar: View {
         }
         .font(.callout)
         .padding(.horizontal, ADKTheme.Spacing.lg).padding(.vertical, ADKTheme.Spacing.md)
-        .background(.bar)
+        .adkBarBackground()
         .overlay(alignment: .top) { Rectangle().fill(.adkLine).frame(height: ADKTheme.hairline) }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(SizeText.string(bytes, .upTo) + ", " + countLabel)
