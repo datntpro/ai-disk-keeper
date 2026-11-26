@@ -1,0 +1,14 @@
+# Orca environment recipes for this repo. See scripts/vm/README.md.
+environmentRecipes:
+  - id: tart-macos
+    name: Tart macOS VM (adk-base clone)
+    description: >-
+      Throwaway macOS 26 + Xcode 26.3 VM (Tart, copy-on-write clone of `adk-base`) that runs
+      `orca serve`, so workers can build and test AI Disk Keeper without touching the host.
+      Needs Tart (brew install openai/tools/tart) and the base image from scripts/vm/tart-build-base.sh.
+    create: ./scripts/vm/tart-recipe-create.sh
+    destroy: ./scripts/vm/tart-recipe-destroy.sh
+    timeoutSeconds: 600
+    passEnv:
+      - ADK_BASE_VM
+      - ADK_MIN_FREE_GB
