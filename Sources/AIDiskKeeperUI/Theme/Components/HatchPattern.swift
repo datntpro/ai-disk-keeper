@@ -14,8 +14,12 @@ struct HatchPattern: Shape {
         let h = rect.height
         var x = rect.minX - h
         while x < rect.maxX {
-            p.move(to: CGPoint(x: x, y: rect.maxY))
-            p.addLine(to: CGPoint(x: x + h, y: rect.minY))
+            // Clip the diagonal to the rect's x-range so nothing is drawn outside the frame.
+            let x0 = max(x, rect.minX), x1 = min(x + h, rect.maxX)
+            if x1 > x0 {
+                p.move(to: CGPoint(x: x0, y: rect.maxY - (x0 - x)))
+                p.addLine(to: CGPoint(x: x1, y: rect.maxY - (x1 - x)))
+            }
             x += spacing
         }
         return p

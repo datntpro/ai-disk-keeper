@@ -5,6 +5,9 @@ struct WarningsView: View {
     let warnings: [ScanWarning]
 
     var body: some View {
+        if warnings.isEmpty {
+            StateView(kind: .empty, symbol: "checkmark.circle", title: StateCopy.noWarnings, message: "")
+        } else {
         List {
             ForEach(ScanWarning.Kind.allCases, id: \.self) { kind in
                 let group = warnings.filter { $0.kind == kind }
@@ -29,6 +32,7 @@ struct WarningsView: View {
                     }
                 }
             }
+        }
         }
     }
 
