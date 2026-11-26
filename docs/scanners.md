@@ -71,3 +71,5 @@ struct ExampleScanner: Scanner {
 Foundation also has a `Scanner` type, so a file that imports both should add `import protocol DiskKeeperCore.Scanner`.
 
 Large & Old Files (`LargeFileScanner`, id `large-files`): big, long-unopened files from the disk index, always Review. See [large-files.md](large-files.md).
+
+Docker (`DockerScanner`, id `docker`): images, stopped containers, unused volumes and build cache from every *running* runtime, as virtual items cleaned with the allowlisted `docker` CLI (see [docker.md](docker.md) and [cleanup.md](cleanup.md)).

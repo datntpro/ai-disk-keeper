@@ -124,6 +124,10 @@ public struct DockerDiskImage: Sendable, Hashable {
     public let allocatedBytes: Int64
     public let logicalBytes: Int64
 
+    public init(path: String, allocatedBytes: Int64, logicalBytes: Int64) {
+        self.path = path; self.allocatedBytes = allocatedBytes; self.logicalBytes = logicalBytes
+    }
+
     public static func stat(_ paths: [String]) -> DockerDiskImage? {
         for p in paths {
             var st = Darwin.stat()

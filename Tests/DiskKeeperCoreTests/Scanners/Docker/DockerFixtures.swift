@@ -89,7 +89,7 @@ final class DockerWorld: ToolProcessRunning, @unchecked Sendable {
     var containerLs: String {
         """
         {"ID":"\(Self.stopped)","Names":"old-web","Image":"web:1","State":"exited","Status":"Exited (0) 2 days ago","CreatedAt":"2026-11-25 10:00:00 +0000 UTC"}
-        {"ID":"\(Self.running)","Names":"live","Image":"app:latest","State":"running","Status":"Up 2 hours","CreatedAt":"2026-11-27 10:00:00 +0000 UTC"}
+        {"ID":"\(Self.running)","Names":"live","Image":"alpine","State":"running","Status":"Up 2 hours","CreatedAt":"2026-11-27 10:00:00 +0000 UTC"}
         """
     }
     var volumeLs: String {

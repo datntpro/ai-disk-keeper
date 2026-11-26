@@ -14,6 +14,10 @@ public struct DockerRuntimeStatus: Sendable, Hashable, Identifiable {
     public let state: DockerRuntimeState
     public let diskImage: DockerDiskImage?
     public var id: String { definition.id }
+
+    public init(definition: DockerRuntimeDefinition, state: DockerRuntimeState, diskImage: DockerDiskImage?) {
+        self.definition = definition; self.state = state; self.diskImage = diskImage
+    }
 }
 
 /// Shared by the scanner and the module card. Starts a process only when a validated socket exists, and never

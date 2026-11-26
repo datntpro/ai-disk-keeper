@@ -121,3 +121,5 @@ Each run appends one audit line with `command` (absolute executable + argv), `ex
 (≤ 2 KB) and `toolTarget`; `result` is `ran`. Skipped and failed entries carry `command` too. These fields are
 additive (`schemaVersion` stays 1). A JSON rule that declares `toolCommand` still decodes, but is refused at plan time
 with `toolCommandNotAllowed`.
+
+Docker items (T17) are tool commands: see [docker.md](docker.md). Their blockers are `toolNotRunning` (daemon down), `toolUnavailable` (CLI missing or unsafe), `inUseByTool` (a container appeared, tags changed) and `missing` (already gone); a successful run is `.ranCommand`.
