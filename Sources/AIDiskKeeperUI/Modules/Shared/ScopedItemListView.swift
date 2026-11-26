@@ -22,7 +22,7 @@ struct ScopedItemListView: View {
         } else if !scan.isScanning, ctx.list.rows.isEmpty, ctx.list.scopeCount > 0,
                   ctx.query.wrappedValue.tiers != Set(RiskTier.allCases) {
             StateView(kind: .filteredEmpty, symbol: "line.3.horizontal.decrease.circle", title: StateCopy.filteredTiersTitle,
-                      message: StateCopy.filteredBody,
+                      message: StateCopy.filteredTiersBody,
                       actions: [StateAction(title: StateCopy.filteredShowAll) { ctx.query.wrappedValue.tiers = Set(RiskTier.allCases) }])
         } else {
             VStack(spacing: 0) {

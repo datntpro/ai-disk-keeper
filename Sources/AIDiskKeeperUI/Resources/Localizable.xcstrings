@@ -12695,6 +12695,22 @@
         }
       }
     },
+    "state.filtered.tiers.body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn the hidden tiers back on to see them."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bật lại các mức độ đang ẩn để xem chúng."
+          }
+        }
+      }
+    },
     "state.filtered.tiers.show" : {
       "localizations" : {
         "en" : {

@@ -4,6 +4,7 @@ REMOVE = ("index.failed",)
 
 VI = {
     "state.filtered.tiers.title": "Mọi kết quả đều bị bộ lọc mức độ ẩn",
+    "state.filtered.tiers.body": "Bật lại các mức độ đang ẩn để xem chúng.",
     "state.filtered.tiers.show": "Hiện tất cả mức độ",
     "pill.keeps": "Đang giữ",
 }

@@ -29,6 +29,7 @@ enum StateCopy {
     static func filteredTitle(_ query: String) -> String { loc("state.filtered.title", "Nothing matches “\(query)”") }
     static var filteredBody: String { loc("state.filtered.body", "Try another name, or show Keep items too.") }
     static var filteredTiersTitle: String { loc("state.filtered.tiers.title", "Every match is hidden by the tier filter") }
+    static var filteredTiersBody: String { loc("state.filtered.tiers.body", "Turn the hidden tiers back on to see them.") }
     static var filteredShowAll: String { loc("state.filtered.tiers.show", "Show all tiers") }
     static var filteredClear: String { loc("state.filtered.clear", "Clear search") }
 
