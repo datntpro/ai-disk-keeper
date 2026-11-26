@@ -15,8 +15,7 @@ final class ToolCommandRegistryTests: XCTestCase {
         XCTAssertEqual(m.argv, ["thing", "rm", ToolFixtures.imageID])
     }
 
-    func testBuiltInRegistryIsEmptyAndRefusesEverything() {
-        XCTAssertTrue(ToolCommandRegistry.builtIn.specs.isEmpty)
+    func testBuiltInRegistryRefusesAnItemNoBuiltInSpecOwns() {
         XCTAssertNotNil(refusal(ToolFixtures.virtualItem(), .builtIn))
     }
 
