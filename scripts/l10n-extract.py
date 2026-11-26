@@ -34,7 +34,7 @@ def build():
             env["DEVELOPER_DIR"] = "/Applications/Xcode.app/Contents/Developer"
     # Force a recompile so every source emits its .stringsdata.
     subprocess.run(["rm", "-rf", SCRATCH], check=True)
-    cmd = ["swift", "build", "--build-system", "swiftbuild", "--target", "AIDiskKeeperUI", "--scratch-path", SCRATCH,
+    cmd = ["swift", "build", "--build-system", "swiftbuild", "--scratch-path", SCRATCH,
            "-Xswiftc", "-emit-localized-strings", "-Xswiftc", "-emit-localized-strings-path",
            "-Xswiftc", os.path.join(ROOT, ".build", "l10n")]
     r = subprocess.run(cmd, cwd=ROOT, env=env, capture_output=True, text=True)
