@@ -1377,6 +1377,40 @@
         }
       }
     },
+    "cleanup.result.errors" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld error"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld errors"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "%lld lỗi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "cleanup.result.failed" : {
       "localizations" : {
         "en" : {
@@ -1389,6 +1423,40 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Không thành công"
+          }
+        }
+      }
+    },
+    "cleanup.result.items" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld items"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "%lld mục"
+                }
+              }
+            }
           }
         }
       }
@@ -1542,13 +1610,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "moved to the Trash · %@ items · %@ errors · %@ skipped"
+            "value" : "moved to the Trash · %@ · %@ · %@ skipped"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "đã chuyển vào Thùng rác · %@ mục · %@ lỗi · %@ bỏ qua"
+            "value" : "đã chuyển vào Thùng rác · %@ · %@ · %@ bỏ qua"
           }
         }
       }
@@ -1761,6 +1829,22 @@
         }
       }
     },
+    "cleanup.row.keeping" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keeping %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Giữ lại %@"
+          }
+        }
+      }
+    },
     "cleanup.row.moreReasons" : {
       "localizations" : {
         "en" : {
@@ -1773,6 +1857,40 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "+%@ lý do khác"
+          }
+        }
+      }
+    },
+    "cleanup.row.otherCopies" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "+%lld other copy"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "+%lld other copies"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "+%lld bản sao khác"
+                }
+              }
+            }
           }
         }
       }
@@ -2052,15 +2170,33 @@
     "cleanup.trio.items" : {
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ items"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld items"
+                }
+              }
+            }
           }
         },
         "vi" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ mục"
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "%lld mục"
+                }
+              }
+            }
           }
         }
       }
