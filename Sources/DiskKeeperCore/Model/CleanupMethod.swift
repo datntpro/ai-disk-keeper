@@ -8,6 +8,8 @@ public enum CleanupMethod: Codable, Sendable, Hashable {
     case trashWorktree(mainRepoPath: String)
     /// Run the tool's own CLI. Executable resolution happens at cleanup time, not here.
     case toolCommand(command: String, arguments: [String])
+    /// Trash an application bundle (run-state and bundle checks happen at cleanup time).
+    case trashApplication(bundleID: String)
     /// Report only; never cleanable.
     case none
 
@@ -17,7 +19,7 @@ public enum CleanupMethod: Codable, Sendable, Hashable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case kind, mainRepoPath, command, arguments
+        case kind, mainRepoPath, command, arguments, bundleID
     }
 
     public init(from decoder: Decoder) throws {
@@ -31,6 +33,13 @@ public enum CleanupMethod: Codable, Sendable, Hashable {
         case "toolCommand":
             self = .toolCommand(command: try c.decode(String.self, forKey: .command),
                                 arguments: try c.decode([String].self, forKey: .arguments))
+        case "trashApplication":
+            let bundleID = try c.decode(String.self, forKey: .bundleID)
+            guard RuleCleanup.isValidBundleID(bundleID) else {
+                throw DecodingError.dataCorruptedError(
+                    forKey: .bundleID, in: c, debugDescription: "bundleID must be a bundle id like com.example.App")
+            }
+            self = .trashApplication(bundleID: bundleID)
         case "none":
             self = .none
         default:
@@ -51,6 +60,9 @@ public enum CleanupMethod: Codable, Sendable, Hashable {
             try c.encode("toolCommand", forKey: .kind)
             try c.encode(command, forKey: .command)
             try c.encode(arguments, forKey: .arguments)
+        case .trashApplication(let bundleID):
+            try c.encode("trashApplication", forKey: .kind)
+            try c.encode(bundleID, forKey: .bundleID)
         case .none:
             try c.encode("none", forKey: .kind)
         }

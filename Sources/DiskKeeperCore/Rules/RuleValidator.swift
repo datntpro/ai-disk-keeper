@@ -32,6 +32,10 @@ public enum RuleValidator {
             if let problem = idProblem(rule.id, tool: file.tool.id) {
                 return err(.invalidRuleID, "\(base).id", problem)
             }
+            if !rule.category.isRuleCategory {
+                return err(.invalidValue, "\(base).category",
+                           "category '\(rule.category.rawValue)' is produced by built-in scanners only")
+            }
             if rule.category == .modelWeights {
                 if rule.tier == .safe {
                     return err(.invalidValue, "\(base).tier", "model weights are always Review")

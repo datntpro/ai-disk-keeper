@@ -60,12 +60,16 @@ public struct ToolID: RawRepresentable, Codable, Sendable, Hashable, Comparable,
     /// Stray worktrees not attributable to a tool.
     public static let git: ToolID           = "git"
     public static let system: ToolID        = "system"
+    /// "Your files": large files, duplicates.
+    public static let files: ToolID         = "files"
+    /// "Applications": app bundles, leftovers, startup items.
+    public static let apps: ToolID          = "apps"
 
     /// All well-known constants.
     public static let wellKnown: [ToolID] = [
         .claudeCode, .claudeDesktop, .cursor, .codex, .gemini, .kiro, .windsurf,
         .copilot, .aider, .continueDev, .orca, .ollama, .huggingFace, .lmStudio,
-        .docker, .git, .system,
+        .docker, .git, .system, .files, .apps,
     ]
 
     /// Built-in English name for well-known IDs; nil otherwise.
@@ -88,6 +92,8 @@ public struct ToolID: RawRepresentable, Codable, Sendable, Hashable, Comparable,
         case "docker": "Docker"
         case "git": "Git"
         case "system": "System"
+        case "files": "Your files"
+        case "apps": "Applications"
         default: nil
         }
     }

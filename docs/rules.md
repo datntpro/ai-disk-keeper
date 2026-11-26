@@ -31,7 +31,7 @@ accepted or rejected as a whole: one bad rule rejects the file, and the other fi
 |---|---|---|---|
 | `id` | string | yes | `<tool.id>.<name>`; the name is `[a-z0-9]+([.-][a-z0-9]+)*`; ≤ 96 chars; unique across **all** loaded files |
 | `title` | string | yes | 1–80 chars |
-| `category` | string | yes | `aiToolData`, `worktree`, `buildArtifact`, `modelWeights`, `systemJunk`, `docker` |
+| `category` | string | yes | `aiToolData`, `worktree`, `buildArtifact`, `modelWeights`, `systemJunk`, `docker`. `largeFile`, `duplicate`, `application`, `appLeftover` and `startupItem` also exist, but only built-in Swift scanners produce them; a rule that uses one is rejected with `invalidValue`. |
 | `paths` | [string] | yes | 1…16 *path templates*, no glob characters |
 | `match` | object | yes | see Match |
 | `project` | object | no | `{ "from": … }`, one of `none` (default), `claudeProjectDirName`, `itemName`, `parentOfItem` |
@@ -271,7 +271,7 @@ A rejected file produces a `RuleLoadError` carrying the file, the JSON path and 
 | `duplicateKey` | duplicate key 'tier' (an object repeats a key; JSON tools disagree on which value wins) |
 | `missingKey` | missing required key 'explanation' (at `rules[0]`) |
 | `typeMismatch` | a value has the wrong JSON type |
-| `invalidValue` | a value is out of range or not allowed (bad enum value, `depth` 4, `gitState`, model weights as Safe, …) |
+| `invalidValue` | a value is out of range or not allowed (bad enum value, a built-in-only category such as `largeFile`, `duplicate`, `application`, `appLeftover` or `startupItem`, `depth` 4, `gitState`, model weights as Safe, …) |
 | `invalidGlob` | unclosed '[' at position 3 |
 | `invalidPathTemplate` | must start with ~, $HOME, $TMPDIR, … |
 | `invalidRuleID` | rule id 'other.r' must start with 'mytool.' |

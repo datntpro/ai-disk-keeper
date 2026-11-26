@@ -6,7 +6,7 @@ private func assertSendable<T: Sendable>(_: T.Type) {}
 final class ScanItemTests: XCTestCase {
     func testRoundTripFullyPopulated() throws {
         let item = ModelFixtures.fullItem()
-        XCTAssertEqual(item.flags.count, 6)
+        XCTAssertEqual(item.flags.count, ItemFlag.allCases.count)
         XCTAssertEqual(try ModelFixtures.roundTrip(item), item)
     }
 
