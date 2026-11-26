@@ -1,4 +1,5 @@
 import DiskKeeperCore
+import SwiftUI
 import XCTest
 @testable import AIDiskKeeperUI
 
@@ -12,5 +13,15 @@ final class TierStyleTests: XCTestCase {
             XCTAssertFalse(s.shortExplanation.isEmpty)
             XCTAssertFalse(s.longExplanation.isEmpty)
         }
+    }
+
+    func testSymbolsMatchGlyphsAndKeepIsNotSecondary() {
+        XCTAssertEqual(TierStyle.style(for: .safe).symbolName, "circle.fill")
+        XCTAssertEqual(TierStyle.style(for: .review).symbolName, "diamond.fill")
+        XCTAssertEqual(TierStyle.style(for: .keep).symbolName, "circle")
+        XCTAssertEqual(TierStyle.style(for: .safe).glyph, .safe)
+        XCTAssertEqual(TierStyle.style(for: .review).glyph, .review)
+        XCTAssertEqual(TierStyle.style(for: .keep).glyph, .keep)
+        XCTAssertNotEqual(TierStyle.style(for: .keep).color, Color.secondary)
     }
 }
