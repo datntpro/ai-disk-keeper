@@ -121,3 +121,74 @@ final class MenuBarLayoutTests: XCTestCase {
         XCTAssertEqual(MonitorFormatting.percent(1.4), "100%")
     }
 }
+
+@MainActor
+final class MenuBarF5Tests: XCTestCase {
+    /// Real fonts, real formatter output (en + vi), the same entries the Settings preview uses.
+    private func layout(_ style: MenuBarStyle, _ metrics: [MetricID], _ loc: Locale) -> MenuBarLayout.Result {
+        let entries: [MenuBarLayout.Entry] = metrics.map { m in
+            switch m {
+            case .disk: .init(metric: .disk, text: Formatting.bytes(182_340_000_000, locale: loc))
+            default: .init(metric: m, text: "100%")
+            }
+        }
+        return MenuBarLayout.layout(style: style, entries: entries, measure: MenuBarLayout.measureText,
+                                    measureDisk: MenuBarLayout.measureDiskText)
+    }
+
+    func testDefaultCombosKeepTheirChosenStyleInEnAndVi() {
+        for loc in [Locale(identifier: "en"), Locale(identifier: "vi")] {
+            let id = loc.identifier
+            let two = layout(.readout, [.disk, .cpu], loc)
+            XCTAssertEqual(two.stepDown, 0, "Disk+CPU Readout is Full (\(id))")
+            XCTAssertEqual(two.mode, .readout)
+            XCTAssertTrue(two.cells.contains { $0.kind == .separator }, "separators kept (\(id))")
+            XCTAssertTrue(two.fits)
+
+            let three = layout(.readout, [.disk, .cpu, .memory], loc)
+            XCTAssertLessThanOrEqual(three.stepDown, 2, "Disk+CPU+Memory Readout never falls to Live strata (\(id))")
+            XCTAssertNotEqual(three.mode, .strata)
+            XCTAssertTrue(three.fits)
+
+            let ridge = layout(.ridge, [.disk, .cpu, .memory], loc)
+            XCTAssertEqual(ridge.mode, .ridge, "Ridge stays Ridge (\(id))")
+            XCTAssertLessThanOrEqual(ridge.stepDown, 2)
+            XCTAssertTrue(ridge.fits)
+            XCTAssertEqual(layout(.ridge, [.disk, .cpu], loc).mode, .ridge, "Disk+CPU Ridge stays Ridge (\(id))")
+        }
+    }
+
+    func testSeparatorCellIsOnePointAndSpacingKeepsItClearOfTheText() {
+        let r = layout(.readout, [.disk, .cpu], Locale(identifier: "en"))
+        for c in r.cells where c.kind == .separator { XCTAssertEqual(c.width, MenuBarLayout.separatorWidth) }
+        XCTAssertGreaterThanOrEqual(MenuBarLayout.spacing, 2)
+        let img = MenuBarLabelRenderer.render(LabelContent(layout: r))
+        XCTAssertEqual(img.size.width, r.width, accuracy: 0.001)
+    }
+
+    func testWhyLineOnlyWhenTheBarSteppedDown() {
+        func res(_ step: Int) -> MenuBarLayout.Result { .init(mode: .strata, cells: [], width: 18, stepDown: step) }
+        XCTAssertFalse(MenuBarLayout.steppedDown(res(3), style: .liveStrata), "picked Live strata: no 'too many metrics'")
+        XCTAssertTrue(MenuBarLayout.steppedDown(res(3), style: .readout))
+        XCTAssertTrue(MenuBarLayout.steppedDown(res(1), style: .ridge))
+        XCTAssertFalse(MenuBarLayout.steppedDown(res(0), style: .readout))
+    }
+
+    func testLayoutNamesFollowTheStepDown() {
+        func r(_ step: Int) -> MenuBarLayout.Result { .init(mode: .readout, cells: [], width: 0, stepDown: step) }
+        XCTAssertEqual([0, 1, 2, 3].map { MenuBarLayout.layoutName(r($0)) }, [.full, .compact, .ridgeNoValues, .liveStrata])
+        XCTAssertEqual(SystemMonitorCopy.layoutName(.ridgeNoValues), "Ridge (no values)")
+        XCTAssertEqual(SystemMonitorCopy.layoutName(.liveStrata), "Live strata")
+        XCTAssertTrue(SystemMonitorCopy.layoutLineWhy("Compact").contains("too many metrics for the bar width"))
+    }
+
+    func testFreeSpaceUsesTheMenuBarFont() {
+        XCTAssertEqual(MenuBarLayout.diskFont.pointSize, NSFont.menuBarFont(ofSize: 0).pointSize)
+        XCTAssertEqual(MenuBarLayout.measureDiskText("182 GB"),
+                       ceil(("182 GB" as NSString).size(withAttributes: [.font: NSFont.menuBarFont(ofSize: 0)]).width))
+    }
+
+    func testTopToolsCaption() {
+        XCTAssertEqual(MenuBarCopy.topToolsNote, "AI tool data only. Caches, worktrees and build files are counted separately.")
+    }
+}

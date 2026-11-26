@@ -11,6 +11,8 @@ enum MenuBarLayout {
     static let ridgeWidth: CGFloat = 24
     static let spacing: CGFloat = 3
     static let separatorWidth: CGFloat = 1
+    // The `spacing` gap on each side of a separator already keeps a full "100%" clear of the line, so the cell stays
+    // `separatorWidth` wide and the T50 width budget behaviour is unchanged.
 
     /// The widest string each cell can show, so digits never move the item.
     /// Widest `Formatting.bytes` outputs (two decimals, every unit, English and Vietnamese). Measured, never guessed.
@@ -57,13 +59,15 @@ enum MenuBarLayout {
         var fits: Bool { width <= MenuBarLayout.budget }
     }
 
-    static func layout(style: MenuBarStyle, entries: [Entry], measure: (String) -> CGFloat) -> Result {
+    static func layout(style: MenuBarStyle, entries: [Entry], measure: @escaping (String) -> CGFloat,
+                       measureDisk: ((String) -> CGFloat)? = nil) -> Result {
+        let measureDisk = measureDisk ?? measure
         let nonDisk = entries.filter { $0.metric != .disk }
         let disk = entries.first { $0.metric == .disk }
         if style == .glyph || nonDisk.isEmpty {
             // Exactly the T47 item: glyph, plus the free-space text when it is on.
             var cells = [Cell(kind: .glyph, width: glyphWidth)]
-            if disk != nil { cells.append(Cell(kind: .metric(.disk), text: disk?.text, width: reservedDiskWidth(measure))) }
+            if disk != nil { cells.append(Cell(kind: .metric(.disk), text: disk?.text, width: reservedDiskWidth(measureDisk))) }
             return Result(mode: .glyph, cells: cells, width: total(cells, gap: 4), stepDown: 0)
         }
         let start = style == .liveStrata ? 3 : 0
@@ -74,7 +78,7 @@ enum MenuBarLayout {
         return build(style: style, step: 3, entries: entries, measure: measure)
     }
 
-    private static func build(style: MenuBarStyle, step: Int, entries: [Entry], measure: (String) -> CGFloat) -> Result {
+    private static func build(style: MenuBarStyle, step: Int, entries: [Entry], measure: @escaping (String) -> CGFloat) -> Result {
         if step >= 3 {
             let cells = [Cell(kind: .glyph, width: glyphWidth)]
             return Result(mode: .strata, cells: cells, width: glyphWidth, stepDown: 3)
@@ -116,6 +120,13 @@ enum MenuBarLayout {
 
     static var font: NSFont { .monospacedDigitSystemFont(ofSize: 12, weight: .regular) }
 
+    /// The free-space text keeps the T47 look (system menu bar font) only when it sits beside the glyph alone. Next to
+    /// other metrics it uses the monitor's 12 pt font, so the T50 width budget holds.
+    static var diskFont: NSFont { .menuBarFont(ofSize: 0) }
+    static func measureDiskText(_ s: String) -> CGFloat {
+        ceil((s as NSString).size(withAttributes: [.font: diskFont]).width)
+    }
+
     /// Width of a string in the bar font, rounded up to a whole point.
     static func measureText(_ s: String) -> CGFloat {
         ceil((s as NSString).size(withAttributes: [.font: font]).width)
@@ -133,6 +144,21 @@ enum MenuBarLayout {
     }
 
     static func preview(_ s: AppSettings) -> Result {
-        layout(style: s.menuBarStyle, entries: previewEntries(s), measure: measureText)
+        layout(style: s.menuBarStyle, entries: previewEntries(s), measure: measureText, measureDisk: measureDiskText)
+    }
+
+    /// True only when the bar really stepped down from the chosen style. Live strata is already the last step, so
+    /// picking it is never a step-down. Glyph has no layouts to name.
+    static func steppedDown(_ r: Result, style: MenuBarStyle) -> Bool { r.stepDown > 0 && style != .liveStrata }
+
+    /// Which form the item takes, and why, for the Settings width preview.
+    enum LayoutName: Equatable { case full, compact, ridgeNoValues, liveStrata }
+    static func layoutName(_ r: Result) -> LayoutName {
+        switch r.stepDown {
+        case 0: .full
+        case 1: .compact
+        case 2: .ridgeNoValues
+        default: .liveStrata
+        }
     }
 }

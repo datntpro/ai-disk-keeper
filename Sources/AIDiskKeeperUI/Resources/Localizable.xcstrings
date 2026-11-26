@@ -8821,6 +8821,22 @@
         }
       }
     },
+    "menubar.topTools.note" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI tool data only. Caches, worktrees and build files are counted separately."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chỉ tính dữ liệu của công cụ AI. Bộ nhớ đệm, worktree và tệp build được tính riêng."
+          }
+        }
+      }
+    },
     "menubar.usedPercent" : {
       "localizations" : {
         "en" : {
@@ -11233,6 +11249,102 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Trên thanh menu"
+          }
+        }
+      }
+    },
+    "settings.sysmon.layout" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Layout: %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bố cục: %@"
+          }
+        }
+      }
+    },
+    "settings.sysmon.layout.compact" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compact"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gọn"
+          }
+        }
+      }
+    },
+    "settings.sysmon.layout.full" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Full"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đầy đủ"
+          }
+        }
+      }
+    },
+    "settings.sysmon.layout.ridge" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ridge (no values)"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sườn núi (không số)"
+          }
+        }
+      }
+    },
+    "settings.sysmon.layout.strata" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Live strata"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Địa tầng trực tiếp"
+          }
+        }
+      }
+    },
+    "settings.sysmon.layout.why" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Layout: %@, because there are too many metrics for the bar width"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bố cục: %@, vì có quá nhiều chỉ số so với độ rộng thanh menu"
           }
         }
       }

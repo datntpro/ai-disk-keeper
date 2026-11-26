@@ -102,6 +102,8 @@ struct MenuBarPopover: View {
     private var topTools: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(MenuBarCopy.topTools).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            Text(MenuBarCopy.topToolsNote).font(.caption2).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             ForEach(model.topTools, id: \.tool) { row in
                 HStack {
                     Text(verbatim: row.tool.uiName)
@@ -112,6 +114,7 @@ struct MenuBarPopover: View {
                 .accessibilityElement(children: .combine)
             }
         }
+        .help(MenuBarCopy.topToolsNote)
     }
 
     private var actions: some View {
