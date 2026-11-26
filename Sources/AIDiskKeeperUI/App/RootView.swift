@@ -76,10 +76,11 @@ public struct RootView: View {
         .sheet(isPresented: Binding(get: { suite.cleanup.isPresented },
                                     set: { if !$0 { suite.cleanup.dismiss() } })) {
             if let flow = suite.cleanup.flow {
-                CleanupSheetContent(flow: flow, environment: env.pathEnvironment) { suite.cleanup.finished($0) }
+                CleanupSheetContent(flow: flow, environment: env.pathEnvironment, coordinator: suite.cleanup)
                     .interactiveDismissDisabled(flow.isExecuting)
             }
         }
+        .onChange(of: suite.cleanup.rescanRequests) { _, _ in scan.startScan() }
         .onChange(of: scan.phase) { _, phase in announce(phase) }
         .onExitCommand { if scan.isScanning { scan.cancelScan() } }
         .sheet(isPresented: Binding(get: { !env.settings.settings.hasCompletedOnboarding }, set: { _ in })) {

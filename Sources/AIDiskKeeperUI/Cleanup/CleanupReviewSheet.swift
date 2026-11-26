@@ -1,13 +1,17 @@
 import DiskKeeperCore
 import SwiftUI
 
-/// The dry run. The primary button is never the Return-key default, so a stray keypress can't confirm.
+/// The dry run. The primary button answers ⌘⏎ only and focus starts on Cancel, so a stray Return can't confirm.
 public struct CleanupReviewSheet: View {
     let plan: CleanupPlan
     let notice: CleanupFlowModel.Notice?
     let onRecheck: () -> Void
     let onCancel: () -> Void
     let onConfirm: () -> Void
+
+    @Namespace private var focusNamespace
+    /// False for static renders (snapshots): `ImageRenderer` draws nothing inside a `ScrollView`.
+    var scrolls = true
 
     public init(plan: CleanupPlan, notice: CleanupFlowModel.Notice?, onRecheck: @escaping () -> Void,
                 onCancel: @escaping () -> Void, onConfirm: @escaping () -> Void) {
@@ -19,118 +23,102 @@ public struct CleanupReviewSheet: View {
     }
 
     private var executable: [CleanupPlanEntry] { plan.executableEntries }
-    private var blocked: [CleanupPlanEntry] { plan.entries.filter { !$0.isExecutable } }
 
-    /// bundle id → blocked entries, for entries whose only problem is a running app.
-    private var quitGroups: [(bundleID: String, entries: [CleanupPlanEntry])] {
-        var order: [String] = []
-        var map: [String: [CleanupPlanEntry]] = [:]
-        for e in blocked {
-            for b in e.blockers {
-                if case .appRunning(let id) = b {
-                    if map[id] == nil { order.append(id) }
-                    map[id, default: []].append(e)
-                    break
-                }
-            }
-        }
-        return order.map { ($0, map[$0] ?? []) }
+    private func runningAppID(_ e: CleanupPlanEntry) -> String? {
+        for b in e.blockers { if case .appRunning(let id) = b { return id } }
+        return nil
     }
+
+    /// App-running entries first, then the others.
+    private var blocked: [CleanupPlanEntry] {
+        let all = plan.entries.filter { !$0.isExecutable }
+        return all.filter { runningAppID($0) != nil } + all.filter { runningAppID($0) == nil }
+    }
+
+    /// The first blocked row of each running app carries the inline Re-check.
+    private var recheckRowIDs: Set<ScanItem.ID> {
+        var seen = Set<String>()
+        var out = Set<ScanItem.ID>()
+        for e in blocked { if let id = runningAppID(e), seen.insert(id).inserted { out.insert(e.id) } }
+        return out
+    }
+
+    private var contextLine: String {
+        let tools = Set(executable.map(\.item.tool))
+        if tools.count == 1, let t = tools.first { return t.uiName }
+        return CleanupCopy.several
+    }
+
+    private var tools: [ToolID] { Array(Set(executable.map(\.item.tool))).sorted { $0.uiName < $1.uiName } }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(CleanupCopy.reviewTitle).font(.title2.bold())
-            Text(CleanupCopy.reviewSubtitle).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: ADKTheme.Spacing.md) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(contextLine.uppercased()).font(.caption.weight(.semibold)).foregroundStyle(.adkText3)
+                Text(CleanupCopy.titleBytes(plan.reclaimableBytes)).font(.title2.bold())
+                Text(CleanupCopy.dryRun).foregroundStyle(.adkText2)
+            }
             if notice == .refreshedBecauseExpired {
                 Label(CleanupCopy.expiredNotice, systemImage: "arrow.clockwise")
-                    .padding(8).background(.yellow.opacity(0.2), in: RoundedRectangle(cornerRadius: 6))
+                    .padding(8).background(.adkReviewSoft, in: RoundedRectangle(cornerRadius: 6))
             }
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    quitSections
-                    willMoveSection
-                    wontCleanSection
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
+            CleanupSummaryTrio(plan: plan)
+            planList
             Divider()
-            Text(CleanupCopy.footerNote).font(.caption).foregroundStyle(.secondary)
+            Text(CleanupCopy.footerNote).font(.caption).foregroundStyle(.adkText3)
             HStack {
+                Button(CleanupCopy.cancel, role: .cancel, action: onCancel)
+                    .keyboardShortcut(CleanupSheetKeys.cancel)
+                    .prefersDefaultFocus(CleanupSheetKeys.defaultFocus == .cancel, in: focusNamespace)
+                Button(CleanupCopy.recheck, action: onRecheck)
                 Spacer()
-                Button(CleanupCopy.cancel, role: .cancel, action: onCancel).keyboardShortcut(.cancelAction)
-                Button(CleanupCopy.moveButton(plan.reclaimableBytes), action: onConfirm)
+                validity
+                Button(CleanupCopy.confirm(plan.reclaimableBytes), action: onConfirm)
+                    .keyboardShortcut(CleanupSheetKeys.confirm)
                     .buttonStyle(.borderedProminent)
+                    .tint(.adkAccent)
                     .disabled(executable.isEmpty)
-                    .accessibilityLabel(CleanupCopy.moveButton(plan.reclaimableBytes))
             }
+            .focusScope(focusNamespace)
         }
-        .padding(24)
-        .frame(minWidth: 560, minHeight: 420)
+        .padding(ADKTheme.Spacing.xl)
+        .frame(minWidth: 600, idealWidth: 680, minHeight: 460)
+        .modifier(FormSizing())
     }
 
-    @ViewBuilder private var quitSections: some View {
-        ForEach(quitGroups, id: \.bundleID) { group in
-            let bytes = group.entries.reduce(Int64(0)) { $0 + $1.item.sizeAllocated }
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Label(CleanupCopy.quitHeading(app: AppNameResolver.name(forBundleID: group.bundleID),
-                                                  count: group.entries.count, bytes: bytes),
-                          systemImage: "exclamationmark.circle").font(.headline)
-                    Spacer()
-                    Button(CleanupCopy.recheck, action: onRecheck)
-                }
-                ForEach(group.entries) { row($0) }
+    @ViewBuilder private var planList: some View {
+        let list = VStack(alignment: .leading, spacing: 0) {
+            ForEach(tools, id: \.self) { tool in
+                Text(tool.uiName).font(.subheadline.weight(.semibold)).foregroundStyle(.adkText2)
+                    .padding(.top, 8).padding(.bottom, 2)
+                ForEach(executable.filter { $0.item.tool == tool }) { CleanupPlanRow(entry: $0) }
             }
-        }
-    }
-
-    @ViewBuilder private var willMoveSection: some View {
-        if !executable.isEmpty {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(CleanupCopy.willMoveHeading(count: executable.count, bytes: plan.reclaimableBytes)).font(.headline)
-                let reviewCount = executable.filter { $0.item.tier == .review }.count
-                if reviewCount > 0 {
-                    Text(CleanupCopy.reviewIncluded(reviewCount)).font(.callout).foregroundStyle(.orange)
-                }
-                let tools = Array(Set(executable.map(\.item.tool))).sorted { $0.uiName < $1.uiName }
-                ForEach(tools, id: \.self) { tool in
-                    Text(tool.uiName).font(.subheadline).foregroundStyle(.secondary).padding(.top, 4)
-                    ForEach(executable.filter { $0.item.tool == tool }) { row($0) }
+            if !blocked.isEmpty {
+                Divider().padding(.vertical, 8)
+                ForEach(blocked) { e in
+                    CleanupPlanRow(entry: e, onRecheck: recheckRowIDs.contains(e.id) ? onRecheck : nil)
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        if scrolls { ScrollView { list } } else { list; Spacer(minLength: 0) }
     }
 
-    @ViewBuilder private var wontCleanSection: some View {
-        let others = blocked.filter { e in
-            !e.blockers.contains { if case .appRunning = $0 { return true } else { return false } }
+    private var validity: some View {
+        let parts = CleanupCopy.planValidParts
+        let end = plan.createdAt.addingTimeInterval(15 * 60)
+        let range = plan.createdAt...max(end, plan.createdAt)
+        return HStack(spacing: 0) {
+            Text(verbatim: parts.before)
+            Text(timerInterval: range, countsDown: true).monospacedDigit()
+            Text(verbatim: parts.after)
         }
-        if !others.isEmpty {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(CleanupCopy.wontCleanHeading(others.count)).font(.headline)
-                ForEach(others) { e in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(e.item.uiDisplayName())
-                        ForEach(e.blockers, id: \.self) { b in
-                            Text(CleanupCopy.sentence(for: b)).font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
-                }
-            }
-        }
+        .font(.caption).foregroundStyle(.adkText3)
     }
+}
 
-    private func row(_ e: CleanupPlanEntry) -> some View {
-        let style = TierStyle.style(for: e.item.tier)
-        return HStack {
-            Label(style.label, systemImage: style.symbolName).foregroundStyle(style.color)
-                .font(.caption).fixedSize().frame(minWidth: 80, alignment: .leading)
-            VStack(alignment: .leading) {
-                Text(e.item.uiDisplayName())
-                Text(e.item.path).font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
-            }
-            Spacer()
-            Text(Formatting.bytes(e.item.sizeAllocated)).monospacedDigit()
-        }
+private struct FormSizing: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 15, *) { content.presentationSizing(.form) } else { content }
     }
 }

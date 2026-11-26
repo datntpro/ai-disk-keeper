@@ -268,7 +268,7 @@ final class DuplicatesModel {
         for item in items {
             if let id = item.groupID, let g = group(id: id) { needed[id] = g }
         }
-        coordinator.review(items, duplicateGroups: needed) { [weak self] trashed in
+        coordinator.review(items, duplicateGroups: needed, onRescan: { [weak self] in self?.analyse() }) { [weak self] trashed in
             self?.finished(trashed: trashed)
         }
     }

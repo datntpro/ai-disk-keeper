@@ -337,6 +337,22 @@
         }
       }
     },
+    "cleanup.a11y.row" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@, %@, %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@, %@, %@, %@"
+          }
+        }
+      }
+    },
     "cleanup.action.cancel" : {
       "localizations" : {
         "en" : {
@@ -445,6 +461,38 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Dừng"
+          }
+        }
+      }
+    },
+    "cleanup.audit.paused" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cleanup paused: audit log unavailable. Nothing more was moved."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã tạm dừng: không ghi được nhật ký thao tác. Không chuyển thêm mục nào."
+          }
+        }
+      }
+    },
+    "cleanup.audit.revealFolder" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reveal folder"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hiển thị thư mục"
           }
         }
       }
@@ -977,6 +1025,22 @@
         }
       }
     },
+    "cleanup.confirm" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move %@ to Trash"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chuyển %@ vào Thùng rác"
+          }
+        }
+      }
+    },
     "cleanup.error.auditUnavailable" : {
       "localizations" : {
         "en" : {
@@ -1041,6 +1105,182 @@
         }
       }
     },
+    "cleanup.next.openSettings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open settings"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mở cài đặt"
+          }
+        }
+      }
+    },
+    "cleanup.next.protected" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No action needed — this item is protected"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không cần làm gì — mục này được bảo vệ"
+          }
+        }
+      }
+    },
+    "cleanup.next.quit" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quit %@, then review again"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Thoát %@ rồi xem lại"
+          }
+        }
+      }
+    },
+    "cleanup.next.rescan" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Re-scan"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quét lại"
+          }
+        }
+      }
+    },
+    "cleanup.next.reveal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reveal in Finder"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hiển thị trong Finder"
+          }
+        }
+      }
+    },
+    "cleanup.next.tryLater" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try again later. Nothing else was changed."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hãy thử lại sau. Không có gì khác bị thay đổi."
+          }
+        }
+      }
+    },
+    "cleanup.outcome.failed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed — %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lỗi — %@"
+          }
+        }
+      }
+    },
+    "cleanup.outcome.pruned" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trashed · worktree pruned"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã chuyển · đã prune worktree"
+          }
+        }
+      }
+    },
+    "cleanup.outcome.skipped" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skipped — %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bỏ qua — %@"
+          }
+        }
+      }
+    },
+    "cleanup.outcome.trashed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trashed"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã chuyển vào Thùng rác"
+          }
+        }
+      }
+    },
+    "cleanup.planValid" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plan valid %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kế hoạch còn hiệu lực %@"
+          }
+        }
+      }
+    },
     "cleanup.progress.title" : {
       "localizations" : {
         "en" : {
@@ -1073,6 +1313,22 @@
         }
       }
     },
+    "cleanup.result.after" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "After you empty the Trash · %@ free"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sau khi dọn sạch Thùng rác · trống %@"
+          }
+        }
+      }
+    },
     "cleanup.result.auditWarning" : {
       "localizations" : {
         "en" : {
@@ -1089,6 +1345,72 @@
         }
       }
     },
+    "cleanup.result.before" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before · %@ free"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Trước · trống %@"
+          }
+        }
+      }
+    },
+    "cleanup.result.complete" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cleanup complete"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã dọn dẹp xong"
+          }
+        }
+      }
+    },
+    "cleanup.result.errors" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld error"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld errors"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "%lld lỗi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "cleanup.result.failed" : {
       "localizations" : {
         "en" : {
@@ -1101,6 +1423,40 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Không thành công"
+          }
+        }
+      }
+    },
+    "cleanup.result.items" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld items"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "%lld mục"
+                }
+              }
+            }
           }
         }
       }
@@ -1153,6 +1509,22 @@
         }
       }
     },
+    "cleanup.result.problems" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cleanup finished with problems"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dọn dẹp xong nhưng có lỗi"
+          }
+        }
+      }
+    },
     "cleanup.result.section" : {
       "localizations" : {
         "en" : {
@@ -1185,6 +1557,22 @@
         }
       }
     },
+    "cleanup.result.stopped" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cleanup stopped"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã dừng dọn dẹp"
+          }
+        }
+      }
+    },
     "cleanup.result.stoppedByAudit" : {
       "localizations" : {
         "en" : {
@@ -1213,6 +1601,38 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Đã dừng trước các mục này"
+          }
+        }
+      }
+    },
+    "cleanup.result.summary" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "moved to the Trash · %@ · %@ · %@ skipped"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "đã chuyển vào Thùng rác · %@ · %@ · %@ bỏ qua"
+          }
+        }
+      }
+    },
+    "cleanup.review.dryRun" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is a dry run: nothing has changed yet. Each item is checked again right before it moves."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đây là chạy thử: chưa có gì thay đổi. Mỗi mục được kiểm tra lại ngay trước khi chuyển."
           }
         }
       }
@@ -1361,6 +1781,22 @@
         }
       }
     },
+    "cleanup.review.titleBytes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move %@ to the Trash?"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chuyển %@ vào Thùng rác?"
+          }
+        }
+      }
+    },
     "cleanup.review.willMove" : {
       "localizations" : {
         "en" : {
@@ -1389,6 +1825,120 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Sẽ không được dọn (%lld)"
+          }
+        }
+      }
+    },
+    "cleanup.row.keeping" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keeping %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Giữ lại %@"
+          }
+        }
+      }
+    },
+    "cleanup.row.moreReasons" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%@ more"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "+%@ lý do khác"
+          }
+        }
+      }
+    },
+    "cleanup.row.otherCopies" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "+%lld other copy"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "+%lld other copies"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "+%lld bản sao khác"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "cleanup.row.quitFirst" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is running — quit it first"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ đang chạy — hãy thoát trước"
+          }
+        }
+      }
+    },
+    "cleanup.row.thenPrune" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "then git worktree prune"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "sau đó git worktree prune"
+          }
+        }
+      }
+    },
+    "cleanup.row.tickedByYou" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ticked by you"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "do bạn chọn"
           }
         }
       }
@@ -1537,6 +2087,22 @@
         }
       }
     },
+    "cleanup.several" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Several sources"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nhiều nguồn"
+          }
+        }
+      }
+    },
     "cleanup.toolbar.review" : {
       "localizations" : {
         "en" : {
@@ -1581,6 +2147,88 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Chuyển vào Thùng rác"
+          }
+        }
+      }
+    },
+    "cleanup.trio.frees" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frees after emptying Trash"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Giải phóng sau khi dọn sạch Thùng rác"
+          }
+        }
+      }
+    },
+    "cleanup.trio.items" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld items"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "%lld mục"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "cleanup.trio.skipped" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skipped"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bỏ qua"
+          }
+        }
+      }
+    },
+    "cleanup.trio.willMove" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Will move"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sẽ chuyển"
           }
         }
       }

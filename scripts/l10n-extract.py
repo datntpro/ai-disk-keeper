@@ -82,7 +82,10 @@ def load_catalog():
 
 
 def unit(entry, lang):
-    return entry.get("localizations", {}).get(lang, {}).get("stringUnit")
+    """The language's string unit; for a plural key (`variations.plural`) the `other` form, which the code default
+    (a `%lld` format string) must equal."""
+    loc = entry.get("localizations", {}).get(lang, {})
+    return loc.get("stringUnit") or loc.get("variations", {}).get("plural", {}).get("other", {}).get("stringUnit")
 
 
 def check(keys, errors, cat):
@@ -118,6 +121,7 @@ def sync(keys, cat):
         entry.pop("extractionState", None)
         en = unit(entry, "en")
         if en is None or en["value"] != fmt:
+            # A changed code default drops the English plural forms; `PLURALS` in the vi file puts them back.
             entry.setdefault("localizations", {})["en"] = {"stringUnit": {"state": "translated", "value": fmt}}
             vi = unit(entry, "vi")
             if vi and vi["state"] != "new":
