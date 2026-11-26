@@ -85,3 +85,24 @@ should run this scanner in its own pass or after the rule scanners.
 ## Benchmark
 
 `ADK_BENCH=1` on the real `/Applications` (read-only, not in CI): target under 5 s for 200 apps, warm.
+
+## UI (T37)
+
+Code: `Sources/AIDiskKeeperUI/Modules/Apps/Uninstall*.swift`. UI only: no Core changes. The engine still refuses
+Apple, system, nested, symlinked, root-owned and running apps; the screen just can't ask for them and says why.
+
+- **Apps tab:** searchable list (size descending, view-only apps last and greyed with a lock), detail with the
+  bundle row, "Related files in your Library" and a "May be shared" section.
+- **Ticks:** `exact` and launch-agent matches start ticked; `name` and shared entries never do, and shared entries
+  are ticked one at a time. Items with `cleanupMethod .none` can't be ticked. The bundle is implicit: it is what
+  Uninstall means. Shared entries are shown under an app when their folder name equals the app's name.
+- **Uninstall…** hands `[bundle] + ticked leftovers` to `CleanupCoordinator.review` (the normal dry-run sheet). It is
+  disabled while the app runs ("Quit the app first") and for view-only apps. We never quit an app for you.
+- **Reset app only** moves the app's exact leftovers in `Caches`, `HTTPStorages`, `WebKit`, `Saved Application
+  State` and `Logs`; the app stays. Preferences are guard-protected and Application Support / Containers hold user data.
+- **Guidance:** after a run, `CleanupCoordinator.lastReport` is read for `needsAppManagementPermission` (card with
+  an "Open settings" link) and `requiresAdmin` (Finder guidance). Running and view-only apps get their own card.
+- **Orphaned leftovers tab:** grouped by bundle id, never pre-ticked, no select-all; Review cleanup… opens the sheet
+  for the ticked ones only.
+- Preferences are not removed (the scan guard protects them), so the screen says they stay.
+- "Unused for 90+ days" counts uninstallable apps whose last-used date is older than 90 days or unknown.

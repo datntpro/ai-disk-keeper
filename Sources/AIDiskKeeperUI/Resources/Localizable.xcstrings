@@ -161,6 +161,1046 @@
         }
       }
     },
+    "apps.a11y.app" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@, %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@, %2$@, %3$@"
+          }
+        }
+      }
+    },
+    "apps.a11y.related" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@, %@, %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@, %2$@, %3$@, %4$@"
+          }
+        }
+      }
+    },
+    "apps.a11y.ticked" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "selected"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "đã chọn"
+          }
+        }
+      }
+    },
+    "apps.a11y.unticked" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "not selected"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "chưa chọn"
+          }
+        }
+      }
+    },
+    "apps.action.disabled.running" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quit the app first"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hãy thoát ứng dụng trước"
+          }
+        }
+      }
+    },
+    "apps.action.reset" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset app only"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chỉ đặt lại ứng dụng"
+          }
+        }
+      }
+    },
+    "apps.action.reset.help" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moves its caches and saved state to the Trash and keeps the app."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chuyển cache và trạng thái đã lưu vào Thùng rác, giữ lại ứng dụng."
+          }
+        }
+      }
+    },
+    "apps.action.uninstall" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uninstall…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gỡ cài đặt…"
+          }
+        }
+      }
+    },
+    "apps.allUsers" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installed for all users"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Được cài cho mọi người dùng"
+          }
+        }
+      }
+    },
+    "apps.appStore" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Store · %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "App Store · %@"
+          }
+        }
+      }
+    },
+    "apps.apple" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple system app · can't be removed"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ứng dụng hệ thống của Apple · không thể gỡ"
+          }
+        }
+      }
+    },
+    "apps.bar.summary" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "app + %@ related items"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ứng dụng + %@ mục liên quan"
+          }
+        }
+      }
+    },
+    "apps.bar.summaryOne" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "app + %@ related item"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ứng dụng + %@ mục liên quan"
+          }
+        }
+      }
+    },
+    "apps.empty.message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No apps were found in Applications or ~/Applications."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không có ứng dụng nào trong Applications hoặc ~/Applications."
+          }
+        }
+      }
+    },
+    "apps.empty.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No apps found"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không tìm thấy ứng dụng"
+          }
+        }
+      }
+    },
+    "apps.failed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't list your apps. Nothing was changed."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không liệt kê được ứng dụng. Không có gì bị thay đổi."
+          }
+        }
+      }
+    },
+    "apps.failed.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't read your apps"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không đọc được ứng dụng của bạn"
+          }
+        }
+      }
+    },
+    "apps.guide.admin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installed for all users. Drag it to the Trash in Finder; you may need an administrator password."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Được cài cho mọi người dùng. Hãy kéo nó vào Thùng rác trong Finder; có thể cần mật khẩu quản trị viên."
+          }
+        }
+      }
+    },
+    "apps.guide.appManagement" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Needs permission once — macOS asks you to allow AI Disk Keeper under Privacy & Security › App Management to move apps."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cần cấp quyền một lần — macOS yêu cầu bạn cho phép AI Disk Keeper trong Quyền riêng tư & Bảo mật › Quản lý ứng dụng để di chuyển ứng dụng."
+          }
+        }
+      }
+    },
+    "apps.guide.locked.apple" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Part of macOS or Apple software. It can't be removed here."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Một phần của macOS hoặc phần mềm Apple. Không thể gỡ ở đây."
+          }
+        }
+      }
+    },
+    "apps.guide.locked.noBundleID" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app has no bundle identifier. It can't be removed here."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ứng dụng này không có bundle identifier. Không thể gỡ ở đây."
+          }
+        }
+      }
+    },
+    "apps.guide.locked.notTopLevel" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inside a sub-folder of Applications (a suite or vendor folder). It can't be removed here."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nằm trong thư mục con của Applications (bộ ứng dụng hoặc thư mục của nhà phát triển). Không thể gỡ ở đây."
+          }
+        }
+      }
+    },
+    "apps.guide.locked.symlink" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A link to an app stored elsewhere. It can't be removed here."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Một liên kết tới ứng dụng được lưu ở nơi khác. Không thể gỡ ở đây."
+          }
+        }
+      }
+    },
+    "apps.guide.locked.system" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lives on the protected system volume. It can't be removed here."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nằm trên ổ hệ thống được bảo vệ. Không thể gỡ ở đây."
+          }
+        }
+      }
+    },
+    "apps.guide.openSettings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open settings"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mở cài đặt"
+          }
+        }
+      }
+    },
+    "apps.guide.reveal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reveal in Finder"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hiện trong Finder"
+          }
+        }
+      }
+    },
+    "apps.guide.running" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is running. Quit it to uninstall."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ đang chạy. Hãy thoát ứng dụng để gỡ cài đặt."
+          }
+        }
+      }
+    },
+    "apps.lastOpened" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "last opened %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "mở lần cuối %@"
+          }
+        }
+      }
+    },
+    "apps.leftovers.failed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't read related files — Uninstall moves only the app."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không đọc được các tệp liên quan — Gỡ cài đặt chỉ chuyển ứng dụng vào Thùng rác."
+          }
+        }
+      }
+    },
+    "apps.loading" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading your apps…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đang đọc danh sách ứng dụng…"
+          }
+        }
+      }
+    },
+    "apps.match.exact" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "bundle id"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "bundle id"
+          }
+        }
+      }
+    },
+    "apps.match.launchAgent" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "launch agent"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "launch agent"
+          }
+        }
+      }
+    },
+    "apps.match.name" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "name match · may be shared"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "khớp theo tên · có thể dùng chung"
+          }
+        }
+      }
+    },
+    "apps.match.shared" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "used by %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "được dùng bởi %@"
+          }
+        }
+      }
+    },
+    "apps.neverOpened" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no usage record"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "chưa có dữ liệu sử dụng"
+          }
+        }
+      }
+    },
+    "apps.noMatch" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No apps match “%@”"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không có ứng dụng nào khớp “%@”"
+          }
+        }
+      }
+    },
+    "apps.note.body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Documents outside its container are not touched. Its settings in ~/Library/Preferences stay. Everything else goes to the Trash, so you can put it back."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Các tài liệu nằm ngoài vùng chứa của nó không bị động đến. Cài đặt của nó trong ~/Library/Preferences được giữ lại. Mọi thứ khác được chuyển vào Thùng rác, nên bạn có thể khôi phục."
+          }
+        }
+      }
+    },
+    "apps.note.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before you uninstall"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Trước khi gỡ cài đặt"
+          }
+        }
+      }
+    },
+    "apps.orphans.explain" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Left behind by an app that no longer seems to be installed anywhere on this Mac, and untouched for over 30 days."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Do một ứng dụng dường như không còn được cài ở đâu trên máy Mac này để lại, và không được động đến hơn 30 ngày."
+          }
+        }
+      }
+    },
+    "apps.orphans.modified" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "last modified %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "sửa lần cuối %@"
+          }
+        }
+      }
+    },
+    "apps.orphans.none" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No orphaned leftovers — every Library folder belongs to an installed app."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không có tệp sót lại mồ côi — mọi thư mục trong Thư viện đều thuộc một ứng dụng đã cài."
+          }
+        }
+      }
+    },
+    "apps.orphans.review" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review cleanup…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Xem lại trước khi dọn dẹp…"
+          }
+        }
+      }
+    },
+    "apps.orphans.selected" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ selected"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "đã chọn %@"
+          }
+        }
+      }
+    },
+    "apps.orphans.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orphaned leftovers"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tệp sót lại mồ côi"
+          }
+        }
+      }
+    },
+    "apps.related.none" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No related files found in your Library."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không tìm thấy tệp liên quan nào trong Thư viện của bạn."
+          }
+        }
+      }
+    },
+    "apps.retry" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try again"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Thử lại"
+          }
+        }
+      }
+    },
+    "apps.runningNow" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "running now"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "đang chạy"
+          }
+        }
+      }
+    },
+    "apps.search" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search apps"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tìm ứng dụng"
+          }
+        }
+      }
+    },
+    "apps.search.clear" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear search"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Xóa tìm kiếm"
+          }
+        }
+      }
+    },
+    "apps.section.bundle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App bundle"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gói ứng dụng"
+          }
+        }
+      }
+    },
+    "apps.section.related" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Related files in your Library"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tệp liên quan trong Thư viện của bạn"
+          }
+        }
+      }
+    },
+    "apps.section.shared" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "May be shared"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Có thể dùng chung"
+          }
+        }
+      }
+    },
+    "apps.select" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select an app to see what it leaves behind."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chọn một ứng dụng để xem nó để lại những gì."
+          }
+        }
+      }
+    },
+    "apps.sizeIncomplete" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "size may be incomplete"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "kích thước có thể chưa đầy đủ"
+          }
+        }
+      }
+    },
+    "apps.source.appStore" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac App Store"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mac App Store"
+          }
+        }
+      }
+    },
+    "apps.source.apple" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple"
+          }
+        }
+      }
+    },
+    "apps.source.developerID" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Developer ID: %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Developer ID: %@"
+          }
+        }
+      }
+    },
+    "apps.source.unsigned" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unsigned"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chưa ký"
+          }
+        }
+      }
+    },
+    "apps.subtitle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ apps · %@ unused for 90+ days"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ ứng dụng · %2$@ ứng dụng không dùng từ 90 ngày trở lên"
+          }
+        }
+      }
+    },
+    "apps.tab.apps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ứng dụng"
+          }
+        }
+      }
+    },
+    "apps.tab.orphans" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orphaned leftovers %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tệp sót lại mồ côi %@"
+          }
+        }
+      }
+    },
+    "apps.tab.orphansPlain" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orphaned leftovers"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tệp sót lại mồ côi"
+          }
+        }
+      }
+    },
+    "apps.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uninstaller"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gỡ cài đặt"
+          }
+        }
+      }
+    },
+    "apps.total" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "app %@ + %@ related items"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ứng dụng %1$@ + %2$@ mục liên quan"
+          }
+        }
+      }
+    },
+    "apps.totalOne" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "app %@ + %@ related item"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ứng dụng %1$@ + %2$@ mục liên quan"
+          }
+        }
+      }
+    },
     "care.announce.finished" : {
       "localizations" : {
         "en" : {
