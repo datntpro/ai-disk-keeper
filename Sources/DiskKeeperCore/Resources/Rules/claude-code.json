@@ -195,7 +195,7 @@
       "explanation": "Shell environment snapshots taken at session start; recreated for each new session. A Claude Code session that is still open and started earlier loses its shell setup (aliases, PATH) until you restart it.",
       "localized": {
         "vi": {
-          "title": "Ảnh chụp shell",
+          "title": "Bản chụp nhanh shell",
           "explanation": "Ảnh chụp môi trường shell lúc bắt đầu phiên; được tạo lại cho mỗi phiên mới. Một phiên Claude Code đang mở và bắt đầu từ trước sẽ mất thiết lập shell (alias, PATH) cho đến khi bạn khởi động lại phiên đó."
         }
       }
@@ -387,7 +387,7 @@
       "localized": {
         "vi": {
           "title": "Cache plugin",
-          "explanation": "Các tệp plugin đã cài được Claude Code lưu cache. Plugin sẽ không dùng được cho đến khi cài lại bằng /plugin, việc này có thể cần thiết sau khi xóa mục này."
+          "explanation": "Các tệp plugin đã cài được Claude Code lưu cache. Sau khi xóa, có thể phải cài lại plugin bằng /plugin; trước đó plugin sẽ không dùng được."
         }
       }
     },

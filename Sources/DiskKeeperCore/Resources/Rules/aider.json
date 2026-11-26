@@ -84,7 +84,7 @@
       "localized": {
         "vi": {
           "title": "Lịch sử chat của Aider",
-          "explanation": "Nhật ký chat của Aider cho repo này; không thể tạo lại. Nhật ký trong 7 ngày gần nhất được giữ lại."
+          "explanation": "Nhật ký chat của Aider cho repo này; không thể tạo lại. Nhật ký có thay đổi trong 7 ngày qua được giữ lại."
         }
       },
       "cleanup": {

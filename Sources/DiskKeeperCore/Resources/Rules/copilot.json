@@ -43,7 +43,7 @@
       "localized": {
         "vi": {
           "title": "Dữ liệu workspace của Copilot Chat",
-          "explanation": "Dữ liệu tiện ích Copilot Chat cho một workspace (chỉ mục mã cục bộ, đầu ra công cụ lưu tạm). Được tạo lại khi cần; VS Code lưu danh sách chat riêng. Các workspace được dùng trong 14 ngày gần nhất được giữ lại."
+          "explanation": "Dữ liệu tiện ích Copilot Chat cho một workspace (chỉ mục mã cục bộ, đầu ra công cụ lưu tạm). Được tạo lại khi cần; VS Code lưu danh sách chat riêng. Các workspace có thay đổi trong 14 ngày qua được giữ lại."
         }
       },
       "cleanup": {
@@ -77,7 +77,7 @@
       "localized": {
         "vi": {
           "title": "Dữ liệu workspace của Copilot Chat (Insiders)",
-          "explanation": "Dữ liệu tiện ích Copilot Chat cho một workspace (chỉ mục mã cục bộ, đầu ra công cụ lưu tạm). Được tạo lại khi cần; VS Code lưu danh sách chat riêng. Các workspace được dùng trong 14 ngày gần nhất được giữ lại."
+          "explanation": "Dữ liệu tiện ích Copilot Chat cho một workspace (chỉ mục mã cục bộ, đầu ra công cụ lưu tạm). Được tạo lại khi cần; VS Code lưu danh sách chat riêng. Các workspace có thay đổi trong 14 ngày qua được giữ lại."
         }
       },
       "cleanup": {

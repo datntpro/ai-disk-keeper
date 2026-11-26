@@ -16,7 +16,6 @@ struct GeneralSettingsView: View {
             }
             languageSection
             FullDiskAccessCard(status: model.fdaStatus, recheck: model.refreshFullDiskAccess)
-            Divider()
             Button(loc("settings.general.showWelcome", "Show welcome screen again")) { model.setOnboardingCompleted(false) }
         }
         .formStyle(.grouped)

@@ -45,7 +45,7 @@
       "localized": {
         "vi": {
           "title": "Phiên Codex (theo ngày)",
-          "explanation": "Các phiên Codex của một ngày (YYYY/MM/DD). Xóa đi thì các phiên đó biến mất khỏi `codex resume`; mã nguồn của bạn không bị ảnh hưởng. Các ngày trong 7 ngày gần nhất được giữ lại."
+          "explanation": "Các phiên Codex của một ngày (YYYY/MM/DD). Xóa đi thì các phiên đó biến mất khỏi `codex resume`; mã nguồn của bạn không bị ảnh hưởng. Các ngày có thay đổi trong 7 ngày qua được giữ lại."
         }
       },
       "cleanup": {
@@ -107,7 +107,7 @@
       "localized": {
         "vi": {
           "title": "Nhật ký Codex",
-          "explanation": "Nhật ký chẩn đoán do Codex ghi. Xóa được; nhật ký mới sẽ được tạo khi Codex chạy. Nhật ký trong ngày gần nhất được giữ lại."
+          "explanation": "Nhật ký chẩn đoán do Codex ghi. Có thể xóa an toàn; nhật ký mới sẽ được tạo khi Codex chạy. Nhật ký có thay đổi trong 24 giờ qua được giữ lại."
         }
       },
       "cleanup": {

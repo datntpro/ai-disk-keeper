@@ -107,8 +107,11 @@ if [ "$VERIFY" = 1 ]; then
   echo "==> Verifying bundled resources"
   OUT="$("$APP/Contents/MacOS/AIDiskKeeper" --verify-resources)" || die "--verify-resources failed: $OUT"
   echo "$OUT"
-  case "$(printf '%s\n' "$OUT" | sed -n 's/^bundle=//p')" in
-    "$APP/Contents/Resources/"*) ;;
+  # Compare physical paths: the binary reports /private/tmp where $APP may say /tmp.
+  APP_REAL="$(cd -P "$APP" && pwd -P)"
+  BUNDLE_REAL="$(cd -P "$(printf '%s\n' "$OUT" | sed -n 's/^bundle=//p')" 2>/dev/null && pwd -P || true)"
+  case "$BUNDLE_REAL" in
+    "$APP_REAL/Contents/Resources/"*) ;;
     *) die "resource bundle did not resolve inside the .app" ;;
   esac
   [ "$(printf '%s\n' "$OUT" | sed -n 's/^rules=//p')" != "MISSING" ] || die "rules directory missing"

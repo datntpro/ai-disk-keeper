@@ -77,7 +77,7 @@
       "localized": {
         "vi": {
           "title": "Nhật ký ứng dụng Windsurf",
-          "explanation": "Nhật ký chẩn đoán do Windsurf ghi. Xóa được; nhật ký mới sẽ được tạo khi ứng dụng chạy. Nhật ký trong ngày gần nhất được giữ lại phòng khi ứng dụng đang chạy."
+          "explanation": "Nhật ký chẩn đoán do Windsurf ghi. Có thể xóa an toàn; nhật ký mới sẽ được tạo khi ứng dụng chạy. Nhật ký có thay đổi trong 24 giờ qua được giữ lại phòng khi ứng dụng đang chạy."
         }
       },
       "cleanup": {
@@ -109,7 +109,7 @@
       "localized": {
         "vi": {
           "title": "Trạng thái workspace của Windsurf",
-          "explanation": "Trạng thái theo workspace cho một thư mục đã mở trong Windsurf (lịch sử chat, trạng thái trình soạn thảo, chỉ mục). Xóa đi là mất lịch sử chat và trạng thái các trình soạn thảo đang mở của workspace đó; các thư mục được dùng trong 14 ngày gần nhất được giữ lại."
+          "explanation": "Trạng thái theo workspace cho một thư mục đã mở trong Windsurf (lịch sử hội thoại, trạng thái trình soạn thảo, chỉ mục). Xóa đi là mất lịch sử hội thoại và trạng thái các trình soạn thảo đang mở của workspace đó; các thư mục có thay đổi trong 14 ngày qua được giữ lại."
         }
       },
       "cleanup": {
@@ -141,7 +141,7 @@
       "localized": {
         "vi": {
           "title": "Hội thoại Cascade của Windsurf",
-          "explanation": "Lịch sử hội thoại Cascade. Xóa một cuộc hội thoại là nó biến mất khỏi danh sách chat của Windsurf; mã nguồn của bạn không bị ảnh hưởng. Các hội thoại trong 7 ngày gần nhất được giữ lại."
+          "explanation": "Lịch sử hội thoại Cascade. Xóa một cuộc hội thoại là nó biến mất khỏi danh sách chat của Windsurf; mã nguồn của bạn không bị ảnh hưởng. Các hội thoại có thay đổi trong 7 ngày qua được giữ lại."
         }
       },
       "cleanup": {

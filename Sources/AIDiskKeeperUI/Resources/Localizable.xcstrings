@@ -12,7 +12,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Hiện trong Finder"
+            "value" : "Hiển thị trong Finder"
           }
         }
       }
@@ -604,7 +604,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Chưa dọn dẹp: không mở được nhật ký thao tác (%@). Chưa có gì bị thay đổi."
+            "value" : "Chưa bắt đầu dọn dẹp: không mở được nhật ký thao tác (%@). Chưa có gì bị thay đổi."
           }
         }
       }
@@ -1132,7 +1132,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Chọn mọi mục An toàn (%lld · %@)"
+            "value" : "Chọn tất cả mục An toàn (%lld · %@)"
           }
         }
       }
@@ -1148,7 +1148,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Chọn mọi mục An toàn trong %1$@ (%2$lld · %3$@)"
+            "value" : "Chọn tất cả mục An toàn trong %1$@ (%2$lld · %3$@)"
           }
         }
       }
@@ -1500,7 +1500,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Chọn một mục để xem vì sao nó nằm ở đây."
+            "value" : "Chọn một mục để xem vì sao mục đó được liệt kê."
           }
         }
       }
@@ -1580,7 +1580,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "%1$@ dung lượng gốc · %2$lld tệp · sửa đổi %3$@"
+            "value" : "%1$@ theo kích thước tệp · %2$lld tệp · sửa lần cuối %3$@"
           }
         }
       }
@@ -1676,7 +1676,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Mở cài đặt quyền riêng tư"
+            "value" : "Mở Quyền riêng tư & Bảo mật"
           }
         }
       }
@@ -2012,7 +2012,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Cache, nhật ký, lịch sử phiên làm việc và tệp tạm trong thư mục chính của bạn."
+            "value" : "Cache, nhật ký, lịch sử phiên và tệp tạm trong thư mục chính của bạn."
           }
         }
       }
@@ -2140,7 +2140,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Tổng cộng tìm thấy"
+            "value" : "Tổng dung lượng tìm thấy"
           }
         }
       }
@@ -3692,7 +3692,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Xóa %1$@ %2$@"
+            "value" : "Bỏ %1$@ %2$@ khỏi danh sách"
           }
         }
       }
@@ -4076,7 +4076,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Gồm những thứ như lịch sử chat hoặc phiên làm việc cũ mà bạn không thể tiếp tục được nữa, một mô hình bạn sẽ phải tải lại, hoặc các thư viện phụ thuộc bạn sẽ phải cài lại. Hãy đọc phần giải thích rồi tự chọn từng mục. Mục Cần xem không bao giờ được chọn hàng loạt."
+            "value" : "Gồm những thứ như lịch sử hội thoại hoặc phiên cũ mà bạn không thể tiếp tục được nữa, một mô hình bạn sẽ phải tải lại, hoặc các thư viện phụ thuộc bạn sẽ phải cài lại. Hãy đọc phần giải thích rồi tự chọn từng mục. Mục Cần xem không bao giờ được chọn hàng loạt."
           }
         }
       }
@@ -4652,7 +4652,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Mở Cài đặt"
+            "value" : "Mở cài đặt"
           }
         }
       }

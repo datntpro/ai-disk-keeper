@@ -74,7 +74,7 @@
       "localized": {
         "vi": {
           "title": "Nhật ký ứng dụng Cursor",
-          "explanation": "Nhật ký chẩn đoán do Cursor ghi. Xóa được; nhật ký mới sẽ được tạo khi ứng dụng chạy. Nhật ký trong ngày gần nhất được giữ lại phòng khi ứng dụng đang chạy."
+          "explanation": "Nhật ký chẩn đoán do Cursor ghi. Có thể xóa an toàn; nhật ký mới sẽ được tạo khi ứng dụng chạy. Nhật ký có thay đổi trong 24 giờ qua được giữ lại phòng khi ứng dụng đang chạy."
         }
       },
       "cleanup": {
@@ -106,7 +106,7 @@
       "localized": {
         "vi": {
           "title": "Trạng thái workspace của Cursor",
-          "explanation": "Trạng thái theo workspace cho một thư mục đã mở trong Cursor (lịch sử chat, trạng thái trình soạn thảo, chỉ mục). Xóa đi là mất lịch sử chat và trạng thái các trình soạn thảo đang mở của workspace đó; các thư mục được dùng trong 14 ngày gần nhất được giữ lại."
+          "explanation": "Trạng thái theo workspace cho một thư mục đã mở trong Cursor (lịch sử hội thoại, trạng thái trình soạn thảo, chỉ mục). Xóa đi là mất lịch sử hội thoại và trạng thái các trình soạn thảo đang mở của workspace đó; các thư mục có thay đổi trong 14 ngày qua được giữ lại."
         }
       },
       "cleanup": {
@@ -138,7 +138,7 @@
       "localized": {
         "vi": {
           "title": "Lịch sử tệp cục bộ của Cursor",
-          "explanation": "Lịch sử tệp cục bộ (các phiên bản trước của tệp bạn đã sửa), lưu theo từng tệp. Xóa đi là mất các mục Timeline của những tệp đó; tệp hiện tại của bạn không bị ảnh hưởng. Các mục được dùng trong 14 ngày gần nhất được giữ lại."
+          "explanation": "Lịch sử tệp cục bộ (các phiên bản trước của tệp bạn đã sửa), lưu theo từng tệp. Xóa đi là mất các mục Timeline của những tệp đó; tệp hiện tại của bạn không bị ảnh hưởng. Các mục có thay đổi trong 14 ngày qua được giữ lại."
         }
       },
       "cleanup": {

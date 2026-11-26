@@ -59,7 +59,7 @@
       "localized": {
         "vi": {
           "title": "Dữ liệu dự án của Gemini CLI",
-          "explanation": "Checkpoint chat, nhật ký và lịch sử shell theo dự án của Gemini CLI. Xóa đi là mất các checkpoint `/chat resume` của dự án đó. Các dự án được dùng trong 7 ngày gần nhất được giữ lại."
+          "explanation": "Checkpoint chat, nhật ký và lịch sử shell theo dự án của Gemini CLI. Xóa đi là mất các checkpoint `/chat resume` của dự án đó. Các dự án có thay đổi trong 7 ngày qua được giữ lại."
         }
       },
       "cleanup": {
@@ -103,7 +103,7 @@
       "localized": {
         "vi": {
           "title": "Báo cáo sự cố Antigravity",
-          "explanation": "Các báo cáo sự cố do Antigravity ghi. Xóa được."
+          "explanation": "Các báo cáo sự cố do Antigravity ghi. Có thể xóa an toàn."
         }
       },
       "cleanup": {
@@ -164,7 +164,7 @@
       "localized": {
         "vi": {
           "title": "Nhật ký ứng dụng Antigravity",
-          "explanation": "Nhật ký chẩn đoán do Antigravity ghi. Xóa được; nhật ký mới sẽ được tạo khi ứng dụng chạy. Nhật ký trong ngày gần nhất được giữ lại phòng khi ứng dụng đang chạy."
+          "explanation": "Nhật ký chẩn đoán do Antigravity ghi. Có thể xóa an toàn; nhật ký mới sẽ được tạo khi ứng dụng chạy. Nhật ký có thay đổi trong 24 giờ qua được giữ lại phòng khi ứng dụng đang chạy."
         }
       },
       "cleanup": {
@@ -196,7 +196,7 @@
       "localized": {
         "vi": {
           "title": "Trạng thái workspace của Antigravity",
-          "explanation": "Trạng thái theo workspace cho một thư mục đã mở trong Antigravity (lịch sử chat, trạng thái trình soạn thảo, chỉ mục). Xóa đi là mất lịch sử chat và trạng thái các trình soạn thảo đang mở của workspace đó; các thư mục được dùng trong 14 ngày gần nhất được giữ lại."
+          "explanation": "Trạng thái theo workspace cho một thư mục đã mở trong Antigravity (lịch sử hội thoại, trạng thái trình soạn thảo, chỉ mục). Xóa đi là mất lịch sử hội thoại và trạng thái các trình soạn thảo đang mở của workspace đó; các thư mục có thay đổi trong 14 ngày qua được giữ lại."
         }
       },
       "cleanup": {

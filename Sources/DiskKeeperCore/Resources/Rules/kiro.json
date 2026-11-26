@@ -64,7 +64,7 @@
       "localized": {
         "vi": {
           "title": "Nhật ký agent Kiro",
-          "explanation": "Nhật ký chẩn đoán do Kiro ghi. Xóa được; nhật ký mới sẽ được tạo khi Kiro chạy. Nhật ký trong ngày gần nhất được giữ lại."
+          "explanation": "Nhật ký chẩn đoán do Kiro ghi. Có thể xóa an toàn; nhật ký mới sẽ được tạo khi Kiro chạy. Nhật ký có thay đổi trong 24 giờ qua được giữ lại."
         }
       },
       "cleanup": {
@@ -126,7 +126,7 @@
       "localized": {
         "vi": {
           "title": "Nhật ký ứng dụng Kiro",
-          "explanation": "Nhật ký chẩn đoán do Kiro ghi. Xóa được; nhật ký mới sẽ được tạo khi ứng dụng chạy. Nhật ký trong ngày gần nhất được giữ lại phòng khi ứng dụng đang chạy."
+          "explanation": "Nhật ký chẩn đoán do Kiro ghi. Có thể xóa an toàn; nhật ký mới sẽ được tạo khi ứng dụng chạy. Nhật ký có thay đổi trong 24 giờ qua được giữ lại phòng khi ứng dụng đang chạy."
         }
       },
       "cleanup": {
@@ -158,7 +158,7 @@
       "localized": {
         "vi": {
           "title": "Trạng thái workspace của Kiro",
-          "explanation": "Trạng thái theo workspace cho một thư mục đã mở trong Kiro (lịch sử chat, trạng thái trình soạn thảo, chỉ mục). Xóa đi là mất lịch sử chat và trạng thái các trình soạn thảo đang mở của workspace đó; các thư mục được dùng trong 14 ngày gần nhất được giữ lại."
+          "explanation": "Trạng thái theo workspace cho một thư mục đã mở trong Kiro (lịch sử hội thoại, trạng thái trình soạn thảo, chỉ mục). Xóa đi là mất lịch sử hội thoại và trạng thái các trình soạn thảo đang mở của workspace đó; các thư mục có thay đổi trong 14 ngày qua được giữ lại."
         }
       },
       "cleanup": {
@@ -237,7 +237,7 @@
       "localized": {
         "vi": {
           "title": "Gói ứng dụng Kiro Crew đã tải",
-          "explanation": "Các gói ứng dụng đã tải mà Kiro Crew sử dụng. Sẽ được tải lại khi cần. Các gói trong 7 ngày gần nhất được giữ lại."
+          "explanation": "Các gói ứng dụng đã tải mà Kiro Crew sử dụng. Sẽ được tải lại khi cần. Các gói có thay đổi trong 7 ngày qua được giữ lại."
         }
       },
       "cleanup": {

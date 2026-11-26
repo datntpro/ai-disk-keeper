@@ -47,7 +47,7 @@
       "localized": {
         "vi": {
           "title": "Phiên chat Continue",
-          "explanation": "Một phiên chat Continue đã lưu. Xóa đi thì nó biến mất khỏi danh sách lịch sử; mã nguồn của bạn không bị ảnh hưởng. Các phiên trong 7 ngày gần nhất được giữ lại."
+          "explanation": "Một phiên chat Continue đã lưu. Xóa đi thì nó biến mất khỏi danh sách lịch sử; mã nguồn của bạn không bị ảnh hưởng. Các phiên có thay đổi trong 7 ngày qua được giữ lại."
         }
       },
       "cleanup": {
@@ -100,7 +100,7 @@
       "localized": {
         "vi": {
           "title": "Nhật ký Continue",
-          "explanation": "Nhật ký chẩn đoán do Continue ghi. Xóa được. Nhật ký trong ngày gần nhất được giữ lại."
+          "explanation": "Nhật ký chẩn đoán do Continue ghi. Có thể xóa an toàn. Nhật ký có thay đổi trong 24 giờ qua được giữ lại."
         }
       },
       "cleanup": {

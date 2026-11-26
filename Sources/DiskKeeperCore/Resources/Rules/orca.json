@@ -79,7 +79,7 @@
       "localized": {
         "vi": {
           "title": "Nhật ký Orca",
-          "explanation": "Nhật ký chẩn đoán do Orca ghi. Xóa được; nhật ký mới sẽ được tạo khi Orca chạy. Nhật ký trong ngày gần nhất được giữ lại."
+          "explanation": "Nhật ký chẩn đoán do Orca ghi. Có thể xóa an toàn; nhật ký mới sẽ được tạo khi Orca chạy. Nhật ký có thay đổi trong 24 giờ qua được giữ lại."
         }
       },
       "cleanup": {
@@ -102,7 +102,7 @@
       "localized": {
         "vi": {
           "title": "Bản ghi sự cố của Orca",
-          "explanation": "Các báo cáo sự cố do trình xử lý sự cố của Orca ghi. Xóa được."
+          "explanation": "Các báo cáo sự cố do trình xử lý sự cố của Orca ghi. Có thể xóa an toàn."
         }
       },
       "cleanup": {

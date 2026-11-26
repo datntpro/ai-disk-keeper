@@ -29,7 +29,7 @@
       "localized": {
         "vi": {
           "title": "Nhật ký Claude",
-          "explanation": "Tạo lại được: nhật ký chẩn đoán của Claude; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký được dùng trong ngày gần nhất được giữ lại."
+          "explanation": "Tạo lại được: nhật ký chẩn đoán của Claude; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký có thay đổi trong 24 giờ qua được giữ lại."
         }
       },
       "cleanup": {
@@ -61,7 +61,7 @@
       "localized": {
         "vi": {
           "title": "Nhật ký Cursor",
-          "explanation": "Tạo lại được: nhật ký chẩn đoán của Cursor; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký được dùng trong ngày gần nhất được giữ lại."
+          "explanation": "Tạo lại được: nhật ký chẩn đoán của Cursor; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký có thay đổi trong 24 giờ qua được giữ lại."
         }
       },
       "cleanup": {
@@ -93,7 +93,7 @@
       "localized": {
         "vi": {
           "title": "Nhật ký Windsurf",
-          "explanation": "Tạo lại được: nhật ký chẩn đoán của Windsurf; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký được dùng trong ngày gần nhất được giữ lại."
+          "explanation": "Tạo lại được: nhật ký chẩn đoán của Windsurf; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký có thay đổi trong 24 giờ qua được giữ lại."
         }
       },
       "cleanup": {
@@ -125,7 +125,7 @@
       "localized": {
         "vi": {
           "title": "Nhật ký Kiro",
-          "explanation": "Tạo lại được: nhật ký chẩn đoán của Kiro; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký được dùng trong ngày gần nhất được giữ lại."
+          "explanation": "Tạo lại được: nhật ký chẩn đoán của Kiro; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký có thay đổi trong 24 giờ qua được giữ lại."
         }
       },
       "cleanup": {
@@ -157,7 +157,7 @@
       "localized": {
         "vi": {
           "title": "Nhật ký KiroCrew",
-          "explanation": "Tạo lại được: nhật ký chẩn đoán của KiroCrew; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký được dùng trong ngày gần nhất được giữ lại."
+          "explanation": "Tạo lại được: nhật ký chẩn đoán của KiroCrew; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký có thay đổi trong 24 giờ qua được giữ lại."
         }
       },
       "cleanup": {
@@ -189,7 +189,7 @@
       "localized": {
         "vi": {
           "title": "Nhật ký Antigravity",
-          "explanation": "Tạo lại được: nhật ký chẩn đoán của Antigravity; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký được dùng trong ngày gần nhất được giữ lại."
+          "explanation": "Tạo lại được: nhật ký chẩn đoán của Antigravity; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký có thay đổi trong 24 giờ qua được giữ lại."
         }
       },
       "cleanup": {
@@ -221,7 +221,7 @@
       "localized": {
         "vi": {
           "title": "Nhật ký Orca",
-          "explanation": "Tạo lại được: nhật ký chẩn đoán của Orca; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký được dùng trong ngày gần nhất được giữ lại."
+          "explanation": "Tạo lại được: nhật ký chẩn đoán của Orca; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký có thay đổi trong 24 giờ qua được giữ lại."
         }
       },
       "cleanup": {
@@ -253,7 +253,7 @@
       "localized": {
         "vi": {
           "title": "Nhật ký Codex",
-          "explanation": "Tạo lại được: nhật ký chẩn đoán của Codex; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký được dùng trong ngày gần nhất được giữ lại. Codex có thể đang mở các nhật ký này khi chạy, nên hãy kiểm tra xem nó có đang chạy hay không."
+          "explanation": "Tạo lại được: nhật ký chẩn đoán của Codex; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký có thay đổi trong 24 giờ qua được giữ lại. Codex có thể đang mở các nhật ký này khi chạy, nên hãy kiểm tra xem nó có đang chạy hay không."
         }
       }
     },
@@ -275,7 +275,7 @@
       "localized": {
         "vi": {
           "title": "Báo cáo sự cố của Claude",
-          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Claude. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+          "explanation": "Không cần thiết: Báo cáo sự cố và treo ứng dụng của Claude. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
         }
       }
     },
@@ -296,8 +296,8 @@
       "explanation": "Regenerable: not needed. Crash and hang reports from Claude. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
       "localized": {
         "vi": {
-          "title": "Báo cáo lỗi của Claude",
-          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Claude. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+          "title": "Báo cáo lỗi hệ thống của Claude",
+          "explanation": "Không cần thiết: Báo cáo sự cố và treo ứng dụng của Claude. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
         }
       }
     },
@@ -319,7 +319,7 @@
       "localized": {
         "vi": {
           "title": "Báo cáo sự cố của Cursor",
-          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Cursor. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+          "explanation": "Không cần thiết: Báo cáo sự cố và treo ứng dụng của Cursor. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
         }
       }
     },
@@ -340,8 +340,8 @@
       "explanation": "Regenerable: not needed. Crash and hang reports from Cursor. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
       "localized": {
         "vi": {
-          "title": "Báo cáo lỗi của Cursor",
-          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Cursor. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+          "title": "Báo cáo lỗi hệ thống của Cursor",
+          "explanation": "Không cần thiết: Báo cáo sự cố và treo ứng dụng của Cursor. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
         }
       }
     },
@@ -363,7 +363,7 @@
       "localized": {
         "vi": {
           "title": "Báo cáo sự cố của Cursor Helper",
-          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Cursor Helper. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+          "explanation": "Không cần thiết: Báo cáo sự cố và treo ứng dụng của Cursor Helper. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
         }
       }
     },
@@ -384,8 +384,8 @@
       "explanation": "Regenerable: not needed. Crash and hang reports from Cursor Helper. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
       "localized": {
         "vi": {
-          "title": "Báo cáo lỗi của Cursor Helper",
-          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Cursor Helper. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+          "title": "Báo cáo lỗi hệ thống của Cursor Helper",
+          "explanation": "Không cần thiết: Báo cáo sự cố và treo ứng dụng của Cursor Helper. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
         }
       }
     },
@@ -407,7 +407,7 @@
       "localized": {
         "vi": {
           "title": "Báo cáo sự cố của Windsurf",
-          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Windsurf. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+          "explanation": "Không cần thiết: Báo cáo sự cố và treo ứng dụng của Windsurf. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
         }
       }
     },
@@ -428,8 +428,8 @@
       "explanation": "Regenerable: not needed. Crash and hang reports from Windsurf. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
       "localized": {
         "vi": {
-          "title": "Báo cáo lỗi của Windsurf",
-          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Windsurf. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+          "title": "Báo cáo lỗi hệ thống của Windsurf",
+          "explanation": "Không cần thiết: Báo cáo sự cố và treo ứng dụng của Windsurf. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
         }
       }
     },
@@ -451,7 +451,7 @@
       "localized": {
         "vi": {
           "title": "Báo cáo sự cố của Kiro và KiroCrew",
-          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Kiro và KiroCrew. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+          "explanation": "Không cần thiết: Báo cáo sự cố và treo ứng dụng của Kiro và KiroCrew. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
         }
       }
     },
@@ -472,8 +472,8 @@
       "explanation": "Regenerable: not needed. Crash and hang reports from Kiro and KiroCrew. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
       "localized": {
         "vi": {
-          "title": "Báo cáo lỗi của Kiro và KiroCrew",
-          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Kiro và KiroCrew. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+          "title": "Báo cáo lỗi hệ thống của Kiro và KiroCrew",
+          "explanation": "Không cần thiết: Báo cáo sự cố và treo ứng dụng của Kiro và KiroCrew. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
         }
       }
     },
@@ -495,7 +495,7 @@
       "localized": {
         "vi": {
           "title": "Báo cáo sự cố của Antigravity",
-          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Antigravity. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+          "explanation": "Không cần thiết: Báo cáo sự cố và treo ứng dụng của Antigravity. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
         }
       }
     },
@@ -516,8 +516,8 @@
       "explanation": "Regenerable: not needed. Crash and hang reports from Antigravity. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
       "localized": {
         "vi": {
-          "title": "Báo cáo lỗi của Antigravity",
-          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Antigravity. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+          "title": "Báo cáo lỗi hệ thống của Antigravity",
+          "explanation": "Không cần thiết: Báo cáo sự cố và treo ứng dụng của Antigravity. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
         }
       }
     },
@@ -539,7 +539,7 @@
       "localized": {
         "vi": {
           "title": "Báo cáo sự cố của Orca",
-          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Orca. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+          "explanation": "Không cần thiết: Báo cáo sự cố và treo ứng dụng của Orca. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
         }
       }
     },
@@ -560,8 +560,8 @@
       "explanation": "Regenerable: not needed. Crash and hang reports from Orca. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
       "localized": {
         "vi": {
-          "title": "Báo cáo lỗi của Orca",
-          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Orca. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+          "title": "Báo cáo lỗi hệ thống của Orca",
+          "explanation": "Không cần thiết: Báo cáo sự cố và treo ứng dụng của Orca. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
         }
       }
     },
@@ -583,7 +583,7 @@
       "localized": {
         "vi": {
           "title": "Báo cáo sự cố của Ollama",
-          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Ollama. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+          "explanation": "Không cần thiết: Báo cáo sự cố và treo ứng dụng của Ollama. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
         }
       }
     },
@@ -604,8 +604,8 @@
       "explanation": "Regenerable: not needed. Crash and hang reports from Ollama. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
       "localized": {
         "vi": {
-          "title": "Báo cáo lỗi của Ollama",
-          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Ollama. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+          "title": "Báo cáo lỗi hệ thống của Ollama",
+          "explanation": "Không cần thiết: Báo cáo sự cố và treo ứng dụng của Ollama. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
         }
       }
     },
@@ -627,7 +627,7 @@
       "localized": {
         "vi": {
           "title": "Báo cáo sự cố của Codex",
-          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Codex. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+          "explanation": "Không cần thiết: Báo cáo sự cố và treo ứng dụng của Codex. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
         }
       }
     },
@@ -648,8 +648,8 @@
       "explanation": "Regenerable: not needed. Crash and hang reports from Codex. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
       "localized": {
         "vi": {
-          "title": "Báo cáo lỗi của Codex",
-          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Codex. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+          "title": "Báo cáo lỗi hệ thống của Codex",
+          "explanation": "Không cần thiết: Báo cáo sự cố và treo ứng dụng của Codex. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
         }
       }
     },
@@ -943,7 +943,7 @@
       "localized": {
         "vi": {
           "title": "Thư mục tạm của Claude Code",
-          "explanation": "Tạo lại được: tệp tạm và tệp nháp từ các phiên Claude Code. Mọi thứ được dùng trong 24 giờ gần nhất có thể thuộc về một phiên đang chạy và được giữ lại."
+          "explanation": "Tạo lại được: tệp tạm và tệp nháp từ các phiên Claude Code. Mọi thứ có thay đổi trong 24 giờ qua có thể thuộc về một phiên đang chạy và được giữ lại."
         }
       }
     },
