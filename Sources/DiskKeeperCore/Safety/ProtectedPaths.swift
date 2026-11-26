@@ -352,3 +352,45 @@ public struct ProtectedPaths: Sendable {
         "/private/etc", "/private/var/db", "/private/var/root", "/Volumes", "/Network", "/dev",
     ]
 }
+
+// MARK: Index fast path (additive; indexing/display only: cleanup and execution keep calling `check`)
+
+extension ProtectedPaths {
+    /// Longest allowed-root / system-root key. Below this depth a node's root containment equals its parent's.
+    var maxRootComponents: Int {
+        (systemRootKeys.map(\.components.count) + roots.map(\.components.count)).max() ?? 0
+    }
+
+    /// Anchored + exact-only patterns whose first `depth` components match a path (finite length; a trailing
+    /// `**` only means "and everything below"). Empty `live` after advancing means no anchored/exact pattern
+    /// can fire for this node or any descendant that is not itself protected.
+    struct AnchoredCursor {
+        var live: [Int]
+        var depth: Int
+    }
+
+    private func pattern(_ i: Int) -> Compiled { i < anchored.count ? anchored[i] : exactOnly[i - anchored.count] }
+
+    func anchoredCursor(forKey comps: [String]) -> AnchoredCursor {
+        var c = AnchoredCursor(live: Array(0..<(anchored.count + exactOnly.count)), depth: 0)
+        for comp in comps { c = advance(c, foldedComponent: comp) }
+        return c
+    }
+
+    /// Keeps patterns with a component at this depth that glob-matches `foldedComponent`.
+    func advance(_ c: AnchoredCursor, foldedComponent f: String) -> AnchoredCursor {
+        let n = c.depth
+        var out: [Int] = []
+        for i in c.live {
+            let p = pattern(i)
+            if p.components.count > n, GlobMatcher.matches(pattern: p.components[n], component: f) { out.append(i) }
+        }
+        return AnchoredCursor(live: out, depth: n + 1)
+    }
+
+    /// True if a single path component matches a basename pattern (`protectedName`).
+    func matchesBasename(_ component: String) -> Bool {
+        let folded = PathCanonicalizer.fold(component)
+        return basenames.contains { GlobMatcher.matches(pattern: $0.components[0], component: folded) }
+    }
+}
