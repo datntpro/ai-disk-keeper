@@ -8,4 +8,7 @@ public enum SystemSettingsLinks {
 
     /// General › Login Items & Extensions.
     public static let loginItems = URL(string: "x-apple.systempreferences:com.apple.LoginItems-Settings.extension")!
+
+    /// Privacy & Security › Full Disk Access.
+    public static let fullDiskAccess = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles")!
 }

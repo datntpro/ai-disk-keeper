@@ -33,7 +33,8 @@ struct StartupItemsView: View {
         case .idle, .loading:
             StateView(kind: .progress(nil), symbol: "power.circle", title: StartupCopy.title, message: StartupCopy.loading)
         case .failed(let reason):
-            StateView(kind: .error, symbol: "exclamationmark.triangle", title: StartupCopy.failedTitle, message: reason,
+            StateView(kind: .blockingError, symbol: "exclamationmark.triangle", title: StartupCopy.failedTitle,
+                      message: StateCopy.errorStartup + "\n" + reason,
                       actions: [StateAction(title: StartupCopy.refresh) { Task { await model.refresh() } }])
         case .ready:
             VStack(spacing: 0) {
@@ -121,7 +122,7 @@ struct StartupItemsView: View {
                 .disabled(model.selectedItems.isEmpty)
         }
         .padding(.horizontal, ADKTheme.Spacing.lg).padding(.vertical, ADKTheme.Spacing.md)
-        .background(.bar)
+        .adkBarBackground()
         .overlay(alignment: .top) { Rectangle().fill(.adkLine).frame(height: ADKTheme.hairline) }
         .accessibilityElement(children: .contain)
     }

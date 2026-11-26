@@ -36,11 +36,9 @@ struct CleanupSheetContent: View {
                 flow.dismiss()
             }
         case .failed(let message):
-            VStack(alignment: .leading, spacing: 12) {
-                Text(message)
-                HStack { Spacer(); Button(CleanupCopy.done) { flow.dismiss() } }
-            }
-            .padding(24).frame(minWidth: 420)
+            StateView(kind: .blockingError, symbol: "exclamationmark.triangle", title: StateCopy.errorCleanupTitle, message: message,
+                      actions: [StateAction(title: CleanupCopy.done) { flow.dismiss() }])
+                .padding(24).frame(minWidth: 420)
         }
     }
 }
