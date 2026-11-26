@@ -279,10 +279,17 @@ final class DuplicatesModelTests: XCTestCase {
     func testReorderIsFastForTenThousandGroups() async {
         let N = 10_000
         let index = await readyIndex()
-        let unique = (0..<N).map { i in
-            DuplicateGroup(digest: String(format: "%032x%032x", i, 0), partialDigest: "p", logicalBytes: 1_000_000, members: (0..<3).map { j in
-                DupUI.member("/Users/tester/d\(i)/f\(j).bin", inode: UInt64(i * 3 + j + 1), created: Double(j) * 10 + 1)
-            })
+        var unique: [DuplicateGroup] = []
+        unique.reserveCapacity(N)
+        for i in 0..<N {
+            var members: [DuplicateMember] = []
+            for j in 0..<3 {
+                let path: String = "/Users/tester/d\(i)/f\(j).bin"
+                let inode: UInt64 = UInt64(i * 3 + j + 1)
+                members.append(DupUI.member(path, inode: inode, created: Double(j) * 10 + 1))
+            }
+            let digest: String = String(format: "%032x%032x", i, 0)
+            unique.append(DuplicateGroup(digest: digest, partialDigest: "p", logicalBytes: 1_000_000, members: members))
         }
         let m = make(index, groups: unique, skipGuard: true)
         let start = ContinuousClock.now
@@ -293,7 +300,7 @@ final class DuplicatesModelTests: XCTestCase {
         let clock = ContinuousClock()
         let t = clock.measure { m.rule = .insideGitRepo }
         print("reorder 10k groups:", t)
-        XCTAssertLessThan(t, .milliseconds(500))
+        XCTAssertLessThan(t, .milliseconds(250))
         // toggle is O(1) in the number of groups: 1 000 toggles stay quick.
         let t2 = clock.measure { for g in m.groups.prefix(1000) { m.toggle(g.members[1], in: g) } }
         print("1000 toggles:", t2)
