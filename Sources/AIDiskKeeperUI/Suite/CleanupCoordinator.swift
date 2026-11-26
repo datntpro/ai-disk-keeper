@@ -7,6 +7,10 @@ import Observation
 @MainActor @Observable
 public final class CleanupCoordinator {
     public private(set) var flow: CleanupFlowModel?
+    /// The report of the most recent finished run (read-only; the Uninstaller reads it to follow up).
+    public private(set) var lastReport: CleanupReport?
+    /// Bumped by `requestRescan()`; the root view starts a normal scan when it changes.
+    public private(set) var rescanRequests = 0
     public var isPresented: Bool { flow?.isActive ?? false }
 
     @ObservationIgnored private let holder: CleanupEngineHolder
@@ -26,11 +30,17 @@ public final class CleanupCoordinator {
     }
 
     /// The sheet's results screen calls this with the ids that were trashed.
-    public func finished(_ trashed: Set<ScanItem.ID>) {
+    public func finished(_ trashed: Set<ScanItem.ID>) { finished(trashed, report: nil) }
+
+    public func finished(_ trashed: Set<ScanItem.ID>, report: CleanupReport?) {
+        if let report { lastReport = report }
         let callback = onFinished
         onFinished = nil
         callback?(trashed)
     }
+
+    /// "Re-scan" next step: asks the window to start a normal scan.
+    public func requestRescan() { rescanRequests += 1 }
 
     public func dismiss() {
         flow?.dismiss()
