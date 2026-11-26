@@ -113,8 +113,6 @@ enum CoreCopy {
         case "google.cloud.credentials": loc("protected.why.google.cloud.credentials", "Google Cloud credentials")
         case "shell.config": loc("protected.why.shell.config", "shell config")
         case "shell.history": loc("protected.why.shell.history", "shell history")
-        case "shell.config": loc("protected.why.shell.config", "shell config")
-        case "shell.history": loc("protected.why.shell.history", "shell history")
         case "git.config": loc("protected.why.git.config", "git config")
         case "npm.credentials": loc("protected.why.npm.credentials", "npm credentials")
         case "pypi.credentials": loc("protected.why.pypi.credentials", "PyPI credentials")

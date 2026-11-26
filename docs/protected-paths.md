@@ -47,7 +47,7 @@ tests. Summary:
 | Cursor | `~/.cursor/mcp.json`, `$APP_SUPPORT/Cursor/User/{settings.json,keybindings.json,snippets}` |
 | Copilot | `~/.config/github-copilot` |
 | Dev credentials | `~/.ssh ~/.aws ~/.gnupg ~/.azure ~/.kube ~/.docker/config.json ~/.config/{gh,gcloud,git} ~/.gitconfig ~/.git-credentials ~/.netrc ~/.npmrc ~/.pypirc ~/.password-store` |
-| Shell config and history | `~/{.zshrc,.zshenv,.zprofile,.zlogin,.zlogout,.zsh_history,.zsh_sessions,.bashrc,.bash_profile,.bash_login,.bash_logout,.bash_history,.bash_sessions,.profile,.inputrc,.python_history,.node_repl_history,.lesshst,.viminfo}`, `~/.config/fish`, `~/.local/share/fish/fish_history` (never `~/.config` or `~/.cache` wholesale) |
+| Shell config and history | `~/{.zshrc,.zshenv,.zprofile,.zlogin,.zlogout,.zsh_history,.zsh_sessions,.bashrc,.bash_profile,.bash_login,.bash_logout,.bash_history,.bash_sessions,.profile,.inputrc,.kshrc,.mkshrc,.shrc,.irbrc,.sh_history,.irb_history,.psql_history,.mysql_history,.sqlite_history,.rediscli_history,.python_history,.node_repl_history,.lesshst,.viminfo}`, `~/.config/fish`, `~/.local/share/fish/fish_history` (never `~/.config` or `~/.cache` wholesale) |
 | macOS | `~/Library/{Keychains,Preferences,Mobile Documents,CloudStorage,Mail,Messages}`, `~/.Trash` |
 | Docker | `~/Library/Containers/com.docker.docker/Data/vms/*/data/Docker.raw` |
 | Other credentials | `$APP_SUPPORT/Claude/claude_desktop_config.json`, `~/.cargo/credentials*`, `~/.config/op`, `~/.vault-token`, `~/.terraform.d/credentials*`, `~/.gem/credentials`, `~/.m2/settings*.xml`, browser `Login Data*`/`Cookies*`/Firefox `logins.json`/`key4.db`/`cookies.sqlite`, `~/Library/Cookies`, `/private/tmp/com.apple.launchd.*` |
