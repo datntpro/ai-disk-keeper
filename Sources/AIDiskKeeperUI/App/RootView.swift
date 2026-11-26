@@ -9,12 +9,16 @@ public struct RootView: View {
     @State private var inspectedID: ScanItem.ID?
     @State private var list = ItemListModel()
     @State private var showInspector = true
-    @State private var cleanupSelection = SelectionModel()
+    @State private var cleanupSelection: SelectionModel
 
-    public init(env: AppEnvironment) {
-        self.env = env
-        _scan = State(initialValue: ScanViewModel(makeEngine: env.makeScanEngine))
-        _suite = State(initialValue: SuiteModel(env: env))
+    public init(env: AppEnvironment) { self.init(models: AppModels(env: env)) }
+
+    /// The app passes the models it shares with the menu bar; `init(env:)` builds its own (tests).
+    public init(models: AppModels) {
+        env = models.env
+        _scan = State(initialValue: models.scan)
+        _suite = State(initialValue: models.suite)
+        _cleanupSelection = State(initialValue: models.cleanupSelection)
     }
 
     /// The language revision is the view identity of the whole tree, so every `loc()` call re-runs after a switch.

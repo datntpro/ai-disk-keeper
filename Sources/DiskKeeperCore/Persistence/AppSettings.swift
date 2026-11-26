@@ -17,6 +17,16 @@ public struct AppSettings: Codable, Sendable, Hashable {
     public var disabledTools: Set<ToolID>
     /// UI language choice: "system" (default), "en" or "vi". Kept as a raw string; the UI maps unknown values to system.
     public var language: String = "system"
+    /// Menu bar extra (T47). Shown by default, glyph only.
+    public var showMenuBarItem = true
+    /// Optional free-space text next to the glyph.
+    public var menuBarShowsFreeSpace = false
+    public var lowSpaceAlertEnabled = true
+    /// Alert when free space falls below this percent of the volume. Kept within `thresholdRange`.
+    public var lowSpaceThresholdPercent = AppSettings.defaultLowSpaceThresholdPercent
+
+    public static let lowSpaceThresholdRange = 1...50
+    public static let defaultLowSpaceThresholdPercent = 10
 
     public static let defaultProjectRoots = ["~", "~/orca/workspaces", "~/Developer", "~/code", "~/src", "~/projects"]
 
@@ -33,6 +43,7 @@ public struct AppSettings: Codable, Sendable, Hashable {
 
     private enum CodingKeys: String, CodingKey {
         case schemaVersion, hasCompletedOnboarding, projectRoots, excludedPaths, disabledTools, language
+        case showMenuBarItem, menuBarShowsFreeSpace, lowSpaceAlertEnabled, lowSpaceThresholdPercent
     }
 
     /// Lenient: unknown keys are ignored and missing keys take defaults.
@@ -44,7 +55,18 @@ public struct AppSettings: Codable, Sendable, Hashable {
         excludedPaths = try c.decodeIfPresent([String].self, forKey: .excludedPaths) ?? []
         disabledTools = try c.decodeIfPresent(Set<ToolID>.self, forKey: .disabledTools) ?? []
         language = try c.decodeIfPresent(String.self, forKey: .language) ?? "system"
+        showMenuBarItem = try c.decodeIfPresent(Bool.self, forKey: .showMenuBarItem) ?? true
+        menuBarShowsFreeSpace = try c.decodeIfPresent(Bool.self, forKey: .menuBarShowsFreeSpace) ?? false
+        lowSpaceAlertEnabled = try c.decodeIfPresent(Bool.self, forKey: .lowSpaceAlertEnabled) ?? true
+        let percent = try c.decodeIfPresent(Int.self, forKey: .lowSpaceThresholdPercent) ?? Self.defaultLowSpaceThresholdPercent
+        lowSpaceThresholdPercent = Self.clampThreshold(percent)
     }
+
+    public static func clampThreshold(_ percent: Int) -> Int {
+        min(max(percent, lowSpaceThresholdRange.lowerBound), lowSpaceThresholdRange.upperBound)
+    }
+
+    public mutating func setLowSpaceThreshold(percent: Int) { lowSpaceThresholdPercent = Self.clampThreshold(percent) }
 
     public func scanScope(environment: PathEnvironment) -> ScanScope {
         ScanScope(excludedPaths: Self.dedupe(excludedPaths.map { Self.expand($0, environment) }),

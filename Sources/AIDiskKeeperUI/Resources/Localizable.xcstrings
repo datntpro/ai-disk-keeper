@@ -8005,6 +8005,22 @@
         }
       }
     },
+    "menubar.free" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ free"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Còn trống %@"
+          }
+        }
+      }
+    },
     "menubar.glyph.a11y" : {
       "localizations" : {
         "en" : {
@@ -8017,6 +8033,262 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "AI Disk Keeper"
+          }
+        }
+      }
+    },
+    "menubar.growth" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI tools grew since last scan +%@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Công cụ AI tăng so với lần quét trước +%@"
+          }
+        }
+      }
+    },
+    "menubar.growthDown" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI tools shrank since last scan %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Công cụ AI giảm so với lần quét trước %@"
+          }
+        }
+      }
+    },
+    "menubar.label.a11y" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI Disk Keeper, %@ free"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "AI Disk Keeper, còn trống %@"
+          }
+        }
+      }
+    },
+    "menubar.lowSpace.body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ free (%@ %%). Open AI Disk Keeper to review what's safe to remove."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Còn trống %@ (%@ %%). Mở AI Disk Keeper để xem những gì có thể xóa an toàn."
+          }
+        }
+      }
+    },
+    "menubar.lowSpace.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your disk is almost full"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ổ đĩa của bạn sắp đầy"
+          }
+        }
+      }
+    },
+    "menubar.nextScan" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next Care Scan: %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lần quét tổng thể tiếp theo: %@"
+          }
+        }
+      }
+    },
+    "menubar.notScanned" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not scanned yet"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chưa quét"
+          }
+        }
+      }
+    },
+    "menubar.quit" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quit AI Disk Keeper"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Thoát AI Disk Keeper"
+          }
+        }
+      }
+    },
+    "menubar.reviewInApp" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review in app"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Xem lại trong ứng dụng"
+          }
+        }
+      }
+    },
+    "menubar.safe" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%@ Safe to reclaim"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "+%@ An toàn để giải phóng"
+          }
+        }
+      }
+    },
+    "menubar.scanNow" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan now"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quét ngay"
+          }
+        }
+      }
+    },
+    "menubar.scanned" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "scanned %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "quét %@"
+          }
+        }
+      }
+    },
+    "menubar.scanning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scanning…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đang quét…"
+          }
+        }
+      }
+    },
+    "menubar.topModule" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · %@ Safe"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ · %@ An toàn"
+          }
+        }
+      }
+    },
+    "menubar.topTools" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Top AI tools"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Công cụ AI dùng nhiều nhất"
+          }
+        }
+      }
+    },
+    "menubar.usedPercent" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ %%"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ %%"
           }
         }
       }
@@ -10161,6 +10433,102 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Hiện lại màn hình chào mừng"
+          }
+        }
+      }
+    },
+    "settings.menubar.freeText" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show free space next to the icon"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hiển thị dung lượng trống cạnh biểu tượng"
+          }
+        }
+      }
+    },
+    "settings.menubar.lowSpace" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alert me when free space is low"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Báo khi dung lượng trống thấp"
+          }
+        }
+      }
+    },
+    "settings.menubar.section" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menu bar"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Thanh menu"
+          }
+        }
+      }
+    },
+    "settings.menubar.show" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show in menu bar"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hiển thị trên thanh menu"
+          }
+        }
+      }
+    },
+    "settings.menubar.threshold" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Below %@ %%"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dưới %@ %%"
+          }
+        }
+      }
+    },
+    "settings.menubar.thresholdHelp" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One notification each time free space drops below this level."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Một thông báo mỗi lần dung lượng trống xuống dưới mức này."
           }
         }
       }
