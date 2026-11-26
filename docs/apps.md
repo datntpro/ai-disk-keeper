@@ -97,7 +97,7 @@ Apple, system, nested, symlinked, root-owned and running apps; the screen just c
   are ticked one at a time. Items with `cleanupMethod .none` can't be ticked. The bundle is implicit: it is what
   Uninstall means. Shared entries are shown under an app when their folder name equals the app's name.
 - **Uninstall…** hands `[bundle] + ticked leftovers` to `CleanupCoordinator.review` (the normal dry-run sheet). It is
-  disabled while the app runs ("Quit the app first") and for view-only apps. We never quit an app for you.
+  disabled while the app runs ("Quit the app first") and for view-only apps. The guidance card offers Quit App (T37b, below).
 - **Reset app only** moves the app's exact leftovers in `Caches`, `HTTPStorages`, `WebKit`, `Saved Application
   State` and `Logs`; the app stays. Preferences are guard-protected and Application Support / Containers hold user data.
 - **Guidance:** after a run, `CleanupCoordinator.lastReport` is read for `needsAppManagementPermission` (card with
@@ -106,3 +106,25 @@ Apple, system, nested, symlinked, root-owned and running apps; the screen just c
   for the ticked ones only.
 - Preferences are not removed (the scan guard protects them), so the screen says they stay.
 - "Unused for 90+ days" counts uninstallable apps whose last-used date is older than 90 days or unknown.
+
+## Quit / Force Quit (T37b)
+
+Code: `AppProcessController.swift`, `AppQuitFlow.swift`, `Core/Safety/AppQuitPolicy.swift`. Closes #113, #111.
+
+- **Running = the engine's definition.** The screen asks the same three questions as `WorkspaceRunningApps`: the
+  bundle id, a LaunchServices app (helper / login item) inside the bundle, any process image inside the bundle
+  (`LiveProcessScanner.snapshot()`, one walk per refresh). An app with only a background process inside it keeps
+  Uninstall disabled, as the engine would refuse it. An unreadable process list means "running" (fail closed).
+- **Quit App** asks the main app and its helper apps to quit (`NSRunningApplication.terminate()`, like ⌘Q). Background
+  processes (XPC, CLI, daemons) are listed as "name (pid)" and never signalled; LaunchAgents are not unloaded.
+- After 5 s with the app still open the card says it may be asking to save and offers **Show App** and **Force Quit…**.
+  Force Quit has its own confirmation (unsaved work is lost, copy count shown). Nothing is ever force quit
+  automatically; the audit `requested` line is written first and a failed write cancels the force quit.
+- If the app comes back within 1.5 s ("relaunched") the card points to Startup Items; there is no quit loop.
+- **Refused:** view-only and Apple/system apps, AI Disk Keeper itself, processes of another user (or of unknown
+  owner). The live controller re-checks the policy right before each call and acts only on the
+  `NSRunningApplication` objects of the latest read, never on a pid number.
+- Only `AppProcessController.swift` may call `terminate` / `forceTerminate` / `activate`; a lint test enforces it and
+  tests use `FakeAppProcessController`. Fixtures for manual QA: `scripts/qa/T37b.sh` (Tart VM only).
+- Not folded in: #95 (a process whose executable was deleted after launch isn't matched); `LiveProcessScanner.snapshot()`
+  is where a fix would plug in.

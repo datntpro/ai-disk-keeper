@@ -6,15 +6,21 @@ import XCTest
 
 @MainActor
 final class UninstallerRenderTests: XCTestCase {
-    private func model(running: Set<String> = []) async -> UninstallerModel {
+    private func model(running: Set<InstalledApp.ID> = []) async -> UninstallerModel {
         let apps = [UninstallFix.slide, UninstallFix.app("Notely", size: 2000),
                     UninstallFix.app("Safari", size: 9000, reason: .apple, source: .apple, location: .system)]
         let items = UninstallFix.slideItems + [UninstallFix.sharedItem] + UninstallFix.orphanItems
         let m = UninstallerModel(inventory: { AppInventory(apps: apps, warnings: [], scannedRoots: []) },
-                                 leftovers: { _ in UninstallFix.result(items) }, runningApps: { running }, home: "/h")
+                                 leftovers: { _ in UninstallFix.result(items) }, processes: fake(running), home: "/h")
         m.load()
         await m.settle()
         return m
+    }
+
+    private func fake(_ running: Set<InstalledApp.ID>) -> FakeAppProcessController {
+        let f = FakeAppProcessController()
+        for id in running { f.states[id] = AppRunState(instances: [FakeAppProcessController.instance()]) }
+        return f
     }
 
     private func render(_ view: some View, _ what: String) {
@@ -26,7 +32,7 @@ final class UninstallerRenderTests: XCTestCase {
 
     func testListDetailAndTabsRender() async {
         let c = CleanupCoordinator(holder: CleanupEngineHolder())
-        let m = await model(running: ["com.test.notely"])
+        let m = await model(running: [UninstallFix.app("Notely", size: 2000).id])
         render(UninstallerView(model: m, coordinator: c), "no selection")
         m.select(UninstallFix.slide)
         render(UninstallerView(model: m, coordinator: c), "detail")
@@ -41,14 +47,14 @@ final class UninstallerRenderTests: XCTestCase {
     func testStatesAndGuidanceCardsRender() async {
         let c = CleanupCoordinator(holder: CleanupEngineHolder())
         let loading = UninstallerModel(inventory: { try await Task.sleep(nanoseconds: 60_000_000_000); throw CancellationError() },
-                                       leftovers: { _ in UninstallFix.result([]) }, runningApps: { [] })
+                                       leftovers: { _ in UninstallFix.result([]) }, processes: FakeAppProcessController())
         loading.load()
         render(UninstallerView(model: loading, coordinator: c), "loading")
         struct Boom: Error {}
-        let failed = UninstallerModel(inventory: { throw Boom() }, leftovers: { _ in UninstallFix.result([]) }, runningApps: { [] })
+        let failed = UninstallerModel(inventory: { throw Boom() }, leftovers: { _ in UninstallFix.result([]) }, processes: FakeAppProcessController())
         failed.load(); await failed.settle()
         render(UninstallerView(model: failed, coordinator: c), "failed")
-        let m = await model(running: ["com.test.notely"])
+        let m = await model(running: [UninstallFix.app("Notely", size: 2000).id])
         for app in m.apps { m.select(app); render(UninstallerView(model: m, coordinator: c), app.name) }
         let guidance: [UninstallGuidance] = [.appManagement(bundleID: "x"), .requiresAdmin(bundleID: "x"), .running(name: "A"),
                                              .locked(.apple), .locked(.notOwnedByUser)]
@@ -71,6 +77,34 @@ final class UninstallerRenderTests: XCTestCase {
             if selected { m.select(UninstallFix.slide) }
             let r = ImageRenderer(content: UninstallerView(model: m, coordinator: c).frame(width: 1000, height: 680).background(.adkBg))
             XCTAssertNotNil(r.cgImage, "ready selected=\(selected)")
+        }
+    }
+
+    func testQuitCardsRenderInBothLanguagesAndNarrowDetailHasNoClipping() async {
+        let m = await model(running: [UninstallFix.app("Notely", size: 2000).id])
+        let notely = UninstallFix.app("Notely", size: 2000)
+        let cards: [UninstallGuidance] = [
+            .running(name: "Notely", quit: nil, background: [], otherUser: false, canQuit: true),
+            .running(name: "Notely", quit: .quitting), .running(name: "Notely", quit: .stuck, canQuit: true),
+            .running(name: "Notely", quit: .failed, canQuit: true), .running(name: "Notely", quit: .relaunched),
+            .running(name: "Notely", quit: .backgroundRemains, background: ["adkqa-bg (77)"]),
+            .runningUnknown(name: "Notely"), .selfApp, .quitDone(name: "Notely")]
+        for lang in [AppLanguage.en, .vi] {
+            L10n.withLanguage(lang) {
+                for g in cards {
+                    let r = ImageRenderer(content: UninstallGuidanceCard(guidance: g, app: notely, model: m).padding().frame(width: 380).background(.adkBg))
+                    XCTAssertNotNil(r.cgImage, "\(lang) \(g)")
+                }
+                // #111: the action bar's summary wraps to two lines at the narrowest detail width instead of clipping.
+                m.select(UninstallFix.slide)
+                let c = CleanupCoordinator(holder: CleanupEngineHolder())
+                let host = NSHostingView(rootView: UninstallAppDetail(app: UninstallFix.slide, model: m, coordinator: c).frame(width: 380, height: 560))
+                host.frame = NSRect(x: 0, y: 0, width: 380, height: 560)
+                host.layoutSubtreeIfNeeded()
+                XCTAssertGreaterThan(host.fittingSize.height, 0)
+                let r = ImageRenderer(content: UninstallAppDetail(app: UninstallFix.slide, model: m, coordinator: c).frame(width: 380, height: 560).background(.adkBg))
+                XCTAssertNotNil(r.cgImage, "bar \(lang)")
+            }
         }
     }
 }

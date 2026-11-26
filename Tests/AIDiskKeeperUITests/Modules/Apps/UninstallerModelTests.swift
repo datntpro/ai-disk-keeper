@@ -8,17 +8,15 @@ final class UninstallerModelTests: XCTestCase {
     private let notely = UninstallFix.app("Notely", size: 2000)
     private let safari = UninstallFix.app("Safari", size: 9000, reason: .apple, source: .apple, location: .system)
 
-    private func model(running: Set<String> = [], items: [ScanItem]? = nil,
-                       runningBox: Box = Box()) -> UninstallerModel {
-        runningBox.value = running
+    private func model(running: Set<InstalledApp.ID> = [], items: [ScanItem]? = nil,
+                       processes: FakeAppProcessController = FakeAppProcessController()) -> UninstallerModel {
+        for id in running { processes.states[id] = AppRunState(instances: [FakeAppProcessController.instance()]) }
         let apps = [slide, notely, safari]
         let found = items ?? (UninstallFix.slideItems + [UninstallFix.sharedItem] + UninstallFix.orphanItems)
         return UninstallerModel(inventory: { AppInventory(apps: apps, warnings: [], scannedRoots: []) },
                                 leftovers: { _ in UninstallFix.result(found) },
-                                runningApps: { runningBox.value }, home: "/h")
+                                processes: processes, home: "/h")
     }
-
-    final class Box: @unchecked Sendable { @MainActor var value: Set<String> = [] }
 
     private func ready(_ m: UninstallerModel) async -> UninstallerModel { m.load(); await m.settle(); return m }
 
@@ -46,12 +44,12 @@ final class UninstallerModelTests: XCTestCase {
 
     func testInventoryFailureShowsErrorAndLeftoverFailureKeepsApps() async {
         struct Boom: Error {}
-        let bad = UninstallerModel(inventory: { throw Boom() }, leftovers: { _ in UninstallFix.result([]) }, runningApps: { [] })
+        let bad = UninstallerModel(inventory: { throw Boom() }, leftovers: { _ in UninstallFix.result([]) }, processes: FakeAppProcessController())
         bad.load(); await bad.settle()
         if case .failed = bad.phase {} else { XCTFail("expected failed") }
         let apps = [slide]
         let partial = UninstallerModel(inventory: { AppInventory(apps: apps, warnings: [], scannedRoots: []) },
-                                       leftovers: { _ in throw Boom() }, runningApps: { [] })
+                                       leftovers: { _ in throw Boom() }, processes: FakeAppProcessController())
         partial.load(); await partial.settle()
         XCTAssertEqual(partial.phase, .ready)
         XCTAssertEqual(partial.apps.count, 1)
@@ -70,7 +68,7 @@ final class UninstallerModelTests: XCTestCase {
     }
 
     func testRunningAndAppleAppsCannotBeUninstalled() async {
-        let m = await ready(model(running: [notely.bundleID]))
+        let m = await ready(model(running: [notely.id]))
         XCTAssertEqual(m.canUninstall(notely), .running)
         XCTAssertEqual(m.canUninstall(safari), .viewOnly(.apple))
         XCTAssertEqual(m.canUninstall(slide), .available)
@@ -87,14 +85,14 @@ final class UninstallerModelTests: XCTestCase {
     }
 
     func testRunningRefreshFlipsAvailability() async {
-        let box = Box()
-        let m = await ready(model(runningBox: box))
+        let fake = FakeAppProcessController()
+        let m = await ready(model(processes: fake))
         XCTAssertEqual(m.canUninstall(notely), .available)
-        box.value = [notely.bundleID]
+        fake.set(notely, [FakeAppProcessController.instance()])
         m.refreshRunning()
         XCTAssertEqual(m.canUninstall(notely), .running)
         XCTAssertEqual(m.guidance(for: notely), .running(name: "Notely"))
-        box.value = []
+        fake.clear(notely)
         m.refreshRunning()
         XCTAssertEqual(m.canUninstall(notely), .available)
     }
@@ -206,7 +204,7 @@ final class UninstallerModelTests: XCTestCase {
         let never = UninstallFix.app("Never")
         let apple = UninstallFix.app("Safari2", reason: .apple, source: .apple)
         let m = UninstallerModel(inventory: { AppInventory(apps: [old, fresh, never, apple], warnings: [], scannedRoots: []) },
-                                 leftovers: { _ in UninstallFix.result([]) }, runningApps: { [] }, now: { now })
+                                 leftovers: { _ in UninstallFix.result([]) }, processes: FakeAppProcessController(), now: { now })
         m.load(); await m.settle()
         XCTAssertEqual(m.unusedCount, 1) // no record = unknown (Spotlight off), not unused
     }
@@ -217,7 +215,7 @@ final class UninstallerModelTests: XCTestCase {
         let other = UninstallFix.app("Other", source: .developerID(teamID: "ZZZZZ99999"))
         let team = UninstallFix.leftover(nil, "Group Containers", "ABCDE12345.shared", rule: "apps.leftover.name", size: 10)
         let m = UninstallerModel(inventory: { AppInventory(apps: [a, b, other], warnings: [], scannedRoots: []) },
-                                 leftovers: { _ in UninstallFix.result([team]) }, runningApps: { [] }, home: "/h")
+                                 leftovers: { _ in UninstallFix.result([team]) }, processes: FakeAppProcessController(), home: "/h")
         m.load(); await m.settle()
         for app in [a, b] { XCTAssertEqual(m.group(for: app).shared.map(\.id), [team.id]) }
         XCTAssertTrue(m.group(for: other).shared.isEmpty)
@@ -231,7 +229,7 @@ final class UninstallerModelTests: XCTestCase {
     func testLeftoverScanFailureIsFlagged() async {
         struct Boom: Error {}
         let m = UninstallerModel(inventory: { AppInventory(apps: [self.slide], warnings: [], scannedRoots: []) },
-                                 leftovers: { _ in throw Boom() }, runningApps: { [] })
+                                 leftovers: { _ in throw Boom() }, processes: FakeAppProcessController())
         XCTAssertFalse(m.leftoversFailed)
         m.load(); await m.settle()
         XCTAssertTrue(m.leftoversFailed)

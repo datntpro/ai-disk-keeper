@@ -65,6 +65,8 @@ Off by default. It needs both `requestPermanentDelete` (this run) and `permanent
 
 Fields (schema version 1): `schemaVersion`, `timestamp`, `runID` (plan id), `itemID`, `path`, `bytes`, `action`, `result` (`trashed` | `deleted` | `skipped` | `failed`), `trashPath`, `ruleID`, `tool`, `reasons` (blocker codes for skipped; an app refusal is `appBundleRefused:<refusal>`), `error`, and `bundleID` (optional, present for every app uninstall entry; additive, schema stays 1).
 
+**Quit lines (T37b).** The Uninstaller also appends `{"kind":"appQuit", ...}` lines to the same file when it asks a running app to quit (`mode` `graceful` or `force`; `phase` `requested` then `result`; `result` `quit` | `stillRunning` | `refused`), with `flowID`, `bundleID`, `appPath`, `pids`, `instanceCount`, `reasons`, `error`. They are written by `AuditLog.appendQuitEvent` (a second `AuditLog` instance on the same file is fine: `O_APPEND`, one `write` per line, fsync). `AuditLog.read` decodes `AuditRecord` only and skips them. A force quit is fail-closed: if the `requested` line can't be written, nothing is force quit.
+
 ## Uninstalling an app (`trashApplication`, T36)
 
 Handled by `ApplicationBundlePolicy`, not the generic path/owner checks: see `docs/protected-paths.md`. New blockers:

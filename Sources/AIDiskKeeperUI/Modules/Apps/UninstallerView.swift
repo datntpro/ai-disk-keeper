@@ -14,7 +14,7 @@ struct UninstallerView: View {
             Divider()
             content
         }
-        .onAppear { model.load() }
+        .onAppear { model.load(); model.refreshRunning() }
         .onReceive(launched) { _ in model.refreshRunning() }
         .onReceive(terminated) { _ in model.refreshRunning() }
     }

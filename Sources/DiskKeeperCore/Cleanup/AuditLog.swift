@@ -40,6 +40,46 @@ public struct AuditRecord: Codable, Sendable, Hashable {
     }
 }
 
+/// One line of `audit.jsonl` written when the Uninstaller asks a running app to quit (or force quits it).
+/// Distinguished from `AuditRecord` lines by `kind == "appQuit"`; `AuditLog.read` skips these by design.
+public struct AppQuitAuditRecord: Codable, Sendable, Hashable {
+    public let schemaVersion: Int
+    public let kind: String
+    public let timestamp: Date
+    /// One Quit press = one flow.
+    public let flowID: UUID
+    public let bundleID: String
+    public let appPath: String
+    /// "graceful" | "force"
+    public let mode: String
+    /// "requested" | "result"
+    public let phase: String
+    /// "quit" | "stillRunning" | "refused"; nil for `requested`.
+    public let result: String?
+    public let pids: [Int32]
+    public let instanceCount: Int
+    /// `AppQuitRefusal` raw values, if any.
+    public let reasons: [String]
+    public let error: String?
+
+    public init(schemaVersion: Int = 1, timestamp: Date, flowID: UUID, bundleID: String, appPath: String, mode: String,
+                phase: String, result: String?, pids: [Int32], instanceCount: Int, reasons: [String] = [], error: String? = nil) {
+        self.schemaVersion = schemaVersion
+        self.kind = "appQuit"
+        self.timestamp = timestamp
+        self.flowID = flowID
+        self.bundleID = bundleID
+        self.appPath = appPath
+        self.mode = mode
+        self.phase = phase
+        self.result = result
+        self.pids = pids
+        self.instanceCount = instanceCount
+        self.reasons = reasons
+        self.error = error
+    }
+}
+
 public enum AuditLogError: Error, Equatable {
     case notOpen
     case unsafePath(String)
@@ -84,7 +124,16 @@ public actor AuditLog {
         openCount = 1
     }
 
-    func append(_ record: AuditRecord) throws {
+    func append(_ record: AuditRecord) throws { try appendLine(record) }
+
+    /// Opens (ref-counted), appends one quit line, fsyncs, closes. Throws like `open()` / `append`.
+    public func appendQuitEvent(_ record: AppQuitAuditRecord) throws {
+        try open()
+        defer { close() }
+        try appendLine(record)
+    }
+
+    private func appendLine<T: Encodable>(_ record: T) throws {
         guard fd >= 0 else { throw AuditLogError.notOpen }
         if let failAfter, appended >= failAfter { throw AuditLogError.injectedFailure }
         var line = try DiskKeeperJSON.makeEncoder().encode(record)
