@@ -11,6 +11,8 @@ enum QuitFlowState: Equatable {
     var isBusy: Bool { self == .quitting || self == .forcing || self == .settling }
     /// The app is still open and the user may ask again or force quit.
     var isStuck: Bool { self == .stuck || self == .failed || self == .auditFailed }
+    /// Quit may be pressed (again): nothing in progress, or the last attempt ended with something still open.
+    var allowsQuit: Bool { isStuck || self == .relaunched || self == .backgroundRemains }
 }
 
 /// Who we are, so the quit policy can refuse to act on ourselves.
@@ -73,7 +75,7 @@ extension UninstallerModel {
     func canQuit(_ app: InstalledApp) -> Bool {
         guard appRefusal(app) == nil, !runningUnknown, selectedAppID == app.id, let detail else { return false }
         let flow = quitFlows[app.id]
-        return flow == nil || flow?.isStuck == true ? !quitTargets(in: detail).isEmpty : false
+        return flow == nil || flow?.allowsQuit == true ? !quitTargets(in: detail).isEmpty : false
     }
 
     // MARK: Actions
@@ -82,7 +84,7 @@ extension UninstallerModel {
     func quit(_ app: InstalledApp, coordinator: CleanupCoordinator? = nil) {
         guard coordinator?.isPresented != true else { return }
         let flow = quitFlows[app.id]
-        guard flow == nil || flow?.isStuck == true || flow == .done else { return }
+        guard flow == nil || flow?.allowsQuit == true || flow == .done else { return }
         if let reason = appRefusal(app) {
             quitFlows[app.id] = .refused(reason)
             let flowID = UUID()
@@ -93,6 +95,7 @@ extension UninstallerModel {
         let targets = quitTargets(in: state)
         guard !targets.isEmpty else { refreshRunning(); return }
         let flowID = UUID()
+        flowInfo[app.id] = (flowID, targets)
         quitFlows[app.id] = .quitting
         quitTasks[app.id]?.cancel()
         quitTasks[app.id] = Task { [weak self] in await self?.runGraceful(app, flowID, targets) }
@@ -115,6 +118,7 @@ extension UninstallerModel {
         let targets = quitTargets(in: state)
         guard !targets.isEmpty else { refreshRunning(); return }
         let flowID = UUID()
+        flowInfo[app.id] = (flowID, targets)
         quitFlows[app.id] = .forcing
         quitTasks[app.id]?.cancel()
         quitTasks[app.id] = Task { [weak self] in await self?.runForce(app, flowID, targets) }
@@ -176,11 +180,13 @@ extension UninstallerModel {
         try? await sleep(.milliseconds(Int(QuitTiming.settle * 1000)))
         guard !Task.isCancelled else { return }
         guard let state = processes.runState(for: app) else { return drop(app) }
-        if !quitTargets(in: state).isEmpty { quitFlows[app.id] = .relaunched }
-        else if state.instances.contains(where: { $0.kind == .background }) { quitFlows[app.id] = .backgroundRemains }
-        else { quitFlows[app.id] = .done }
+        let outcome: String
+        if !quitTargets(in: state).isEmpty { quitFlows[app.id] = .relaunched; outcome = "relaunched" }
+        else if state.instances.contains(where: { $0.kind == .background }) { quitFlows[app.id] = .backgroundRemains; outcome = "backgroundRemains" }
+        else { quitFlows[app.id] = .done; outcome = "quit" }
+        flowInfo[app.id] = nil
         refreshRunning()
-        await record(app, flowID, mode: mode, phase: "result", result: "quit", targets: targets)
+        await record(app, flowID, mode: mode, phase: "result", result: outcome, targets: targets)
     }
 
     private func wait(_ app: InstalledApp, timeout: TimeInterval) async -> Wait {
@@ -208,7 +214,8 @@ extension UninstallerModel {
                   quitTargets(in: s).isEmpty else { continue }
             quitTasks[id]?.cancel()
             quitFlows[id] = .settling
-            quitTasks[id] = Task { [weak self] in await self?.settle(app, UUID(), "graceful", []) }
+            let info = flowInfo[id] ?? (UUID(), [])
+            quitTasks[id] = Task { [weak self] in await self?.settle(app, info.id, "graceful", info.targets) }
         }
     }
 

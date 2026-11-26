@@ -121,20 +121,44 @@ struct UninstallAppDetail: View {
     }
 
     private var actionBar: some View {
+        UninstallActionBar(model: model, availability: availability, help: uninstallHelp, coordinator: coordinator)
+    }
+}
+
+/// The bottom bar: how much will go, and Reset / Uninstall. One row when it fits; otherwise the buttons drop
+/// below the summary (long Vietnamese copy at the narrowest detail width).
+struct UninstallActionBar: View {
+    var model: UninstallerModel
+    let availability: UninstallAvailability
+    let help: String
+    let coordinator: CleanupCoordinator
+
+    private var size: some View { SizeText(model.tickedBytes, qualifier: .upTo).font(.headline).fixedSize() }
+    private var summary: some View {
+        Text(UninstallerCopy.barSummary(Formatting.count(model.tickedRelated.count), count: model.tickedRelated.count))
+            .foregroundStyle(.adkText2).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+    }
+    private var buttons: some View {
         HStack(spacing: ADKTheme.Spacing.md) {
-            SizeText(model.tickedBytes, qualifier: .upTo).font(.headline)
-            Text(UninstallerCopy.barSummary(Formatting.count(model.tickedRelated.count), count: model.tickedRelated.count))
-                .foregroundStyle(.adkText2).lineLimit(2).fixedSize(horizontal: false, vertical: true)
-                .layoutPriority(1)
-            Spacer()
             Button(UninstallerCopy.reset) { model.resetApp(using: coordinator) }
                 .disabled(!model.canReset).help(UninstallerCopy.resetHelp).fixedSize()
             Button(UninstallerCopy.uninstall) { model.uninstall(using: coordinator) }
                 .buttonStyle(.borderedProminent).tint(.adkAccent)
-                .disabled(availability != .available).help(uninstallHelp).fixedSize()
+                .disabled(availability != .available).help(help).fixedSize()
+        }
+    }
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: ADKTheme.Spacing.md) { size; summary; Spacer(minLength: 0); buttons }
+            VStack(alignment: .leading, spacing: ADKTheme.Spacing.sm) {
+                HStack(alignment: .firstTextBaseline, spacing: ADKTheme.Spacing.md) { size; summary }
+                HStack { Spacer(minLength: 0); buttons }
+            }
         }
         .font(.callout)
         .padding(.horizontal, ADKTheme.Spacing.lg).padding(.vertical, ADKTheme.Spacing.md)
+        .frame(maxWidth: .infinity)
         .background(.bar)
         .overlay(alignment: .top) { Rectangle().fill(.adkLine).frame(height: ADKTheme.hairline) }
     }
@@ -194,14 +218,11 @@ struct UninstallGuidanceCard: View {
         SectionCard(padding: ADKTheme.Spacing.md) {
             HStack(alignment: .top, spacing: ADKTheme.Spacing.md) {
                 Image(systemName: icon).foregroundStyle(.adkReviewInk)
-                Text(Self.text(guidance)).font(.callout).frame(maxWidth: .infinity, alignment: .leading)
-                if guidance.needsSettingsLink {
-                    Button(UninstallerCopy.openSettings) { NSWorkspace.shared.open(SystemSettingsLinks.appManagement) }
+                VStack(alignment: .leading, spacing: ADKTheme.Spacing.sm) {
+                    Text(Self.text(guidance)).font(.callout).frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if hasControls { controls }
                 }
-                if guidance.needsReveal {
-                    Button(UninstallerCopy.reveal) { FinderReveal.reveal(URL(fileURLWithPath: app.path)) }
-                }
-                quitControls
             }
         }
         .accessibilityElement(children: .contain)
@@ -215,6 +236,32 @@ struct UninstallGuidanceCard: View {
         .onChange(of: model.quitFlows[app.id]) { _, new in
             if new == .done { AccessibilityNotification.Announcement(UninstallerCopy.a11yQuit(app.name)).post() }
         }
+    }
+
+    /// Buttons sit under the text, in one row when they fit and stacked when they don't.
+    @ViewBuilder private var controls: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: ADKTheme.Spacing.sm) { controlButtons }
+            VStack(alignment: .leading, spacing: ADKTheme.Spacing.sm) { controlButtons }
+        }
+    }
+
+    private var hasControls: Bool {
+        if guidance.needsSettingsLink || guidance.needsReveal { return true }
+        switch guidance {
+        case .running, .runningUnknown: return true
+        default: return false
+        }
+    }
+
+    @ViewBuilder private var controlButtons: some View {
+        if guidance.needsSettingsLink {
+            Button(UninstallerCopy.openSettings) { NSWorkspace.shared.open(SystemSettingsLinks.appManagement) }
+        }
+        if guidance.needsReveal {
+            Button(UninstallerCopy.reveal) { FinderReveal.reveal(URL(fileURLWithPath: app.path)) }
+        }
+        quitControls
     }
 
     private var forcePresented: Binding<Bool> {

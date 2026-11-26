@@ -72,7 +72,9 @@ SW
   mkdir -p "$HELPER/Contents/MacOS" "$HELPER_AGENT/Contents/MacOS"
   swiftc -O -o "$HELPER_AGENT/Contents/MacOS/run" "$WORK/agent.swift"
   plist "$HELPER_AGENT" com.adkqa.helper.agent "ADKQA Helper Agent" ui
-  printf '#!/bin/sh\nwhile true; do sleep 5; done\n' > "$HELPER/Contents/MacOS/adkqa-bg"; chmod +x "$HELPER/Contents/MacOS/adkqa-bg"
+  # Compiled, not a shell script: a script's process image is /bin/sh, so it would never match the bundle.
+  printf 'import Foundation\nwhile true { sleep(5) }\n' > "$WORK/bg.swift"
+  swiftc -O -o "$HELPER/Contents/MacOS/adkqa-bg" "$WORK/bg.swift"
   swiftc -O -o "$HELPER/Contents/MacOS/run" "$WORK/quitter.swift"
   plist "$HELPER" com.adkqa.helper "ADKQA Helper"
   for a in "$QUITTER" "$SAVER" "$HUNG" "$HELPER" "$HELPER_AGENT" "$RELAUNCH"; do "$LSREGISTER" -f "$a"; done

@@ -51,6 +51,9 @@ final class UninstallerModel {
     @ObservationIgnored let sleep: Sleeper
     @ObservationIgnored let now: () -> Date
     @ObservationIgnored var quitTasks: [InstalledApp.ID: Task<Void, Never>] = [:]
+    /// The flow id and targets of the quit in progress per app, so a resumed flow joins its audit lines.
+    @ObservationIgnored var flowInfo: [InstalledApp.ID: (id: UUID, targets: [AppInstance])] = [:]
+    @ObservationIgnored private var poller: Task<Void, Never>?
     @ObservationIgnored let home: String
     @ObservationIgnored private var task: Task<Void, Never>?
 
@@ -110,7 +113,7 @@ final class UninstallerModel {
             }
             orphanSelection.formIntersection(orphans.map(\.id))
             let ids = Set(apps.map(\.id))
-            for id in quitFlows.keys where !ids.contains(id) { quitTasks[id]?.cancel(); quitTasks[id] = nil; quitFlows[id] = nil }
+            for id in quitFlows.keys where !ids.contains(id) { quitTasks[id]?.cancel(); quitTasks[id] = nil; quitFlows[id] = nil; flowInfo[id] = nil }
             if let c = forceConfirmation, !ids.contains(c.appID) { forceConfirmation = nil }
             refreshRunning()
             phase = .ready
@@ -232,9 +235,41 @@ final class UninstallerModel {
             running = Set(apps.filter { $0.viewOnlyReason == nil }.map(\.id))
             runningUnknown = true
         }
+        // While we are quitting an app it stays "running" on screen (Quitting…), even after it has gone.
+        for (id, flow) in quitFlows where flow.isBusy { running.insert(id) }
+        clearStaleFlows()
         refreshDetail()
         resumeStuckFlows()
     }
+
+    /// A finished flow that no longer describes reality goes: the app is closed again after "relaunched" / "background
+    /// remains", or it is open again after "done" (or "refused", which belongs to one press).
+    private func clearStaleFlows() {
+        guard !runningUnknown else { return }
+        for (id, flow) in quitFlows {
+            switch flow {
+            case .relaunched, .backgroundRemains: if !running.contains(id) { quitFlows[id] = nil }
+            case .done: if running.contains(id) { quitFlows[id] = nil }
+            default: break
+            }
+        }
+    }
+
+    /// Re-reads what is running now and then every `interval` while the Uninstaller is on screen, from the same
+    /// process snapshot the cleanup engine uses, so an app that never posts a launch notification still shows up.
+    func startPolling(every interval: Duration = .seconds(3)) {
+        guard poller == nil else { return }
+        let sleep = sleep
+        poller = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await sleep(interval)
+                guard !Task.isCancelled, let self else { return }
+                self.refreshRunning()
+            }
+        }
+    }
+
+    func stopPolling() { poller?.cancel(); poller = nil }
 
     private func refreshDetail() {
         detail = nil
@@ -247,7 +282,7 @@ final class UninstallerModel {
         selectedAppID = app.id
         selection = UninstallSelection(app: app, group: group(for: app))
         for (id, state) in quitFlows where state == .done { quitFlows[id] = nil }
-        refreshDetail()
+        refreshRunning()
     }
 
     func toggle(_ item: ScanItem) {
@@ -275,12 +310,14 @@ final class UninstallerModel {
     /// Opens the cleanup sheet for the bundle plus the ticked leftovers. A no-op for anything that can't be
     /// uninstalled; the engine refuses those too.
     func uninstall(using coordinator: CleanupCoordinator) {
+        refreshRunning()
         guard let app = selectedApp, canUninstall(app) == .available else { return }
         review([app.makeScanItem()] + tickedRelated, app: app, using: coordinator)
     }
 
     /// Caches and saved state only; the app stays.
     func resetApp(using coordinator: CleanupCoordinator) {
+        refreshRunning()
         guard let app = selectedApp, canReset else { return }
         review(resetItems, app: app, using: coordinator)
     }

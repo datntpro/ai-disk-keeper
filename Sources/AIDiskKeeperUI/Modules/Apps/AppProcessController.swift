@@ -74,13 +74,16 @@ struct AppRunState: Equatable, Sendable {
             guard let p = Self.resolved(url), !root.isEmpty else { return false }
             return p == root || p.hasPrefix(root + "/")
         }
+        // Same process → same token as last time, so an instance already shown stays valid when a refresh lands mid-quit.
+        var previous: [pid_t: (UUID, NSRunningApplication)] = [:]
+        for (token, r) in held[app.id] ?? [:] where !r.isTerminated { previous[r.processIdentifier] = (token, r) }
         var table: [UUID: NSRunningApplication] = [:]
         var instances: [AppInstance] = []
         var seen: Set<pid_t> = []
         func add(_ r: NSRunningApplication, _ kind: AppInstance.Kind) {
             guard seen.insert(r.processIdentifier).inserted else { return }
             let owner = uids[r.processIdentifier] ?? nil
-            let token = UUID()
+            let token = previous[r.processIdentifier].flatMap { $0.1 === r ? $0.0 : nil } ?? UUID()
             table[token] = r
             instances.append(AppInstance(token: token, pid: r.processIdentifier, kind: kind,
                                          name: r.localizedName ?? r.executableURL?.lastPathComponent ?? app.name,

@@ -191,7 +191,7 @@ final class UninstallQuitFlowTests: XCTestCase {
     }
 
     // 11
-    func testRelaunchedAppIsReportedAndNotQuitAgain() async {
+    func testRelaunchedAppIsReportedAndMayBeQuitAgain() async {
         let r = await rig()
         let app = start(r, running: [main()])
         r.fake.onQuit = { [fake = r.fake] _ in fake.clear(app) }
@@ -200,7 +200,7 @@ final class UninstallQuitFlowTests: XCTestCase {
         await flow(r, app, .relaunched)
         XCTAssertEqual(r.fake.quits.count, 1)
         XCTAssertEqual(r.m.canUninstall(app), .running)
-        XCTAssertFalse(r.m.canQuit(app))
+        XCTAssertTrue(r.m.canQuit(app), "F2: Quit App is not lost after a relaunch")
         XCTAssertTrue(UninstallGuidanceCard.text(r.m.guidance(for: app)!).contains("Startup Items"))
     }
 

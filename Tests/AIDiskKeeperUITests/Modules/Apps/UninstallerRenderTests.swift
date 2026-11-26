@@ -80,7 +80,15 @@ final class UninstallerRenderTests: XCTestCase {
         }
     }
 
-    func testQuitCardsRenderInBothLanguagesAndNarrowDetailHasNoClipping() async {
+    /// Laid-out size of a view proposed `width` wide (what the user would see, not just "an image came out").
+    private func measured(_ view: some View, width: CGFloat) -> CGSize {
+        let host = NSHostingView(rootView: view.frame(width: width))
+        host.frame = NSRect(x: 0, y: 0, width: width, height: 2000)
+        host.layoutSubtreeIfNeeded()
+        return host.fittingSize
+    }
+
+    func testQuitCardsRenderInBothLanguages() async {
         let m = await model(running: [UninstallFix.app("Notely", size: 2000).id])
         let notely = UninstallFix.app("Notely", size: 2000)
         let cards: [UninstallGuidance] = [
@@ -95,15 +103,43 @@ final class UninstallerRenderTests: XCTestCase {
                     let r = ImageRenderer(content: UninstallGuidanceCard(guidance: g, app: notely, model: m).padding().frame(width: 380).background(.adkBg))
                     XCTAssertNotNil(r.cgImage, "\(lang) \(g)")
                 }
-                // #111: the action bar's summary wraps to two lines at the narrowest detail width instead of clipping.
-                m.select(UninstallFix.slide)
-                let c = CleanupCoordinator(holder: CleanupEngineHolder())
-                let host = NSHostingView(rootView: UninstallAppDetail(app: UninstallFix.slide, model: m, coordinator: c).frame(width: 380, height: 560))
-                host.frame = NSRect(x: 0, y: 0, width: 380, height: 560)
-                host.layoutSubtreeIfNeeded()
-                XCTAssertGreaterThan(host.fittingSize.height, 0)
-                let r = ImageRenderer(content: UninstallAppDetail(app: UninstallFix.slide, model: m, coordinator: c).frame(width: 380, height: 560).background(.adkBg))
-                XCTAssertNotNil(r.cgImage, "bar \(lang)")
+            }
+        }
+    }
+
+    /// #111: the action bar is at most two rows (summary up to two lines) at a wide window and at the narrowest
+    /// detail width, in en and vi. A summary squeezed to one character per line would be several times taller.
+    func testActionBarKeepsItsTextReadableAtWideAndMinimumWidthInBothLanguages() async {
+        let m = await model()
+        let c = CleanupCoordinator(holder: CleanupEngineHolder())
+        m.select(UninstallFix.slide)
+        for lang in [AppLanguage.en, .vi] {
+            L10n.withLanguage(lang) {
+                for width in [700.0, 380.0] {
+                    let bar = UninstallActionBar(model: m, availability: .available, help: "", coordinator: c)
+                    let size = measured(bar, width: width)
+                    XCTAssertLessThanOrEqual(size.width, width + 0.5, "bar overflows \(lang) \(width)")
+                    XCTAssertLessThanOrEqual(size.height, 80, "bar text squeezed \(lang) \(width)")
+                    // The size text alone is never wrapped: its height is one line.
+                    let sizeOnly = measured(SizeText(m.tickedBytes, qualifier: .upTo).font(.headline).fixedSize(), width: width)
+                    XCTAssertLessThanOrEqual(sizeOnly.height, 24, "size text wraps \(lang)")
+                }
+            }
+        }
+    }
+
+    /// F1: the stuck card's text and its three buttons fit a narrow detail column in both languages.
+    func testStuckCardTextAndButtonsStayReadableInBothLanguages() async {
+        let m = await model(running: [UninstallFix.app("Notely", size: 2000).id])
+        let notely = UninstallFix.app("Notely", size: 2000)
+        for lang in [AppLanguage.en, .vi] {
+            L10n.withLanguage(lang) {
+                for width in [700.0, 380.0] {
+                    let card = UninstallGuidanceCard(guidance: .running(name: "Notely", quit: .stuck, canQuit: true), app: notely, model: m).padding()
+                    let size = measured(card, width: width)
+                    XCTAssertLessThanOrEqual(size.width, width + 0.5, "card overflows \(lang) \(width)")
+                    XCTAssertLessThanOrEqual(size.height, 200, "card text squeezed \(lang) \(width)")
+                }
             }
         }
     }
