@@ -1,0 +1,42 @@
+PREFIXES = ("history.",)
+
+VI = {
+    "history.title": "Lịch sử dọn dẹp",
+    "history.lifetime": "Tổng dung lượng đã thu hồi",
+    "history.reclaimed": "Đã thu hồi",
+    "history.skipped": "Đã bỏ qua",
+    "history.failed": "Thất bại",
+    "history.quitApp": "Thoát ứng dụng",
+    "history.exportCSV": "Xuất CSV…",
+    "history.revealLog": "Hiện nhật ký kiểm tra",
+    "history.revealInTrash": "Hiện trong Thùng rác",
+    "history.notInTrash": "Không còn trong Thùng rác",
+    "history.truncated": "Nhật ký rất lớn nên chỉ hiển thị các mục gần đây nhất.",
+    "history.empty.title": "Chưa có lần dọn dẹp nào",
+    "history.empty.message": "Khi bạn dọn dẹp, mỗi hành động sẽ được ghi lại ở đây.",
+    "history.loading": "Đang đọc nhật ký kiểm tra…",
+    "history.failed.title": "Không đọc được nhật ký kiểm tra",
+    "history.retry": "Thử lại",
+    "history.selectRun": "Chọn một lần dọn dẹp để xem các mục của nó.",
+    "history.col.path": "Đường dẫn",
+    "history.col.size": "Dung lượng",
+    "history.col.result": "Kết quả",
+    "history.result.trashed": "Đã chuyển vào Thùng rác",
+    "history.result.deleted": "Đã xóa",
+    "history.result.ran": "Đã chạy lệnh",
+    "history.result.skipped": "Đã bỏ qua",
+    "history.result.failed": "Thất bại",
+    "history.result.other": "Khác",
+    "history.run.bytes": "Đã thu hồi %@",
+    "history.quit.result": "Thoát ứng dụng: %@",
+    "history.a11y.lifetime": "Tổng dung lượng đã thu hồi, %@",
+    "history.run.summary": "%@ · %@",
+    "history.export.failed": "Không lưu được tệp CSV.",
+}
+
+PLURALS = {
+    "history.a11y.failed": {"en": {"one": "Failed: %lld", "other": "Failed: %lld"}, "vi": {"other": "Thất bại: %lld"}},
+    "history.items": {"en": {"one": "%lld item", "other": "%lld items"}, "vi": {"other": "%lld mục"}},
+    "history.unreadable": {"en": {"one": "%lld entry couldn't be read", "other": "%lld entries couldn't be read"},
+                           "vi": {"other": "Không đọc được %lld mục"}},
+}
