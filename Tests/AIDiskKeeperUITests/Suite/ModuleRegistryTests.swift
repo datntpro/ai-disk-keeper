@@ -14,10 +14,14 @@ final class ModuleRegistryTests: XCTestCase {
 
     func testSectionsAreOrderedAndExcludeDisabled() {
         let sections = ModuleRegistry.sections()
-        XCTAssertEqual(sections.map(\.0), [.top, .aiWorkspace])   // unbuilt Storage/Apps/Activity modules are hidden
+        // Independent of which module PRs have landed: only enabled modules appear, in registry order.
+        XCTAssertEqual(sections.first?.0, .top)
         XCTAssertEqual(sections[0].1.map(\.id), [.overview])
-        XCTAssertEqual(sections[1].1.map(\.id), [.aiTools, .worktrees, .modelsDocker])
+        let enabled = ModuleRegistry.providers.map { $0.descriptor }.filter { $0.isEnabled }.map { $0.id }
+        XCTAssertEqual(sections.flatMap { $0.1 }.map { $0.id }, enabled)
         XCTAssertTrue(sections.flatMap(\.1).allSatisfy(\.isEnabled))
+        let order = sections.map { $0.0.rawValue }
+        XCTAssertEqual(order, order.sorted())
     }
 
     func testIncludingDisabledListsEverySectionInOrder() {
