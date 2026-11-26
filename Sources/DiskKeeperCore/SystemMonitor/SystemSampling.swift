@@ -17,11 +17,19 @@ public actor SystemSampler {
         self.cpu = cpu; self.memory = memory; self.network = network; self.processes = processes
     }
 
-    public func sample(metrics: Set<MetricID>, perCore: Bool, topProcesses: Bool) -> SystemSnapshot {
+    /// `discarding`: counters for these were last read so long ago that the delta would average a whole idle gap.
+    /// They are read once to re-baseline, and the reading is reported as `pending`.
+    public func sample(metrics: Set<MetricID>, perCore: Bool, topProcesses: Bool, discarding: Set<MetricID> = []) -> SystemSnapshot {
         var s = SystemSnapshot()
-        if metrics.contains(.cpu) { s.cpu = cpu.sample(perCore: perCore) }
+        if metrics.contains(.cpu) {
+            let r = cpu.sample(perCore: perCore)
+            s.cpu = discarding.contains(.cpu) ? .pending : r
+        }
         if metrics.contains(.memory) { s.memory = memory.sample() }
-        if metrics.contains(.network) { s.network = network.sample() }
+        if metrics.contains(.network) {
+            let r = network.sample()
+            s.network = discarding.contains(.network) ? .pending : r
+        }
         if topProcesses { s.processes = processes.sample() }
         return s
     }

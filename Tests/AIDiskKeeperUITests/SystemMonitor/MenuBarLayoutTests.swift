@@ -70,6 +70,25 @@ final class MenuBarLayoutTests: XCTestCase {
         XCTAssertTrue(found)
     }
 
+    func testFreeSpaceCellFitsTheRealFormatterOutputInEveryUnitAndLanguage() {
+        var values: [Int64] = [0, 1, 999, 1_000]
+        var base: Int64 = 1_000
+        while base <= 1_000_000_000_000 {
+            for m in [1, 9, 10, 12, 31, 99, 123, 312, 999, 1_023, 9_999] { values.append(base * Int64(m) + base / 3) }
+            base *= 1000
+        }
+        values.append(31_070_000_000)
+        let width = MenuBarLayout.reservedDiskWidth(MenuBarLayout.measureText)
+        for id in ["en", "vi"] {
+            for v in values {
+                let text = Formatting.bytes(v, locale: Locale(identifier: id))
+                XCTAssertLessThanOrEqual(MenuBarLayout.measureText(text), width, "\(id) \(v) -> \(text)")
+            }
+        }
+        let r = MenuBarLayout.layout(style: .glyph, entries: [.init(metric: .disk, text: Formatting.bytes(31_070_000_000, locale: Locale(identifier: "en")))], measure: MenuBarLayout.measureText)
+        XCTAssertGreaterThanOrEqual(r.cells.last?.width ?? 0, MenuBarLayout.measureText("31.07 GB"))
+    }
+
     func testReservedWidthsAreTheSameInEnglishAndVietnamese() {
         var widths: [CGFloat] = []
         for language in [AppLanguage.en, .vi] {

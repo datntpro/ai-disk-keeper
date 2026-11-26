@@ -2,6 +2,12 @@ import AppKit
 import DiskKeeperCore
 import SwiftUI
 
+/// Counts body evaluations so a test can prove a closed popover does no view work.
+@MainActor enum PopoverProbe {
+    static var shellEvaluations = 0
+    static var contentEvaluations = 0
+}
+
 /// The menu bar popover (320 pt). Report-only: the one way to act on results is "Review in app", which opens the
 /// window on Overview, where every cleanup still goes through the dry-run sheet. There is no cleanup path here.
 struct MenuBarPopover: View {
@@ -11,8 +17,22 @@ struct MenuBarPopover: View {
     var open: () -> Void = {}
     @Environment(\.openWindow) private var openWindow
 
+    /// Only the shell lives while the popover is closed. The hidden MenuBarExtra window keeps its view tree, and every
+    /// view in it that reads an observable model is laid out again on each tick, so the content exists only while open.
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        PopoverProbe.shellEvaluations += 1
+        return Group {
+            if monitor.popoverOpen { content }
+        }
+        .frame(width: 320)
+        .background(WindowAccessor { monitor.popoverWindow = $0 })
+        .onAppear { model.popoverOpened(); monitor.setPopoverOpen(true) }
+        .onDisappear { monitor.setPopoverOpen(false) }
+    }
+
+    private var content: some View {
+        PopoverProbe.contentEvaluations += 1
+        return VStack(alignment: .leading, spacing: 12) {
             volumeRow
             Divider()
             scanSummary
@@ -35,9 +55,6 @@ struct MenuBarPopover: View {
         .background(Color.adkBg)
         .tint(.adkAccent)
         .environment(\.locale, L10n.locale)
-        .background(WindowAccessor { monitor.popoverWindow = $0 })
-        .onAppear { model.popoverOpened(); monitor.setPopoverOpen(true) }
-        .onDisappear { monitor.setPopoverOpen(false) }
     }
 
     private var volumeRow: some View {

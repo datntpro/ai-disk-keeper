@@ -40,6 +40,7 @@ final class SystemMonitorRenderTests: XCTestCase {
         let care = CareRig()
         let env = AppEnvironment(pathEnvironment: PathEnvironment(home: "/Users/tester", temporaryDirectory: "/tmp"),
                                  makeScanEngine: { FakeScanEngine(.scripted([])) })
+        values.monitor.setPopoverOpen(true)
         render(MenuBarPopover(model: values.menuBar, monitor: values.monitor, suite: SuiteModel(env: env)), "popover")
         _ = care
     }

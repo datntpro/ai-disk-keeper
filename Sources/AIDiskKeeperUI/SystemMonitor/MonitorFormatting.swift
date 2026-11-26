@@ -6,6 +6,9 @@ enum MonitorFormatting {
     static func percent(_ fraction: Double) -> String { "\(Int((min(max(fraction, 0), 1) * 100).rounded()))%" }
     static func percentNumber(_ fraction: Double) -> String { "\(Int((min(max(fraction, 0), 1) * 100).rounded()))" }
 
+    /// "0 KB" instead of the system's spelled-out "Zero kB".
+    static var zeroBytes: String { "0 KB" }
+
     private static func number(_ x: Double, locale: Locale) -> String {
         x.formatted(.number.precision(.fractionLength(x < 10 ? 1 : 0)).locale(locale))
     }

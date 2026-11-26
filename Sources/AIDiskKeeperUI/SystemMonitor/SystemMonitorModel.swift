@@ -54,7 +54,7 @@ final class SystemMonitorModel {
         let s = settings.settings
         var d = Demand()
         d.popoverOpen = popoverOpen
-        d.barMetrics = Set(s.menuBarMetricsInOrder)
+        d.barMetrics = Set(drawnBarMetrics)
         d.enabledMetrics = Set(s.enabledMetricsInOrder)
         d.topProcessesVisible = s.popoverShowsTopProcesses && topProcessesExpanded
         d.itemInserted = s.showMenuBarItem
@@ -62,6 +62,17 @@ final class SystemMonitorModel {
         d.systemAsleep = systemAsleep
         d.barInterval = .seconds(SamplingPolicy.snapBarSeconds(s.menuBarRefreshSeconds))
         return d
+    }
+
+    /// The metrics the chosen style actually draws: Glyph draws none, Live strata three meters (disk counts toward
+    /// the three), the others every metric in the bar. Anything not drawn is neither sampled nor spoken.
+    var drawnBarMetrics: [MetricID] {
+        let s = settings.settings
+        switch s.menuBarStyle {
+        case .glyph: return []
+        case .liveStrata: return Array(s.menuBarMetricsInOrder.prefix(3)).filter { $0 != .disk }
+        case .readout, .ridge: return s.menuBarMetricsInOrder.filter { $0 != .disk }
+        }
     }
 
     func setPopoverOpen(_ open: Bool) {
@@ -79,19 +90,20 @@ final class SystemMonitorModel {
     /// One observable mutation batch per tick.
     func apply(_ snapshot: SystemSnapshot) {
         let t = now()
+        // Observation fires on every set, so only assign what changed: an unchanged value must not re-lay out a view.
         if let c = snapshot.cpu {
-            if c != .pending { cpu = c }
+            if c != .pending, c != cpu { cpu = c }
             if let v = c.value { append(.cpu, t, v.total) }
         }
         if let m = snapshot.memory {
-            memory = m
+            if m != memory { memory = m }
             if let v = m.value { append(.memory, t, v.usedFraction) }
         }
         if let n = snapshot.network {
-            if n != .pending { network = n }
+            if n != .pending, n != network { network = n }
             if let v = n.value { append(.down, t, v.downBytesPerSecond); append(.up, t, v.upBytesPerSecond) }
         }
-        if let p = snapshot.processes { processes = p }
+        if let p = snapshot.processes, p != processes { processes = p }
         refreshLabel()
     }
 
@@ -181,7 +193,7 @@ final class SystemMonitorModel {
         let s = settings.settings
         let units = s.networkUnits
         var parts: [String] = []
-        for m in s.menuBarMetricsInOrder where m != .disk {
+        for m in drawnBarMetrics {
             switch m {
             case .cpu: parts.append(SystemMonitorCopy.barCPU(SystemMonitorCopy.percentSpoken(cpu.value.map { MonitorFormatting.percentNumber($0.total) } ?? "—")))
             case .memory: parts.append(SystemMonitorCopy.barMemory(SystemMonitorCopy.percentSpoken(memory.value.map { MonitorFormatting.percentNumber($0.usedFraction) } ?? "—")))

@@ -13,7 +13,17 @@ enum MenuBarLayout {
     static let separatorWidth: CGFloat = 1
 
     /// The widest string each cell can show, so digits never move the item.
-    static let reservedDisk = "999 GB"
+    /// Widest `Formatting.bytes` outputs (two decimals, every unit, English and Vietnamese). Measured, never guessed.
+    static let reservedDiskSamples: [String] = {
+        let bases: [Int64] = [1_000, 1_000_000, 1_000_000_000, 1_000_000_000_000, 1_000_000_000_000_000]
+        return [Locale(identifier: "en"), Locale(identifier: "vi")].flatMap { loc in
+            [Formatting.bytes(0, locale: loc)] + bases.map { Formatting.bytes($0 * 999 + $0 * 99 / 100, locale: loc) }
+        }
+    }()
+    static func reservedDiskWidth(_ measure: (String) -> CGFloat) -> CGFloat {
+        reservedDiskSamples.map(measure).max() ?? measure("999.99 GB")
+    }
+    static let reservedDisk = "999.99 GB"
     static let reservedPercent = "100%"
     static let reservedNetwork = "↓999K ↑999K"
     static let reservedNetworkDownOnly = "↓999K"
@@ -53,7 +63,7 @@ enum MenuBarLayout {
         if style == .glyph || nonDisk.isEmpty {
             // Exactly the T47 item: glyph, plus the free-space text when it is on.
             var cells = [Cell(kind: .glyph, width: glyphWidth)]
-            if disk != nil { cells.append(Cell(kind: .metric(.disk), text: disk?.text, width: measure(reservedDisk))) }
+            if disk != nil { cells.append(Cell(kind: .metric(.disk), text: disk?.text, width: reservedDiskWidth(measure))) }
             return Result(mode: .glyph, cells: cells, width: total(cells, gap: 4), stepDown: 0)
         }
         let start = style == .liveStrata ? 3 : 0
@@ -80,7 +90,7 @@ enum MenuBarLayout {
             first = false
             switch e.metric {
             case .disk:
-                cells.append(Cell(kind: .metric(.disk), text: e.text, width: measure(reservedDisk)))
+                cells.append(Cell(kind: .metric(.disk), text: e.text, width: reservedDiskWidth(measure)))
             case .cpu, .memory:
                 let w = ridge ? ridgeWidth + (values ? spacing + measure(reservedPercent) : 0)
                     : markWidth + spacing + measure(reservedPercent)

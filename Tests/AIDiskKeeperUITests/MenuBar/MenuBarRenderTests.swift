@@ -22,7 +22,12 @@ final class MenuBarRenderTests: XCTestCase {
         return (model, suite, care)
     }
 
-    private func mon(_ m: MenuBarModel) -> SystemMonitorModel { SystemMonitorModel(settings: m.settings, menuBar: m) }
+    /// The popover draws its content only while open, so a render has to open it first.
+    private func mon(_ m: MenuBarModel) -> SystemMonitorModel {
+        let monitor = SystemMonitorModel(settings: m.settings, menuBar: m)
+        monitor.setPopoverOpen(true)
+        return monitor
+    }
 
     private func render(_ view: some View, _ what: String) {
         for scheme in [ColorScheme.light, .dark] {

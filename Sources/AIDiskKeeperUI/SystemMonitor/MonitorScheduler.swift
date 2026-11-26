@@ -72,6 +72,8 @@ final class MonitorScheduler {
     private var sleeping: Task<Void, Never>?
     private var observers: [NSObjectProtocol] = []
     private(set) var loopsStarted = 0
+    /// When each metric was last read and at what cadence, to spot a gap that would make the next delta meaningless.
+    private var lastSampled: [MetricID: (at: Duration, interval: Duration)] = [:]
 
     static let idleSleep: Duration = .seconds(3600)
 
@@ -148,11 +150,21 @@ final class MonitorScheduler {
         guard !due.isEmpty else { return }
         if due.disk { await menuBar.tick() }
         if !due.metrics.isEmpty {
-            let snapshot = await sampler.sample(metrics: due.metrics, perCore: due.perCore, topProcesses: due.topProcesses)
+            let t = clock()
+            let stale = Self.staleMetrics(due.metrics, last: lastSampled, now: t)
+            if !stale.isEmpty { monitor.markStale() }
+            let snapshot = await sampler.sample(metrics: due.metrics, perCore: due.perCore, topProcesses: due.topProcesses, discarding: stale)
+            for metric in due.metrics { lastSampled[metric] = (t, plan.metricsInterval ?? Self.idleSleep) }
             monitor.apply(snapshot)
         } else {
             monitor.refreshLabel()
         }
+    }
+
+    /// Metrics whose previous read is older than twice the cadence it was read at (after an idle gap, a closed
+    /// popover, a hidden item): their first delta would average the whole gap, so it is dropped.
+    static func staleMetrics(_ metrics: Set<MetricID>, last: [MetricID: (at: Duration, interval: Duration)], now: Duration) -> Set<MetricID> {
+        Set(metrics.filter { m in last[m].map { now - $0.at > $0.interval * 2 + MonitorPlanner.slack } ?? false })
     }
 
     /// Safety net: `.onDisappear` can be missed by a menu bar window, so a hidden window closes the popover demand.
@@ -181,6 +193,7 @@ final class MonitorScheduler {
     func wake(_ change: (MonitorScheduler) -> Void) {
         change(self)
         planner.reset()
+        lastSampled = [:]
         monitor.markStale()
         demandChanged()
     }

@@ -95,7 +95,7 @@ struct SystemMonitorSection: View {
                           extra: r.map { m in AnyView(MemoryLegend(reading: m)) },
                           detail: r.map { m in
                               var s = SystemMonitorCopy.memoryDetail(used: Formatting.bytes(Int64(m.usedBytes)), total: Formatting.bytes(Int64(m.totalBytes)))
-                              if let swap = m.swapUsedBytes { s += " · " + SystemMonitorCopy.swap(Formatting.bytes(Int64(swap))) }
+                              if let swap = m.swapUsedBytes { s += " · " + SystemMonitorCopy.swap(swap == 0 ? MonitorFormatting.zeroBytes : Formatting.bytes(Int64(swap))) }
                               return s
                           })
     }
@@ -194,7 +194,7 @@ struct MemoryLegend: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             MemoryStrataBar(reading: reading)
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 item(SystemMonitorCopy.memApp, reading.appBytes, .adkKeep)
                 item(SystemMonitorCopy.memWired, reading.wiredBytes, StrataLayer.apps.color)
                 item(SystemMonitorCopy.memCompressed, reading.compressedBytes, StrataLayer.docker.color)
@@ -205,6 +205,7 @@ struct MemoryLegend: View {
         HStack(spacing: 3) {
             Circle().fill(c).frame(width: 6, height: 6)
             Text(label + " " + Formatting.bytes(Int64(bytes))).font(.caption2).foregroundStyle(.secondary)
+                .lineLimit(1).minimumScaleFactor(0.7)
         }
     }
 }
@@ -223,7 +224,7 @@ struct TopProcessesView: View {
                     Text(SystemMonitorCopy.topMemory).tag(true)
                 } label: { Text(SystemMonitorCopy.topProcesses) }
                 .pickerStyle(.segmented).labelsHidden()
-                let rows = ProcessTopN.top(monitor.processes, by: byMemory ? .memory : .cpu)
+                let rows = monitor.topProcessesExpanded ? ProcessTopN.top(monitor.processes, by: byMemory ? .memory : .cpu) : []
                 if rows.isEmpty {
                     Text(SystemMonitorCopy.collecting).font(.caption).foregroundStyle(.secondary)
                 }

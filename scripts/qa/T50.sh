@@ -44,7 +44,7 @@ case "${1:-}" in
     ;;
   teardown-procs|teardown)
     if [ -f "$ROOT/pids" ]; then while read -r p; do kill "$p" 2>/dev/null || true; done < "$ROOT/pids"; rm -f "$ROOT/pids"; fi
-    [ "$1" = teardown ] && rm -rf "$ROOT" && echo "T50 fixtures removed"
+    if [ "$1" = teardown ]; then rm -rf "$ROOT"; echo "T50 fixtures removed"; fi
     ;;
   *)
     echo "usage: $0 cpu <sec>|mem <MB>|net <sec>|energy <sec>|teardown" >&2
