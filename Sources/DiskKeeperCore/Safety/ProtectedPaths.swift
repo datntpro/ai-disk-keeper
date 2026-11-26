@@ -383,9 +383,28 @@ extension ProtectedPaths {
         var out: [Int] = []
         for i in c.live {
             let p = pattern(i)
-            if p.components.count > n, GlobMatcher.matches(pattern: p.components[n], component: f) { out.append(i) }
+            if p.components.count > n {
+                if GlobMatcher.matches(pattern: p.components[n], component: f) { out.append(i) }
+            } else if i < anchored.count {
+                // Fully matched anchored pattern (matches everything below). Normally the matched node was
+                // itself protected, but a root evaluates as a container first, so keep it: the node never settles.
+                out.append(i)
+            }
         }
         return AnchoredCursor(live: out, depth: n + 1)
+    }
+
+    enum IndexKind { case none, protected, system, outside }
+
+    /// Verdict class of one canonical key, as `evaluate` would use it (container reasons count as `.none`).
+    func indexKind(forKey key: PathKey) -> IndexKind {
+        guard let hit = denyReason(for: key) else { return .none }
+        switch hit.reason {
+        case .protectedPath, .protectedName: return .protected
+        case .systemLocation: return .system
+        case .outsideAllowedRoots: return .outside
+        default: return .none
+        }
     }
 
     /// True if a single path component matches a basename pattern (`protectedName`).

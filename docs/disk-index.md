@@ -81,13 +81,19 @@ the real home read-only. Results are in the PR description.
 
 ### Protected-marking fast path (indexing/display only)
 
-`evaluate` costs ~1 ms per path, which made the index ~8× slower than `FileSizer`. `IndexGuard` keeps the full
-`evaluate` for any node that could be affected by a root, system root, or anchored/exact-only pattern, and tracks
-those patterns incrementally with a cursor (lexical and physical key). Once no such pattern can match and the node is
-deeper than every root, the verdict equals the parent's inherited state plus a memoized basename-pattern check.
-`IndexGuardDifferentialTests` compare it with `evaluate` on generated paths (built-in shapes, additional patterns,
-Unicode/case variants, aliased roots, system and outside roots, depths on both sides of the bound). Cleanup and
-execution never use it: they keep calling `ProtectedPaths.check`.
+`evaluate` costs ~1 ms per path, which made the index ~8x slower than `FileSizer`. The verdict is a function of the
+lexical key and the physical key (lexical wins), so `IndexGuard` tracks one verdict class per key and the flags equal
+`evaluate`'s. A key is *settled* when the node is deeper than every root/system-root key and no anchored or exact-only
+pattern can still apply (an incremental cursor; a fully matched anchored pattern stays in the cursor, so patterns at or
+above a root, whose node evaluates as a container, are never lost). A settled key inherits `protected`, `system` or
+`outside` from its parent, otherwise it becomes `protected` only through a basename pattern on its own name. Everything
+else is computed from the key with the guard itself. Roots at or above `/System/Volumes/Data` (`/`, `/System`,
+`/System/Volumes`) use the full computation because descendant keys lose that prefix. `.fullDisk` (the data volume
+itself) is fast-pathed and marks home items `protected` exactly like a `.home` index.
+`IndexGuardDifferentialTests` compare it with the pure `evaluate` on generated walks: built-in shapes, patterns at,
+above and below the deepest root (aliases, case and Unicode variants), random-pattern fuzz, lexical-inside/physical-outside
+and the reverse, aliased roots, the data volume, system and outside roots. Cleanup and execution never use it: they keep
+calling `ProtectedPaths.check`. Symlink entries get no node and are not classified (a `check` would resolve the target).
 
 ### Results (release build, this machine)
 

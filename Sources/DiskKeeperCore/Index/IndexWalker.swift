@@ -226,18 +226,15 @@ struct IndexWalker {
                 }
                 if !big { break }   // small hardlink repeat: nothing to show
                 var nodeID = top.node
-                var evFlags: NodeFlags = []
+                let ev = evaluate(ent, parent: top)
+                let evFlags = ev.flags
                 if b.nodeCount < options.maxNodes {
-                    let ev = evaluate(ent, parent: top)
-                    evFlags = ev.flags
                     nodeID = b.addNode(parent: top.node, name: nameBuffer(ent), flags: fileFlags.union(ev.flags),
                                        allocated: alloc, logical: repeatLink ? 0 : size, fileCount: repeatLink ? 0 : 1, mtime: t)
                 } else {
                     stats.nodeBudgetHit = true
                     top.needsCollapse = true
                     stack[stack.count - 1] = top
-                    if top.guardState.protected { evFlags.insert(.protected) }
-                    if top.guardState.system || top.guardState.outside { evFlags.insert(.outsideCleanableRoots) }
                 }
                 if isRegular && size >= recordThreshold {
                     if b.records.count < options.maxFileRecords {
