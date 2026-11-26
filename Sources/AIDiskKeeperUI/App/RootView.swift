@@ -9,6 +9,8 @@ public struct RootView: View {
     @State private var inspectedID: ScanItem.ID?
     @State private var list = ItemListModel()
     @State private var showInspector = true
+    @State private var cleanupSelection = SelectionModel()
+    @State private var cleanupFlow: CleanupFlowModel?
 
     public init(env: AppEnvironment) {
         self.env = env
@@ -33,6 +35,7 @@ public struct RootView: View {
         }
         .toolbar {
             ScanToolbar(scan: scan)
+            CleanupToolbar(scan: scan, selection: cleanupSelection, holder: env.cleanup, onReview: startReview)
             ToolbarItem {
                 Button { showInspector.toggle() } label: { Label(loc("toolbar.details", "Details"), systemImage: "sidebar.trailing") }
                     .help(loc("toolbar.details.help", "Show or hide the detail pane"))
@@ -50,6 +53,17 @@ public struct RootView: View {
         .onChange(of: scan.scanGeneration) { _, _ in refreshList() }
         .onAppear { refreshList() }
         .onChange(of: scan.scanGeneration) { _, _ in inspectedID = nil }
+        .onChange(of: scan.scanGeneration) { _, g in cleanupSelection.syncScanGeneration(g) }
+        .sheet(isPresented: Binding(get: { cleanupFlow?.isActive ?? false },
+                                    set: { if !$0 { cleanupFlow?.dismiss() } })) {
+            if let flow = cleanupFlow {
+                CleanupSheetContent(flow: flow, environment: env.pathEnvironment) { trashed in
+                    scan.removeItems(trashed)
+                    cleanupSelection.deselectAll()
+                }
+                .interactiveDismissDisabled(flow.isExecuting)
+            }
+        }
         .onChange(of: scan.phase) { _, phase in announce(phase) }
         .onExitCommand { if scan.isScanning { scan.cancelScan() } }
         .sheet(isPresented: Binding(get: { !env.settings.settings.hasCompletedOnboarding }, set: { _ in })) {
@@ -62,12 +76,33 @@ public struct RootView: View {
     @ViewBuilder private var content: some View {
         switch selection {
         case .overview:
-            OverviewView(scan: scan, inspect: { id in inspectedID = id }, showWarnings: { selection = .warnings })
+            OverviewView(scan: scan, inspect: { id in inspectedID = id }, showWarnings: { selection = .warnings }) {
+                if scan.phase != .idle {
+                    SelectAllSafeButton(items: scan.items, scopeName: nil, selection: cleanupSelection)
+                }
+            }
         case .warnings:
             WarningsView(warnings: scan.warnings)
         case .tool, .category:
-            ItemTableView(rows: list.rows, tierCounts: list.tierCounts, query: $query, inspectedID: $inspectedID)
+            ItemTableView(rows: list.rows, tierCounts: list.tierCounts, query: $query, inspectedID: $inspectedID,
+                          selection: cleanupSelection, scopeName: scopeName)
         }
+    }
+
+    private var scopeName: String? {
+        switch selection {
+        case .tool(let t): t.uiName
+        case .category(let c): c.displayName
+        default: nil
+        }
+    }
+
+    private func startReview() {
+        guard let engine = env.cleanup.engine else { return }
+        let flow = cleanupFlow ?? CleanupFlowModel(engine: engine)
+        cleanupFlow = flow
+        let items = cleanupSelection.selectedItems(in: scan.items)
+        Task { await flow.review(items) }
     }
 
     private func refreshList() { list.update(items: scan.items, query: query) }
