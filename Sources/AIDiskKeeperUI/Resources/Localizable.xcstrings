@@ -9497,6 +9497,22 @@
         }
       }
     },
+    "storage.external" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "external"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ngoài"
+          }
+        }
+      }
+    },
     "storage.failed.body" : {
       "localizations" : {
         "en" : {
@@ -9557,6 +9573,22 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%@, còn trống %@, đã dùng %@ phần trăm"
+          }
+        }
+      }
+    },
+    "storage.internal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "internal"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "trong"
           }
         }
       }
@@ -9788,15 +9820,33 @@
     "storage.snapshots.count" : {
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ snapshots"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld snapshot"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld snapshots"
+                }
+              }
+            }
           }
         },
         "vi" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ snapshot"
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "%lld snapshot"
+                }
+              }
+            }
           }
         }
       }
@@ -10021,6 +10071,22 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Không đo được Thùng rác (%@)."
+          }
+        }
+      }
+    },
+    "storage.unknown" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "unknown"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "không rõ"
           }
         }
       }
