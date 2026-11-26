@@ -3,7 +3,7 @@ import XCTest
 
 final class DiskMapPerfTests: XCTestCase {
     #if DEBUG
-    static let slack = 25.0   // unoptimized builds are ~15× slower; the real bounds apply to release
+    static let slack = 100.0   // unoptimized builds on shared CI are 30–50× slower; the real bounds apply to release
     #else
     static let slack = 1.0
     #endif

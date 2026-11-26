@@ -55,4 +55,4 @@ The map has no user-facing text (labels are the UI's job, T31).
 | `tiles` 2 levels 1600×600 | < 10 ms | ~0.07 ms |
 | `DiskMapOverlay.build`, 5 000 items | < 20 ms | ~17 ms |
 
-Debug builds use a ×25 bound (unoptimized code is ~15× slower). Layout cost depends on the drawn elements, not on tree size.
+Debug builds use a ×100 bound (a sanity check only; unoptimized code on shared CI runs 30–50× slower). Layout cost depends on the drawn elements, not on tree size.
