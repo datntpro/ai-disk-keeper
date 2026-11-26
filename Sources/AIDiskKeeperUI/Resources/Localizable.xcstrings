@@ -5769,6 +5769,22 @@
         }
       }
     },
+    "menubar.glyph.a11y" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI Disk Keeper"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "AI Disk Keeper"
+          }
+        }
+      }
+    },
     "module.aiTools" : {
       "localizations" : {
         "en" : {

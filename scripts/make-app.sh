@@ -84,7 +84,7 @@ sed -e "s|__BUNDLE_ID__|$(esc "$BUNDLE_ID")|g" \
 plutil -lint "$STAGE/Contents/Info.plist" >/dev/null || die "generated Info.plist is invalid"
 printf 'APPL????' > "$STAGE/Contents/PkgInfo"
 
-if swift scripts/make-placeholder-icon.swift "$WORK/AppIcon.iconset" \
+if swift scripts/make-icon.swift Packaging/Icon/StrataMark.json "$WORK/AppIcon.iconset" \
    && iconutil -c icns "$WORK/AppIcon.iconset" -o "$STAGE/Contents/Resources/AppIcon.icns"; then
   :
 else

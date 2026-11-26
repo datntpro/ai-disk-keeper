@@ -72,6 +72,8 @@ jobs:
           ./scripts/make-app.sh --config debug --output "$RUNNER_TEMP/dmgtest" --skip-verify
           ./scripts/make-dmg.sh "$RUNNER_TEMP/dmgtest/AI Disk Keeper.app" "$RUNNER_TEMP/dmgtest/test.dmg"
           hdiutil imageinfo "$RUNNER_TEMP/dmgtest/test.dmg" >/dev/null
+          test -s "$RUNNER_TEMP/dmgtest/AI Disk Keeper.app/Contents/Resources/AppIcon.icns"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' "$RUNNER_TEMP/dmgtest/AI Disk Keeper.app/Contents/Info.plist")" = AppIcon
       - name: Sign (ad-hoc, relative path) and release-notes smoke test
         run: |
           cp -R "$RUNNER_TEMP/dmgtest/AI Disk Keeper.app" "$RUNNER_TEMP/dmgtest/signme.app"
