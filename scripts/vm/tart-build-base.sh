@@ -12,8 +12,11 @@ TMPVM=adk-base-build
 command -v tart >/dev/null || { log "brew install openai/tools/tart"; exit 1; }
 if tart list --quiet | grep -qx "$ADK_BASE_VM"; then
   [[ "${ADK_REBUILD:-}" == 1 ]] || { log "$ADK_BASE_VM exists (ADK_REBUILD=1 to rebuild)"; exit 0; }
-  tart delete "$ADK_BASE_VM"
 fi
+# Never delete a stale build VM someone else made; clear only our own leftover.
+cleanup() { tart stop "$TMPVM" >/dev/null 2>&1 || true; tart delete "$TMPVM" >/dev/null 2>&1 || true; }
+trap cleanup EXIT
+cleanup   # leftover from a previous failed run
 require_free_gb 60   # clone is copy-on-write; the pull (~67 GB download, ~87 GB on disk) needs ~150 GB free if not cached
 tart list --quiet | grep -qx "$(basename "${SRC_IMAGE%%:*}"):${SRC_IMAGE##*:}\|$SRC_IMAGE" || tart pull "$SRC_IMAGE"
 tart clone "$SRC_IMAGE" "$TMPVM"
@@ -28,6 +31,7 @@ gexec "$TMPVM" /bin/bash -lc 'command -v git && git --version; xcode-select -p; 
 gexec "$TMPVM" /bin/bash -lc 'rm -rf ~/ai-disk-keeper && git clone --quiet https://github.com/datntpro/ai-disk-keeper.git ~/ai-disk-keeper'
 
 tart stop "$TMPVM"
+# Swap in only after everything above succeeded, so a failed rebuild keeps the old base.
+if tart list --quiet | grep -qx "$ADK_BASE_VM"; then tart delete "$ADK_BASE_VM"; fi
 tart clone "$TMPVM" "$ADK_BASE_VM"
-tart delete "$TMPVM"
 log "base ready: $ADK_BASE_VM"; tart list

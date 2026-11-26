@@ -11,6 +11,14 @@ if [[ "$(sysctl -n kern.hv_vmm_present 2>/dev/null || echo 0)" != "1" ]]; then
     echo "refusing: not running inside a VM (set ADK_SEED_FORCE=1 and ADK_SEED_HOME=<scratch dir> to test elsewhere)" >&2
     exit 1
   fi
+  # Test mode on bare metal: the target must be a scratch dir under a temp root, never $HOME.
+  mkdir -p "$ADK_SEED_HOME"
+  real=$(cd "$ADK_SEED_HOME" && pwd -P)
+  case "$real" in
+    /tmp/*|/private/tmp/*|/private/var/folders/*) ;;
+    *) echo "refusing: ADK_SEED_HOME ($real) is not under /tmp or a temp folder" >&2; exit 1 ;;
+  esac
+  [[ "$real" != "$(cd "$HOME" && pwd -P)" ]] || { echo "refusing: ADK_SEED_HOME is \$HOME" >&2; exit 1; }
 fi
 H="${ADK_SEED_HOME:-$HOME}"
 OLD="202401010000"   # touch -t stamp used for "old" files
