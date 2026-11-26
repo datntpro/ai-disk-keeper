@@ -182,7 +182,8 @@ public actor CareScanCoordinator {
             }
             do { try history.append(snapshot) } catch {
                 warnings.append(ScanWarning(kind: .other, path: history.fileURL.path,
-                                            message: "Care Scan history could not be saved: \(error.localizedDescription)"))
+                                            message: "Care Scan history could not be saved: \(error.localizedDescription)",
+                                            code: .scannerFailed(scannerID: "care-history")))
             }
         }
         let report = CareReport(id: id, startedAt: startedAt, finishedAt: finishedAt, wasCancelled: wasCancelled,
