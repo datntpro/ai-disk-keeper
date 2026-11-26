@@ -36,6 +36,7 @@ final class CoreCopyTests: XCTestCase {
             .pathError(errno: EIO), .ruleOverlap(earlierRuleID: "a.b"), .cannotSize(errno: EIO), .cannotSize(errno: nil),
             .ruleFileInvalid(file: "x.json"), .scannerFailed(scannerID: "s"), .itemOverlap(earlierRuleID: "a.b"),
             .settingsUnreadable(backupName: "settings.json.corrupt-1"), .settingsUnreadable(backupName: nil),
+            .appSkipped(reason: .noInfoPlist), .appSkipped(reason: .damagedInfoPlist), .appSkipped(reason: .noBundleID), .sizeIncomplete,
         ]
         for code in codes {
             let w = ScanWarning(kind: .other, message: "English message", code: code)

@@ -17,7 +17,13 @@ public struct ScanWarning: Codable, Sendable, Hashable {
         case scannerFailed(scannerID: String)
         case itemOverlap(earlierRuleID: String)
         case settingsUnreadable(backupName: String?)
+        /// An app was left out of the inventory.
+        case appSkipped(reason: AppSkipReason)
+        /// Some files inside an item couldn't be read, so its size may be too low.
+        case sizeIncomplete
     }
+
+    public enum AppSkipReason: String, Codable, Sendable, Hashable { case noInfoPlist, damagedInfoPlist, noBundleID }
 
     public var kind: Kind
     public var path: String?

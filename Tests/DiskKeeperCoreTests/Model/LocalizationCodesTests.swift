@@ -8,6 +8,7 @@ final class LocalizationCodesTests: XCTestCase {
             .itemCapExceeded(cap: 5), .pathError(errno: EACCES), .ruleOverlap(earlierRuleID: "a.b"), .cannotSize(errno: nil),
             .cannotSize(errno: EPERM), .ruleFileInvalid(file: "x.json"), .scannerFailed(scannerID: "s"),
             .itemOverlap(earlierRuleID: "a.c"), .settingsUnreadable(backupName: nil), .settingsUnreadable(backupName: "b"),
+            .appSkipped(reason: .damagedInfoPlist), .sizeIncomplete,
         ]
         for c in codes {
             let w = ScanWarning(kind: .other, message: "m", code: c)

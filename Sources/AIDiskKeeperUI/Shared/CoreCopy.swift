@@ -60,6 +60,14 @@ extension ScanWarning {
             return loc("warning.code.scannerFailed", "The scanner \(id) failed and was skipped.")
         case .itemOverlap(let earlier):
             return loc("warning.code.itemOverlap", "Skipped: this item overlaps another one (\(earlier)).")
+        case .appSkipped(let reason):
+            switch reason {
+            case .noInfoPlist: return loc("warning.code.appNoPlist", "Skipped: this app has no Info.plist.")
+            case .damagedInfoPlist: return loc("warning.code.appDamagedPlist", "Skipped: this app's Info.plist is damaged.")
+            case .noBundleID: return loc("warning.code.appNoBundleID", "Skipped: this app has no valid bundle identifier.")
+            }
+        case .sizeIncomplete:
+            return loc("warning.code.sizeIncomplete", "Some files inside couldn't be read, so the size may be too low.")
         case .settingsUnreadable(let backup):
             if let backup {
                 return loc("warning.code.settingsBackedUp",

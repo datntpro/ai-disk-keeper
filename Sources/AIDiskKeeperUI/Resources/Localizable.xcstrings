@@ -4305,6 +4305,54 @@
         }
       }
     },
+    "warning.code.appDamagedPlist" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skipped: this app's Info.plist is damaged."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã bỏ qua: Info.plist của ứng dụng này bị hỏng."
+          }
+        }
+      }
+    },
+    "warning.code.appNoBundleID" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skipped: this app has no valid bundle identifier."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã bỏ qua: ứng dụng này không có bundle identifier hợp lệ."
+          }
+        }
+      }
+    },
+    "warning.code.appNoPlist" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skipped: this app has no Info.plist."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã bỏ qua: ứng dụng này không có Info.plist."
+          }
+        }
+      }
+    },
     "warning.code.cannotSize" : {
       "localizations" : {
         "en" : {
@@ -4493,6 +4541,22 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Không đọc được cài đặt trước đó. Đang dùng cài đặt mặc định."
+          }
+        }
+      }
+    },
+    "warning.code.sizeIncomplete" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some files inside couldn't be read, so the size may be too low."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Một số tệp bên trong không đọc được nên dung lượng có thể thấp hơn thực tế."
           }
         }
       }

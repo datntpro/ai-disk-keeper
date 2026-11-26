@@ -49,11 +49,12 @@ public struct AppLeftoverScanner: Scanner {
                 continue
             } catch FileSizerError.rootInaccessible(let path, let code) {
                 await sink.warning(ScanWarning(kind: code == EPERM ? .needsFullDiskAccess : .permissionDenied, path: path,
-                                               ruleID: m.ruleID, message: "Couldn't measure this item. Full Disk Access may be needed."))
+                                               ruleID: m.ruleID, message: "Couldn't measure this item. Full Disk Access may be needed.",
+                                               code: .cannotSize(errno: code)))
                 continue
             } catch {
                 await sink.warning(ScanWarning(kind: .scannerFailed, path: m.entry.path, ruleID: m.ruleID,
-                                               message: "Couldn't measure this item."))
+                                               message: "Couldn't measure this item.", code: .cannotSize(errno: nil)))
                 continue
             }
             if report.issueCount > 0 { flags.insert(.sizeIncomplete) }

@@ -55,10 +55,12 @@ struct LibraryIndex: Sendable {
                 case .ENOENT, .ENOTDIR: break
                 case .EPERM:
                     warnings.append(ScanWarning(kind: .needsFullDiskAccess, path: dir,
-                                                message: "Couldn't list \(location.rawValue). Full Disk Access may be needed to find leftovers there."))
+                                                message: "Couldn't list \(location.rawValue). Full Disk Access may be needed to find leftovers there.",
+                                                code: .pathError(errno: EPERM)))
                 default:
                     warnings.append(ScanWarning(kind: .permissionDenied, path: dir,
-                                                message: "Couldn't list \(location.rawValue) (permission denied)."))
+                                                message: "Couldn't list \(location.rawValue) (permission denied).",
+                                                code: .pathError(errno: EACCES)))
                 }
             case .success(let names):
                 for name in names {
