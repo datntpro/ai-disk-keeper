@@ -89,6 +89,7 @@ enum CareCounting {
 /// Accumulates one scan: per-stage module summaries, physically deduplicated totals, per-tool AI bytes.
 struct CareTally {
     private var claims = CareByteTrie()
+    private var seenLinks = Set<InodeKey>()
     private(set) var summaries: [CareModule: ModuleSummary] = [:]
     private(set) var totals = CareTotals()
     private(set) var perTool: [String: Int64] = [:]
@@ -101,10 +102,12 @@ struct CareTally {
     }
 
     /// `physical` is the item's physical path. The first stage to deliver a path wins the totals.
-    mutating func add(_ item: ScanItem, physical: String, stage: CareStage) {
+    /// `link` is the (device, inode) of a regular file with more than one hard link: further paths to it add 0 bytes.
+    mutating func add(_ item: ScanItem, physical: String, link: InodeKey? = nil, stage: CareStage) {
         let (bytes, counted) = CareCounting.contribution(of: item)
         // Claim even a 0-byte or keeper member, so what sits inside it is not counted again.
-        let net = claims.claim(physical, bytes: counted ? bytes : 0)
+        var net = claims.claim(physical, bytes: counted ? bytes : 0)
+        if counted, net != nil, let link, !seenLinks.insert(link).inserted { net = 0 }
         guard counted else { return }
         let module = CareModule(category: item.category)
         stageSummaries[stage, default: [:]][module, default: ModuleSummary(module: module)]
@@ -155,5 +158,15 @@ struct CareByteTrie: Sendable {
         nodes[last].counted = true
         for i in trail { nodes[i].subtree += net }
         return net
+    }
+}
+
+/// The identity of a hard-linked regular file, so the totals count its bytes once however many paths reach it.
+enum HardLinkIdentity {
+    /// nil for anything that is not a regular file with `st_nlink > 1`, or that can't be inspected.
+    static func key(of path: String) -> InodeKey? {
+        var st = stat()
+        guard lstat(path, &st) == 0, (st.st_mode & S_IFMT) == S_IFREG, st.st_nlink > 1 else { return nil }
+        return InodeKey(device: Int32(truncatingIfNeeded: st.st_dev), inode: UInt64(st.st_ino))
     }
 }

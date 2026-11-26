@@ -56,6 +56,8 @@ extension ScanWarning {
             return loc("warning.code.cannotSize", "Couldn't measure this item (\(detail)).")
         case .ruleFileInvalid:
             return loc("warning.code.ruleFile", "A rule file couldn't be used: \(message)")
+        case .scannerFailed("care-history"):
+            return loc("warning.code.careHistory", "Couldn't save the scan history. Growth won't be shown next time.")
         case .scannerFailed(let id):
             return loc("warning.code.scannerFailed", "The scanner \(id) failed and was skipped.")
         case .itemOverlap(let earlier):

@@ -36,6 +36,21 @@ final class CareSummaryTests: XCTestCase {
         XCTAssertEqual(summaries.last?.itemCount, 0)
     }
 
+    func testHardLinksCountOnceInTotals() async throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("care-hl-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let a = dir.appendingPathComponent("a.bin").path, b = dir.appendingPathComponent("b.bin").path
+        try Data(count: 64).write(to: URL(fileURLWithPath: a))
+        try FileManager.default.linkItem(atPath: a, toPath: b)
+        let events = try await CareKit.run([
+            FakeStage.spec(.rules, modules: [.aiTools], items: [
+                CareKit.item(a, tier: .safe, size: 4_000), CareKit.item(b, tier: .safe, size: 4_000)]),
+        ])
+        let report = try XCTUnwrap(CareKit.report(events))
+        XCTAssertEqual(report.totals.safeBytes, 4_000)
+    }
+
     func testSamePhysicalFileCountsOncePerModuleButOnceInTotals() async throws {
         let model = "/f/models/big.gguf"
         let events = try await CareKit.run([

@@ -15063,6 +15063,22 @@
         }
       }
     },
+    "warning.code.careHistory" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save the scan history. Growth won't be shown next time."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không lưu được lịch sử quét. Lần sau sẽ không hiện mức tăng."
+          }
+        }
+      }
+    },
     "warning.code.itemCap" : {
       "localizations" : {
         "en" : {
