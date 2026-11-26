@@ -60,3 +60,39 @@ The map has no user-facing text (labels are the UI's job, T31).
 | `DiskMapOverlay.build`, 5 000 items | < 20 ms | ~17 ms |
 
 Debug builds use a ×100 bound (a sanity check only; unoptimized code on shared CI runs 30–50× slower). Layout cost depends on the drawn elements, not on tree size.
+
+## UI (T31)
+Source: `Sources/AIDiskKeeperUI/Modules/DiskMap/`. The screen is a viewer over the one `DiskIndexModel` tree (invariant 12);
+`DiskMapSafetyTests` greps this folder for cleanup, selection and file-removal APIs and expects none.
+
+- **Model.** `DiskMapModel` (`@MainActor @Observable`, kept in `suite.state(.diskMap)` so the detail and the inspector share
+  it) owns focus, mode (Strata | Tiles), colouring (category | age), filter, hover, selection and the zoom morph.
+  Layout runs in `Task.detached` (`DiskMapLayoutWorker`); every request has a token and stale results are dropped.
+  Strata: `StrataOptions(rows: 6, minimumWidth: 2, rowGap: 1)`; Tiles: `TileOptions(levels: 2, minimumArea: 24)`.
+  Hovering only hit-tests (`element(at:)`), it never lays out. A new tree keeps the focus when its path still exists.
+- **Overlay.** `DiskMapOverlay.build` runs detached from `scan.items` whenever the scan changes. Without a scan the map
+  colours everything as "Other" and shows a hint chip. (Items of Large & Old / Duplicates are not merged in yet: those
+  modules don't exist; add them where `DiskMapModule.model` builds the model.)
+- **Rendering.** One base `Canvas` pass (`DiskMapCanvas`, no per-element views) and a second `Canvas` for hover and
+  selection rings (`DiskMapHighlight`), so a hover sweep redraws a few strokes. Protected nodes: `keepSoft` + hatch + lock;
+  aggregates are neutral (`Other` at 60 %) and never hatched. Labels use `Contrast.labelInk` and are skipped when no ink
+  reaches 4.5:1. The filter dims non-matching elements to 25 %; it does not change the layout.
+- **Interaction.** Click selects, a second click on the selected directory zooms (so double-click zooms); ⌘↑ / Esc zoom out.
+  Arrows move (siblings in size order, ↓ largest child, ↑ parent), Return zooms. The context menu offers Zoom in, Reveal in
+  Finder and Copy path only. "Review in list" navigates (`NavigationModel.show`) and never selects.
+- **Accessibility.** `axRows` (focus's children, capped at 200, plus the selection's ancestors) are invisible proxies with
+  default action = zoom, "Reveal in Finder" and "Review in list"; a rotor lists the largest folders. VoiceOver is told
+  "name, size, N percent of focus" on selection changes, only while it is running.
+- **Motion.** The zoom morph interpolates rectangles by node id over 0.45 s (`StrataMotion.progress`); nodes only in the new
+  layout fade in. Reduce Motion: a 0.2 s cross-fade, no movement.
+
+### UI performance (`DiskMapPerfTests`, release, ~66 000-node synthetic tree, median of 10)
+| Operation | Bound | Measured |
+|---|---|---|
+| 10 000 hover hit-tests | < 20 ms | 0.37 ms |
+| layout round trip through the model | < 8 ms | 0.13 ms |
+| colouring all elements (566) | < 2 ms | 0.004 ms |
+| `ImageRenderer`, base canvas 1400×600 | < 12 ms | 1.8 ms |
+| `ImageRenderer`, highlight canvas | < 1 ms | 0.06 ms |
+
+The Instruments trace (SwiftUI + Time Profiler, hover sweep on a real Home index) is a manual owner check.
