@@ -38,7 +38,8 @@ struct StorageView: View {
     }
 
     private func subtitle(_ v: VolumeInfo) -> String {
-        [model.volumeName, v.fileSystem, v.isInternal.map { $0 ? "internal" : "external" }].compactMap { $0 }.joined(separator: " · ")
+        [model.volumeName, v.fileSystem?.uppercased(),
+         v.isInternal.map { $0 ? loc("storage.internal", "internal") : loc("storage.external", "external") }].compactMap { $0 }.joined(separator: " · ")
     }
 
     @ViewBuilder private var content: some View {

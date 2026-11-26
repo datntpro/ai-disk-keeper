@@ -13,7 +13,7 @@ struct StorageSnapshotsCard: View {
                     Text(loc("storage.snapshots.title", "Local snapshots")).font(.headline)
                     Spacer()
                     if case .listed(let list) = listing, !list.isEmpty {
-                        Text(loc("storage.snapshots.count", "\(Formatting.count(list.count)) snapshots"))
+                        Text(loc("storage.snapshots.count", "\(list.count) snapshots"))
                             .font(.caption).foregroundStyle(.adkText3)
                     }
                 }

@@ -83,15 +83,25 @@ final class StorageModelTests: XCTestCase {
         XCTAssertEqual(n, 2)
     }
 
-    /// "Free" is built from `availableForImportantUsage`, the way `LiveVolumeInfoProvider` fills `VolumeInfo`.
+    /// "Free" is `availableForImportantUsage` (what `LiveVolumeInfoProvider` fills), falling back to the strict number.
+    /// Fixture volumes only; the real volume is never read.
     func testFreeUsesAvailableForImportantUsageKey() async throws {
-        let live = try await LiveVolumeInfoProvider().info(forPath: NSTemporaryDirectory())
-        let counter = LoadCounter([.success(StorageOverview(dataVolume: live, systemVolume: nil, snapshots: .listed([]),
-                                                            trash: TrashInfo(path: "/x", state: .measured, allocatedBytes: 0, itemCount: 0),
-                                                            measuredAt: StorageFix.now))])
-        let m = make(counter)
+        for (important, expected) in [(Optional(182 * StorageFix.gb), 182 * StorageFix.gb), (nil, 150 * StorageFix.gb)] {
+            let counter = LoadCounter([.success(StorageFix.overview(important: important))])
+            let m = make(counter)
+            m.refresh()
+            await m.settle()
+            XCTAssertEqual(m.freeBytes, expected)
+        }
+    }
+
+    func testUnknownSegmentsAreNamedForAccessibility() async {
+        let m = make(LoadCounter([.success(StorageFix.overview(used: nil))]))
         m.refresh()
         await m.settle()
-        XCTAssertEqual(m.freeBytes, live.availableForImportantUsage ?? live.availableBytes)
+        XCTAssertTrue(m.unknownSegmentLabels.contains("Your data"))
+        XCTAssertFalse(m.segments.contains { $0.id == "storage.data" })
+        let bar = StrataBarModel(segments: m.segments, total: 494 * StorageFix.gb)
+        XCTAssertTrue(StrataBar.summary(bar, top: 3, unknown: m.unknownSegmentLabels).contains("Your data, unknown"))
     }
 }

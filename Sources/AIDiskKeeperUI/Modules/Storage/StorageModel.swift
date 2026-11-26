@@ -88,6 +88,18 @@ final class StorageModel {
 
     /// Bar layers in order. A value that is unknown is omitted, never drawn as zero. Purgeable sits inside the
     /// data volume's used bytes, so "your data" excludes it; the bar's `free` is the strict number.
+    /// Labels of the bar layers whose value could not be read, for the bar's accessibility summary.
+    var unknownSegmentLabels: [String] {
+        guard let overview else { return [] }
+        var out: [String] = []
+        if overview.dataVolume.usedBytesThisVolume == nil { out.append(loc("storage.layer.data", "Your data")) }
+        if overview.systemVolume != nil, overview.systemVolume?.usedBytesThisVolume == nil {
+            out.append(loc("storage.layer.system", "macOS (sealed system)"))
+        }
+        if overview.otherVolumesAndSnapshotsBytes == nil { out.append(loc("storage.layer.other", "Other volumes & snapshots")) }
+        return out
+    }
+
     var segments: [StrataSegment] {
         guard let overview else { return [] }
         let purgeable = max(0, purgeableBytes ?? 0)

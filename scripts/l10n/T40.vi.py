@@ -6,6 +6,9 @@ VI = {
     "storage.refresh": "Làm mới",
     "storage.free": "Còn trống %@",
     "storage.usedOf": "Đã dùng %@ trên %@",
+    "storage.internal": "trong",
+    "storage.external": "ngoài",
+    "storage.unknown": "không rõ",
     "storage.volumeDefault": "Macintosh HD",
     "storage.layer.data": "Dữ liệu của bạn",
     "storage.layer.system": "macOS (hệ thống được niêm phong)",
@@ -17,7 +20,6 @@ VI = {
     "storage.why.title": "Vì sao các con số này khác Finder?",
     "storage.why.intro": "Finder và Cài đặt hệ thống tính dung lượng có thể xóa bỏ và snapshot theo cách khác nhau. Đây là ý nghĩa của từng con số.",
     "storage.snapshots.title": "Snapshot cục bộ",
-    "storage.snapshots.count": "%@ snapshot",
     "storage.snapshots.none": "Hiện không có snapshot cục bộ nào.",
     "storage.snapshots.openTM": "Mở cài đặt Time Machine",
     "storage.trash.title": "Thùng rác",
@@ -30,4 +32,8 @@ VI = {
     "storage.retry": "Thử lại",
     "storage.stale": "Không làm mới được — đang hiển thị số liệu lúc %@",
     "storage.gauge.a11y": "%@, còn trống %@, đã dùng %@ phần trăm",
+}
+
+PLURALS = {
+    "storage.snapshots.count": {"en": {"one": "%lld snapshot", "other": "%lld snapshots"}, "vi": {"other": "%lld snapshot"}},
 }

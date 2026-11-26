@@ -14,7 +14,8 @@ struct StorageCapacityCard: View {
                         .foregroundStyle(.adkText2).monospacedDigit()
                 }
                 if let total = model.totalBytes {
-                    StrataBar(segments: model.segments, total: total, free: model.strictFreeBytes)
+                    StrataBar(segments: model.segments, total: total, free: model.strictFreeBytes,
+                               unknownLabels: model.unknownSegmentLabels)
                     legend
                 }
                 VStack(alignment: .leading, spacing: ADKTheme.Spacing.xs) {
