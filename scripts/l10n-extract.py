@@ -27,7 +27,11 @@ KEY_RE = re.compile(r'loc\(\s*"([^"]+)"\s*,\s*$')
 
 def build():
     env = dict(os.environ)
-    env.setdefault("DEVELOPER_DIR", "/Applications/Xcode.app/Contents/Developer")
+    # Only fall back to the default Xcode when the selected developer dir is the Command Line Tools (no xcstringstool).
+    if "DEVELOPER_DIR" not in env:
+        selected = subprocess.run(["xcode-select", "-p"], capture_output=True, text=True).stdout.strip()
+        if "CommandLineTools" in selected or not selected:
+            env["DEVELOPER_DIR"] = "/Applications/Xcode.app/Contents/Developer"
     # Force a recompile so every source emits its .stringsdata.
     subprocess.run(["rm", "-rf", SCRATCH], check=True)
     cmd = ["swift", "build", "--build-system", "swiftbuild", "--target", "AIDiskKeeperUI", "--scratch-path", SCRATCH,
