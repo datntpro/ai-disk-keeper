@@ -132,6 +132,14 @@ public actor ScanEngine {
             for scanner in scanners {
                 let sink = ScanSink(
                     item: { [self] item in
+                        // Virtual items (no file behind them) skip the guard, but only from the scanner that owns
+                        // their namespace and only with a tool command (or none): everything else is dropped.
+                        if let virtual = VirtualItemPath.parse(item.path) {
+                            guard scanner.virtualNamespace == virtual.namespace, item.cleanupMethod.isToolCommandOrNone,
+                                  self.scope.allows(item) else { return }
+                            await self.accept(item, physical: item.path, generation: gen)
+                            return
+                        }
                         // The guard check and path resolution run on the caller's task, not on the actor.
                         guard context.pathGuard.check(item.path).isAllowed else { return }
                         guard self.scope.allows(item) else { return }   // the user asked for this: no warning

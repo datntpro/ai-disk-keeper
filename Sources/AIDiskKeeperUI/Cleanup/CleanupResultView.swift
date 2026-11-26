@@ -23,6 +23,8 @@ public struct CleanupResultView: View {
     }
 
     private var trashedIDs: Set<ScanItem.ID> { CleanupCoordinator.trashedIDs(in: report) }
+    private func entry(_ r: CleanupItemResult) -> CleanupPlanEntry? { plan?.entries.first { $0.id == r.itemID } }
+    private var ranCommands: Bool { report.results.contains { if case .ranCommand = $0.outcome { true } else { false } } }
     private var failedCount: Int { report.results.filter { if case .failed = $0.outcome { true } else { false } }.count }
     private var skippedCount: Int { report.results.filter { if case .skipped = $0.outcome { true } else { false } }.count }
 
@@ -32,7 +34,9 @@ public struct CleanupResultView: View {
         return CleanupCopy.resultComplete
     }
     private var summary: String {
-        CleanupCopy.resultSummary(items: trashedIDs.count, errors: failedCount, skipped: skippedCount)
+        ranCommands
+            ? CleanupCopy.resultSummaryCleaned(items: trashedIDs.count, errors: failedCount, skipped: skippedCount)
+            : CleanupCopy.resultSummary(items: trashedIDs.count, errors: failedCount, skipped: skippedCount)
     }
     private var announcement: String { "\(title). \(Formatting.bytes(report.freedBytes)) \(summary)" }
 
@@ -96,6 +100,7 @@ public struct CleanupResultView: View {
             }
             return CleanupCopy.outcomeTrashed
         case .deleted: return CleanupCopy.outcomeTrashed
+        case .ranCommand: return CleanupCopy.outcomeRanCommand(entry(r)?.item.tool.uiName ?? "")
         case .skipped(let b): return CleanupCopy.outcomeSkipped(b.map { CleanupCopy.sentence(for: $0) }.joined(separator: " "))
         case .failed(let e): return CleanupCopy.outcomeFailed(e)
         case .notAttempted:
@@ -105,11 +110,22 @@ public struct CleanupResultView: View {
 
     private func resultRow(_ r: CleanupItemResult) -> some View {
         let step = CleanupNextStep.step(for: r.outcome)
-        let bad: Bool = { if case .trashed = r.outcome { false } else { true } }()
+        let bad: Bool = {
+            switch r.outcome {
+            case .trashed, .ranCommand: false
+            default: true
+            }
+        }()
+        let planned = entry(r)
         return HStack(alignment: .top, spacing: ADKTheme.Spacing.md) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(URL(fileURLWithPath: r.path).lastPathComponent).lineLimit(1)
-                PathText(CleanupPlanRow.displayPath(r.path, home: environment.home))
+                if let planned, planned.isToolCommand, let line = planned.commandLine {
+                    Text(planned.item.uiDisplayName()).lineLimit(1)
+                    CommandText(line, help: planned.commandHelp)
+                } else {
+                    Text(URL(fileURLWithPath: r.path).lastPathComponent).lineLimit(1)
+                    PathText(CleanupPlanRow.displayPath(r.path, home: environment.home))
+                }
                 Text(outcomeText(r)).font(.caption).foregroundStyle(bad ? .adkReviewInk : .adkText3)
                 if let step { nextStep(step, path: r.path) }
             }

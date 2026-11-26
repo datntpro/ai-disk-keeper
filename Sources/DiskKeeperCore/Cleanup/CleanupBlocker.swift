@@ -89,6 +89,16 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
     case requiresAdmin(bundleID: String)
     /// The Trash move failed with `EPERM`: macOS App Management (TCC) has not been allowed.
     case needsAppManagementPermission(bundleID: String)
+    /// A `.toolCommand` item but no performer is installed (fail closed).
+    case toolCommandUnavailable
+    /// The command is not on the compiled-in allowlist, or does not match its item (JSON rules land here).
+    case toolCommandNotAllowed(reason: String)
+    /// The tool's executable is missing or failed the safety checks (or changed since the dry run).
+    case toolUnavailable(tool: String)
+    /// The tool's service (a container runtime, say) is not running.
+    case toolNotRunning(tool: String, target: String)
+    /// The tool reports the object is in use now.
+    case inUseByTool(detail: String)
 
     /// Stable machine code used in audit lines and tests.
     public var code: String {
@@ -115,6 +125,11 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
         case .appBundleRefused: "appBundleRefused"
         case .requiresAdmin: "requiresAdmin"
         case .needsAppManagementPermission: "needsAppManagementPermission"
+        case .toolCommandUnavailable: "toolCommandUnavailable"
+        case .toolCommandNotAllowed: "toolCommandNotAllowed"
+        case .toolUnavailable: "toolUnavailable"
+        case .toolNotRunning: "toolNotRunning"
+        case .inUseByTool: "inUseByTool"
         }
     }
 
@@ -149,6 +164,11 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
         case .appBundleRefused(let r): "This app can't be removed here (\(r.rawValue))."
         case .requiresAdmin: "Installed for all users. Drag it to the Trash in Finder (you may need an administrator password)."
         case .needsAppManagementPermission: "macOS blocked this. Allow AI Disk Keeper in System Settings › Privacy & Security › App Management, then try again."
+        case .toolCommandUnavailable: "Cleaning this item with its own tool isn't available."
+        case .toolCommandNotAllowed: "This command isn't on the list of commands AI Disk Keeper may run, so it was left alone."
+        case .toolUnavailable(let t): "\(t) wasn't found or isn't safe to run."
+        case .toolNotRunning(let t, _): "\(t) isn't running."
+        case .inUseByTool: "The tool says this is in use right now."
         }
     }
 }

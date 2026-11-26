@@ -23,9 +23,17 @@ struct ItemDetailView: View {
                         Text(verbatim: "\(item.tool.uiName) · \(item.category.uiName)")
                         if let p = item.project { Text(loc("detail.project", "Project: \(p.displayName)")) }
                         Text(loc("detail.rule", "Rule: \(item.ruleID)")).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
-                        Text(item.path).font(.callout.monospaced()).textSelection(.enabled)
-                        Button { FinderReveal.reveal(item.url) } label: { Label(loc("action.reveal", "Reveal in Finder"), systemImage: "folder") }
-                            .disabled(!FinderReveal.exists(item.url))
+                        if item.isVirtual {
+                            Text(loc("detail.managedBy", "Managed by \(item.tool.uiName)"))
+                            if case .toolCommand(let command, let args) = item.cleanupMethod {
+                                Text(ToolCommandDisplay.line(command: command, arguments: args))
+                                    .font(.callout.monospaced()).textSelection(.enabled)
+                            }
+                        } else {
+                            Text(item.path).font(.callout.monospaced()).textSelection(.enabled)
+                            Button { FinderReveal.reveal(item.url) } label: { Label(loc("action.reveal", "Reveal in Finder"), systemImage: "folder") }
+                                .disabled(!FinderReveal.exists(item.url))
+                        }
                     }
                     let notes = flagNotes(item)
                     if !notes.isEmpty {
@@ -50,7 +58,8 @@ struct ItemDetailView: View {
     }
 
     func cleanupText(_ m: CleanupMethod) -> String {
-        m.isActionable ? loc("cleanup.trash", "Moves to Trash") : loc("cleanup.reportOnly", "Report only: no cleanup action")
+        if case .toolCommand = m { return CleanupCopy.rowByTool(item?.tool.uiName ?? "") }
+        return m.isActionable ? loc("cleanup.trash", "Moves to Trash") : loc("cleanup.reportOnly", "Report only: no cleanup action")
     }
 
     private func section<C: View>(_ title: String, @ViewBuilder _ content: () -> C) -> some View {

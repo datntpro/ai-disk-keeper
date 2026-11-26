@@ -45,6 +45,22 @@ public enum CleanupCopy {
     public static var dryRun: String {
         loc("cleanup.review.dryRun", "This is a dry run: nothing has changed yet. Each item is checked again right before it moves.")
     }
+    // T17a: commands run by the item's own tool (not a Trash move)
+    public static func titleClean(_ n: Int64) -> String { loc("cleanup.review.titleClean", "Clean up \(bytes(n))?") }
+    public static func confirmClean(_ n: Int64) -> String { loc("cleanup.confirmClean", "Clean up \(bytes(n))") }
+    public static func toolNotice(count: String, tools: String) -> String {
+        loc("cleanup.review.toolNotice",
+            "\(count) items are removed by their own tool (\(tools)). They don't go to the Trash, so this can't be undone.")
+    }
+    public static var trioWillClean: String { loc("cleanup.trio.willClean", "Will clean") }
+    public static var trioFreesUpTo: String { loc("cleanup.trio.freesUpTo", "Frees up to") }
+    public static func rowByTool(_ tool: String) -> String { loc("cleanup.row.byTool", "Removed by \(tool) · can't be undone") }
+    public static func outcomeRanCommand(_ tool: String) -> String { loc("cleanup.outcome.ranCommand", "Removed by \(tool)") }
+    public static func resultSummaryCleaned(items: Int, errors: Int, skipped: Int) -> String {
+        loc("cleanup.result.summaryCleaned",
+            "cleaned · \(resultItems(items)) · \(resultErrors(errors)) · \(Formatting.count(skipped)) skipped")
+    }
+
     public static var trioWillMove: String { loc("cleanup.trio.willMove", "Will move") }
     /// Plural key: "1 item" / "N items" (String Catalog plural variants, en + vi).
     public static func trioItems(_ n: Int) -> String { loc("cleanup.trio.items", "\(n) items") }
@@ -210,6 +226,13 @@ public enum CleanupCopy {
             loc("cleanup.blocker.app.requiresAdmin", "Installed for all users. Drag it to the Trash in Finder (you may need an administrator password).")
         case .needsAppManagementPermission:
             loc("cleanup.blocker.app.needsAppManagement", "macOS blocked this. Allow AI Disk Keeper in System Settings › Privacy & Security › App Management, then try again.")
+        case .toolCommandUnavailable:
+            loc("cleanup.blocker.toolCommandUnavailable", "Cleaning this item with its own tool isn't available.")
+        case .toolCommandNotAllowed:
+            loc("cleanup.blocker.toolCommandNotAllowed", "This command isn't on the list AI Disk Keeper may run, so it was left alone.")
+        case .toolUnavailable(let tool): loc("cleanup.blocker.toolUnavailable", "\(tool) wasn't found or isn't safe to run.")
+        case .toolNotRunning(let tool, _): loc("cleanup.blocker.toolNotRunning", "\(tool) isn't running. Start it, then press Re-check.")
+        case .inUseByTool: loc("cleanup.blocker.inUseByTool", "The tool says this is in use right now. Rescan to review it again.")
         }
     }
 

@@ -7,7 +7,7 @@ Tiers: a regenerable cache that costs a re-download is **Review**; a pure build 
 changed in the last day is **Keep** (a build may be running). Xcode archives, iOS backups and installers are never
 Safe. DeviceSupport becomes Safe after 180 days unused (decision N12: rules cannot see the Xcode version).
 
-`brew cleanup` and `xcrun simctl delete unavailable` need the `toolCommand` performer (#18) and are tracked in the
+`brew cleanup` and `xcrun simctl delete unavailable` need the `toolCommand` runner (T17a, landed) plus their own specs and are tracked in the
 follow-up T39b.
 
 ## Sources

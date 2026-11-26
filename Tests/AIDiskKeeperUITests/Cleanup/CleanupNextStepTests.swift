@@ -28,6 +28,11 @@ final class CleanupNextStepTests: XCTestCase {
             (.appBundleRefused(.appleOrSystem), .protected),
             (.requiresAdmin(bundleID: "com.a.b"), .revealInFinder),
             (.needsAppManagementPermission(bundleID: "com.a.b"), .openAppManagement),
+            (.toolCommandUnavailable, .sentenceOnly),
+            (.toolCommandNotAllowed(reason: "r"), .protected),
+            (.toolUnavailable(tool: "docker"), .tryLater),
+            (.toolNotRunning(tool: "docker", target: "orbstack"), .tryLater),
+            (.inUseByTool(detail: "d"), .rescan),
         ]
         for (blocker, expected) in table {
             XCTAssertEqual(CleanupNextStep.step(for: blocker), expected, "\(blocker)")
@@ -38,6 +43,7 @@ final class CleanupNextStepTests: XCTestCase {
         XCTAssertEqual(CleanupNextStep.step(for: .failed("boom")), .tryLater)
         XCTAssertNil(CleanupNextStep.step(for: .trashed(trashPath: nil)))
         XCTAssertNil(CleanupNextStep.step(for: .notAttempted))
+        XCTAssertNil(CleanupNextStep.step(for: .ranCommand(exitStatus: 0)))
         XCTAssertEqual(CleanupNextStep.step(for: .skipped([.keepTier, .missing])), .rescan, "actionable step wins")
     }
 

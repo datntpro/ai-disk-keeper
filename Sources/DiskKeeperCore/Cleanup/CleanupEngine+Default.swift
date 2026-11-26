@@ -6,7 +6,8 @@ extension CleanupEngine {
     /// Permanent delete is not exposed: `options` keeps its defaults.
     public static func makeDefault(environment: PathEnvironment,
                                    bundledRulesDirectory: URL? = CoreResources.rulesDirectoryURL,
-                                   runningApps: any RunningAppChecking) throws -> CleanupEngine {
+                                   runningApps: any RunningAppChecking,
+                                   toolCommands: ToolCommandPerformer? = nil) throws -> CleanupEngine {
         let loaded = RuleLoader(
             environment: environment, bundledRulesDirectory: bundledRulesDirectory,
             guardFactory: ScanGuard.loaderFactory(environment: environment)).load()
@@ -15,6 +16,7 @@ extension CleanupEngine {
                              auditLog: AuditLog(fileURL: AuditLog.defaultURL(environment: environment)),
                              runningApps: runningApps,
                              appPolicy: ApplicationBundlePolicy(roots: .live(environment), userID: getuid(),
-                                                                probe: LiveAppBundleProbe()))
+                                                                probe: LiveAppBundleProbe()),
+                             toolCommands: toolCommands)
     }
 }

@@ -33,7 +33,7 @@ final class CleanupPlanTests: CleanupTestCase {
             try item("home/cache/a", method: .trashWorktree(mainRepoPath: "/x")),
             try item("home/cache/b", method: .toolCommand(command: "c", arguments: []))])
         XCTAssertEqual(plan.entries[0].blockers, [.methodNotSupported("trashWorktree")])
-        XCTAssertEqual(plan.entries[1].blockers, [.methodNotSupported("toolCommand")])
+        XCTAssertEqual(plan.entries[1].blockers, [.toolCommandUnavailable])
     }
 
     func testProtectedPathBlockedEvenIfPassedIn() async throws {

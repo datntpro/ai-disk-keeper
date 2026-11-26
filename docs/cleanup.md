@@ -22,7 +22,12 @@ Per-item failures never abort the batch. Cancellation is honoured between items,
 |---|---|
 | `keepTier` | Tier is Keep. |
 | `notActionable` | Cleanup method is `none` (report only). |
-| `methodNotSupported` | `trashWorktree` / `toolCommand` have no performer yet. |
+| `methodNotSupported` | `trashWorktree` has no performer yet. |
+| `toolCommandUnavailable` | A `.toolCommand` item but no performer is installed (fail closed). |
+| `toolCommandNotAllowed` | The command is not on the compiled-in allowlist, or its arguments are not the ones bound to the item. Every JSON-rule `toolCommand` lands here. |
+| `toolUnavailable` | The tool's executable is missing, failed the owner/mode checks, or differs from the one shown in the dry run. |
+| `toolNotRunning` | The tool's service (for example a container runtime) is not running. |
+| `inUseByTool` | The tool reports the object is in use right now. |
 | `protectedPath` | The protected-path guard (T04) denied the path. |
 | `missing` | Item no longer exists. |
 | `isSymlink` | Item is a symlink. |
@@ -86,3 +91,33 @@ fingerprint, and `freedBytes` stays "up to".
 
 - `RunningAppChecking` must be injected by the app target (T10, via NSWorkspace). The core default reports "unknown", so items that require an app to be quit stay blocked until then.
 - `CleanupReport.freedBytes` is an upper bound: hardlinks and APFS clones may free less (see `FileSizer`, T02).
+
+## Tool commands (invariant 19)
+
+Some objects are not files (a container image, a simulator). Their scanner reports a **virtual item** whose path is
+`/.aidiskkeeper-virtual/<namespace>/<target>/<kind>/<id>`. That root never exists on disk and sits outside every
+allowed root, so only a scanner whose `virtualNamespace` equals the item's namespace may report it, and only with a
+`toolCommand` (or `none`) method. Virtual items have no file checks and no Reveal in Finder.
+
+`ToolCommandPerformer` is the only way a `.toolCommand` item runs:
+
+1. **Match.** Exactly one compiled-in, destructive `ToolCommandSpec` must name the command and the item's rule id, the
+   target kind must match, the arguments must match the template token by token, and `spec.bind(item)` must equal the
+   arguments. The argv that runs is `bind(item)`, never the method's arguments on trust. The built-in list is empty
+   until a tool adds its specs.
+2. **Resolve.** The executable comes from absolute candidates (no `PATH`, no `which`). Its `realpath` must be a regular,
+   executable file; the file and its parent directory must be owned by root or the user and not group/world-writable.
+3. **Re-validate** with the spec's own check (fresh at execute time, a per-plan cache at plan time).
+4. **Run** with no shell, working directory `/`, and exactly the environment the spec returns (a fixed `PATH`, `LC_ALL`,
+   `HOME` and tool keys). stdout is capped at 64 KiB, stderr keeps its last 64 KiB, and a timeout terminates the whole
+   process group.
+5. **Verify** with the spec's optional post-check.
+
+The dry run stores a `ToolCommandSnapshot` (executable, argv, environment) in the plan entry and shows the command
+verbatim, labelled "can't be undone": these items do not go to the Trash. At execute time the executable is resolved
+again and must equal the snapshot, otherwise the entry is skipped (`toolUnavailable`) and the command is not run.
+
+Each run appends one audit line with `command` (absolute executable + argv), `exitStatus`, `durationMs`, `stderrTail`
+(≤ 2 KB) and `toolTarget`; `result` is `ran`. Skipped and failed entries carry `command` too. These fields are
+additive (`schemaVersion` stays 1). A JSON rule that declares `toolCommand` still decodes, but is refused at plan time
+with `toolCommandNotAllowed`.

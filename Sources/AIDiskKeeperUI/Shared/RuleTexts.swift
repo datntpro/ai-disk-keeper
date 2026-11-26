@@ -13,12 +13,14 @@ public enum RuleTexts {
 extension ScanItem {
     /// Rule explanation in the active language (English when the rule has no translation).
     func uiExplanation(_ idx: RuleTextIndex = RuleTexts.current) -> String {
-        idx.explanation(ruleID: ruleID, languages: [L10n.languageCode]) ?? explanation
+        if let e = ScannerTexts.text(for: self)?.explanation { return e }
+        return idx.explanation(ruleID: ruleID, languages: [L10n.languageCode]) ?? explanation
     }
 
     /// The rule title in the active language when the title *is* the item's name (`match.kind == .self`);
     /// file and folder names are data and never translated.
     func uiDisplayName(_ idx: RuleTextIndex = RuleTexts.current) -> String {
+        if let n = ScannerTexts.text(for: self)?.name { return n }
         guard idx.titleIsItemName(ruleID: ruleID),
               let title = idx.title(ruleID: ruleID, languages: [L10n.languageCode]) else { return displayName }
         return title

@@ -9,7 +9,7 @@ public struct AuditRecord: Codable, Sendable, Hashable {
     public let path: String
     public let bytes: Int64
     public let action: CleanupAction
-    /// "trashed" | "deleted" | "skipped" | "failed"
+    /// "trashed" | "deleted" | "ran" | "skipped" | "failed"
     public let result: String
     public let trashPath: String?
     public let ruleID: String
@@ -19,10 +19,25 @@ public struct AuditRecord: Codable, Sendable, Hashable {
     public let error: String?
     /// Set for every `.trashApplication` entry. Additive: schemaVersion stays 1, old lines decode without it.
     public let bundleID: String?
+    /// Tool commands only (additive, like `bundleID`): the absolute executable followed by the exact argv.
+    public let command: [String]?
+    public let exitStatus: Int32?
+    public let durationMs: Int?
+    /// At most 2 KB, UTF-8 safe.
+    public let stderrTail: String?
+    /// For example the container runtime the command ran against.
+    public let toolTarget: String?
 
     public init(schemaVersion: Int = 1, timestamp: Date, runID: UUID, itemID: String, path: String,
                 bytes: Int64, action: CleanupAction, result: String, trashPath: String?, ruleID: String,
-                tool: ToolID, reasons: [String], error: String?, bundleID: String? = nil) {
+                tool: ToolID, reasons: [String], error: String?, bundleID: String? = nil,
+                command: [String]? = nil, exitStatus: Int32? = nil, durationMs: Int? = nil,
+                stderrTail: String? = nil, toolTarget: String? = nil) {
+        self.command = command
+        self.exitStatus = exitStatus
+        self.durationMs = durationMs
+        self.stderrTail = stderrTail
+        self.toolTarget = toolTarget
         self.bundleID = bundleID
         self.schemaVersion = schemaVersion
         self.timestamp = timestamp

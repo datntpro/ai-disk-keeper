@@ -53,7 +53,8 @@ public final class AppEnvironment {
         let cleanup = CleanupEngineHolder()
         // Rule loading reads disk: build the one cleanup engine off the main actor.
         Task.detached {
-            let result = Result { try CleanupEngine.makeDefault(environment: env, runningApps: WorkspaceRunningApps()) }
+            let result = Result { try CleanupEngine.makeDefault(
+                environment: env, runningApps: WorkspaceRunningApps(), toolCommands: ToolCommandPerformer.live(environment: env)) }
             await MainActor.run {
                 switch result {
                 case .success(let engine): cleanup.install(engine)
@@ -63,7 +64,8 @@ public final class AppEnvironment {
         }
         let provider = settings.scopeProvider   // current scope is read when each scan starts
         return AppEnvironment(pathEnvironment: env, settings: settings, makeScanEngine: {
-            try ScanEngine.makeDefault(environment: env, userRulesDirectory: nil, scope: provider.current)
+            try ScanEngine.makeDefault(environment: env, userRulesDirectory: nil,
+                                       extraScanners: BuiltInScanners.live(environment: env), scope: provider.current)
         }, cleanup: cleanup, makeDiskIndexer: {
             let loaded = RuleLoader(
                 environment: env, bundledRulesDirectory: CoreResources.rulesDirectoryURL, userRulesDirectory: nil,

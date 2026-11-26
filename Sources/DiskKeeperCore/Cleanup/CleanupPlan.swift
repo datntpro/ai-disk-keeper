@@ -12,10 +12,14 @@ public struct CleanupPlanEntry: Identifiable, Codable, Sendable, Hashable {
     public let survivors: DuplicateSurvivorSet?
     /// `.trashApplication` only: bundle + Info.plist snapshot, compared again right before the move.
     public let appBundle: AppBundleFingerprint?
+    /// `.toolCommand` only: the exact command the dry run showed (compared again right before it runs).
+    public let toolCommand: ToolCommandSnapshot?
     public var isExecutable: Bool { blockers.isEmpty }
 
     public init(item: ScanItem, action: CleanupAction, blockers: [CleanupBlocker], fingerprint: ItemFingerprint?,
-                survivors: DuplicateSurvivorSet? = nil, appBundle: AppBundleFingerprint? = nil) {
+                survivors: DuplicateSurvivorSet? = nil, appBundle: AppBundleFingerprint? = nil,
+                toolCommand: ToolCommandSnapshot? = nil) {
+        self.toolCommand = toolCommand
         self.appBundle = appBundle
         self.item = item
         self.action = action
@@ -98,6 +102,8 @@ public enum CleanupOutcome: Codable, Sendable, Hashable {
     case deleted
     case skipped([CleanupBlocker])
     case failed(String)
+    /// A tool command exited 0 (and passed its own verification). Not a Trash move: it can't be undone.
+    case ranCommand(exitStatus: Int32)
     /// Cancelled, or stopped after an audit failure.
     case notAttempted
 }
@@ -144,7 +150,7 @@ public struct CleanupReport: Codable, Sendable, Hashable {
     public var freedBytes: Int64 {
         results.reduce(0) { sum, r in
             switch r.outcome {
-            case .trashed, .deleted: sum + r.bytes
+            case .trashed, .deleted, .ranCommand: sum + r.bytes
             default: sum
             }
         }
