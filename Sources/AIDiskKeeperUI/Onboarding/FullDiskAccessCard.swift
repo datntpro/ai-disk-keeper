@@ -7,7 +7,7 @@ struct FullDiskAccessCard: View {
     let status: FullDiskAccessStatus
     let recheck: () -> Void
 
-    static let privacySettingsURL = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles")!
+    static let privacySettingsURL = SystemSettingsLinks.fullDiskAccess
 
     var statusText: String {
         switch status {

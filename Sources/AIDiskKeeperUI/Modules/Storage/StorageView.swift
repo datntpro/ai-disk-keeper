@@ -57,7 +57,7 @@ struct StorageView: View {
                         NSWorkspace.shared.open(Self.timeMachineSettingsURL)
                     })
                     StorageTrashCard(trash: overview.trash, openTrash: { NSWorkspace.shared.open(trashURL) },
-                                     grantAccess: { NSWorkspace.shared.open(FullDiskAccessCard.privacySettingsURL) })
+                                     grantAccess: { NSWorkspace.shared.open(SystemSettingsLinks.fullDiskAccess) })
                 }
                 .padding(ADKTheme.Spacing.lg)
             }

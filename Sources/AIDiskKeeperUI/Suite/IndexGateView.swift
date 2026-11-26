@@ -15,10 +15,13 @@ struct IndexGateView<Content: View>: View {
                       message: progressText,
                       actions: [StateAction(title: loc("action.stop", "Stop")) { index.cancel() }])
         } else {
-            StateView(kind: .empty, symbol: "internaldrive", title: loc("index.gate.title", "Map your disk"),
+            StateView(kind: indexFailed ? .blockingError : .firstRun, symbol: indexFailed ? "exclamationmark.triangle" : "internaldrive",
+                      title: indexFailed ? StateCopy.errorIndex : loc("index.gate.title", "Map your disk"),
                       message: gateMessage, actions: startActions)
         }
     }
+
+    private var indexFailed: Bool { if case .failed = index.phase { true } else { false } }
 
     private var progressText: String {
         let p = index.progress
@@ -39,7 +42,7 @@ struct IndexGateView<Content: View>: View {
             actions.append(StateAction(title: loc("index.gate.fullDisk", "Map whole disk")) { index.start(.fullDisk) })
         } else {
             actions.append(StateAction(title: loc("fda.openPrivacy", "Open Privacy Settings")) {
-                NSWorkspace.shared.open(FullDiskAccessCard.privacySettingsURL)
+                NSWorkspace.shared.open(SystemSettingsLinks.fullDiskAccess)
             })
         }
         return actions

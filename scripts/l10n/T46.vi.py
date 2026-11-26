@@ -1,0 +1,36 @@
+PREFIXES = ("state.", "a11y.", "sidebar.settings")
+
+REMOVE = ("empty.readOnlyNote", "module.generic", "module.noItems.title", "module.scanFirst.title")
+
+VI = {
+    "state.firstRun.title": "Xem các công cụ AI đã để lại những gì",
+    "state.firstRun.body": "Quét chỉ đọc thư mục Home của bạn. Không có gì bị xóa cho tới khi bạn xem lại.",
+    "state.firstRun.start": "Bắt đầu quét tổng thể",
+    "state.firstRun.what": "Những gì sẽ được quét?",
+    "state.firstRun.whatBody": "Thư mục của công cụ AI (~/.claude, ~/.cursor…), worktree của agent, cache mô hình, cache hệ thống và cache phát triển, tệp lớn và cũ, tệp trùng lặp trong Home, và tệp sót lại của ứng dụng trong ~/Library. Chỉ đọc kích thước thư mục; nội dung tệp chỉ được đọc để so sánh tệp trùng lặp.",
+    "state.fda.title": "%@ thư mục cần Toàn quyền truy cập ổ đĩa",
+    "state.fda.body": "macOS ẩn tệp tải về của Mail, cache của Safari và container của các ứng dụng khác. Mọi thứ khác vẫn hoạt động mà không cần quyền này.",
+    "state.fda.open": "Mở cài đặt Quyền riêng tư",
+    "state.fda.notNow": "Để sau",
+    "state.empty.nothing": "Hiện không có gì để giải phóng",
+    "state.empty.module": "Không tìm thấy dữ liệu %@",
+    "state.notScanned": "Chưa quét",
+    "state.filtered.title": "Không có gì khớp “%@”",
+    "state.filtered.body": "Hãy thử tên khác, hoặc hiển thị cả mục Giữ lại.",
+    "state.filtered.clear": "Xóa tìm kiếm",
+    "state.partial.title": "Quét xong với %@ cảnh báo",
+    "state.partial.body": "Một số thư mục không đọc được. Kết quả của mọi mô-đun khác vẫn đầy đủ.",
+    "state.partial.show": "Xem cảnh báo",
+    "state.error.scan": "Không bắt đầu quét được. Không có gì bị thay đổi.",
+    "state.error.index": "Không lập bản đồ ổ đĩa được. Không có gì bị thay đổi.",
+    "state.error.startup": "Không đọc được launch agent. Không có gì bị thay đổi.",
+    "state.error.cleanup.title": "Đã tạm dừng dọn dẹp. Không có gì bị chuyển đi.",
+    "state.error.audit.title": "Đã tạm dừng dọn dẹp: không ghi được nhật ký thao tác",
+    "state.error.audit.body": "Chúng tôi chỉ thực hiện khi mọi thao tác đều được ghi lại. Không có gì bị chuyển đi. Hãy kiểm tra dung lượng trống trong ~/Library/Application Support.",
+    "state.retry": "Thử lại",
+    "state.revealFolder": "Hiển thị thư mục",
+    "state.cleanup.allBlocked": "Không mục nào trong lựa chọn này có thể dọn dẹp",
+    "state.noWarnings": "Không có cảnh báo",
+    "a11y.ring": "Đã dùng %@ phần trăm, còn trống %@",
+    "sidebar.settings": "Cài đặt",
+}
