@@ -8,9 +8,11 @@ enum StorageModule: ModuleProvider {
                                              isEnabled: true)
 
     /// The shared volume model (sidebar gauge, this screen; Overview and the menu bar read it later).
-    @MainActor static func model(_ ctx: ModuleContext) -> StorageModel {
-        let env = ctx.env.pathEnvironment
-        return ctx.suite.state(.storage) { StorageModel(load: live(environment: env)) }
+    @MainActor static func model(_ ctx: ModuleContext) -> StorageModel { model(env: ctx.env, suite: ctx.suite) }
+
+    @MainActor static func model(env appEnv: AppEnvironment, suite: SuiteModel) -> StorageModel {
+        let env = appEnv.pathEnvironment
+        return suite.state(.storage) { StorageModel(load: live(environment: env)) }
     }
 
     static func live(environment env: PathEnvironment) -> @Sendable () async throws -> StorageOverview {

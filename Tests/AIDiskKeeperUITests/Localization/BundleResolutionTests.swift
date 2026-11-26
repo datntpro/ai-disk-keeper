@@ -25,9 +25,9 @@ final class BundleResolutionTests: XCTestCase {
     }
 
     func testInterpolatedNumbersUseTheAppLanguageNotTheSystemRegion() {
-        L10n.withLanguage(.en) { XCTAssertEqual(loc("overview.itemCount", "\(1234) items"), "1,234 items") }
+        L10n.withLanguage(.en) { XCTAssertEqual(loc("overview.unreadable", "\(1234) folders couldn't be read"), "1,234 folders couldn't be read") }
         L10n.withLanguage(.vi) {
-            XCTAssertEqual(loc("overview.itemCount", "\(1234) items").replacingOccurrences(of: "\u{00A0}", with: " "), "1.234 mục")
+            XCTAssertEqual(loc("overview.unreadable", "\(1234) folders couldn't be read").replacingOccurrences(of: "\u{00A0}", with: " "), "Không đọc được 1.234 thư mục")
         }
     }
 

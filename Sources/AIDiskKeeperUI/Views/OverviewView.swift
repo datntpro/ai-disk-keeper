@@ -1,83 +1,56 @@
 import DiskKeeperCore
 import SwiftUI
 
-struct OverviewView<Slot: View>: View {
+/// Overview *is* the Care Scan: the hero, the whole-disk strata bar, one tile per module and the biggest wins.
+struct OverviewView: View {
+    let care: CareScanModel
     let scan: ScanViewModel
-    var inspect: (ScanItem.ID) -> Void
+    let storage: StorageModel
+    let cleanup: CleanupCoordinator
+    let selection: SelectionModel
+    var open: (SidebarSelection) -> Void
+    var inspect: (ScanItem) -> Void
     var showWarnings: () -> Void
-    @ViewBuilder var belowTierCards: () -> Slot
+
+    private let tilesAnchor = "overview.tiles"
 
     var body: some View {
-        if scan.phase == .idle {
-            EmptyStateView { scan.startScan() }
-        } else {
-            let totals = scan.totals
+        ScrollViewReader { proxy in
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text(loc("overview.totalFound", "Total found")).font(.headline)
-                        Text(Formatting.bytes(totals.all.allocatedBytes)).font(.title.weight(.semibold))
-                        if scan.result?.wasCancelled == true {
-                            Text(loc("overview.partial", "(partial: scan stopped)")).font(.callout).foregroundStyle(.orange)
-                        }
-                        Spacer()
-                        if let d = scan.lastScanFinishedAt, !scan.isScanning {
-                            TimelineView(.periodic(from: .now, by: 30)) { _ in
-                                Text(loc("overview.lastScan", "Last scan \(Formatting.relative(d))")).font(.caption).foregroundStyle(.secondary)
-                            }
-                        }
+                VStack(alignment: .leading, spacing: ADKTheme.Spacing.lg) {
+                    header
+                    CareHero(model: care, storage: storage, showFirstRunNote: care.phase == .before && care.lastFinishedAt == nil && care.index.tree == nil,
+                             onReview: { withAnimation { proxy.scrollTo(tilesAnchor, anchor: .top) } },
+                             onCleanSafe: { care.cleanSafeOnly(using: cleanup, selection: selection) })
+                    OverviewStrata(storage: storage, scan: scan, care: care)
+                    OverviewModuleTiles(care: care, scan: scan, open: open).id(tilesAnchor)
+                    if !care.biggestWins.isEmpty {
+                        BiggestWinsList(wins: care.biggestWins,
+                                        seeAll: { if let target = BiggestWins.destination(for: care.biggestWins) { open(target) } },
+                                        inspect: inspect)
                     }
-                    HStack(alignment: .top, spacing: 12) {
-                        ForEach(RiskTier.allCases, id: \.self) { tier in
-                            card(tier, totals.byTier[tier] ?? .zero)
-                        }
-                    }
-                    belowTierCards()
-                    if !scan.warnings.isEmpty {
+                    if !care.warnings.isEmpty, care.phase == .results || care.phase == .stopped {
                         Button(action: showWarnings) {
-                            Label(loc("overview.unreadable", "\(scan.warnings.count) folders couldn't be read"), systemImage: "exclamationmark.circle")
+                            Label(OverviewCopy.unreadable(care.warnings.count), systemImage: "exclamationmark.circle")
                         }.buttonStyle(.link)
                     }
-                    Text(loc("overview.largest", "Largest items")).font(.headline)
-                    ForEach(top10(scan.items)) { item in
-                        Button { inspect(item.id) } label: {
-                            HStack {
-                                Text(item.uiDisplayName()).lineLimit(1)
-                                TierBadge(tier: item.tier)
-                                if item.isSelectable, let id = item.requiresAppQuit { QuitAppBadge(bundleID: id) }
-                                Spacer()
-                                Text(Formatting.bytes(item.sizeAllocated)).monospacedDigit().foregroundStyle(.secondary)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(item.a11yLabel)
-                    }
+                    if care.phase == .before { EmptyStateView() }
                 }
-                .padding()
+                .padding(ADKTheme.Spacing.xl)
             }
         }
+        .task { storage.refresh() }
     }
 
-    private func top10(_ items: [ScanItem]) -> [ScanItem] {
-        ItemQuery(scope: .overview).apply(to: items).prefix(10).map { $0 }
-    }
-
-    private func card(_ tier: RiskTier, _ t: UsageTotals) -> some View {
-        let s = TierStyle.style(for: tier)
-        return VStack(alignment: .leading, spacing: 6) {
-            TierBadge(tier: tier)
-            Text(Formatting.bytes(t.allocatedBytes)).font(.title2.weight(.semibold))
-            Text(loc("overview.itemCount", "\(t.itemCount) items")).font(.caption).foregroundStyle(.secondary)
-            Text(s.shortExplanation).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+    private var header: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(OverviewCopy.title).font(ADKTheme.Font.largeTitle).foregroundStyle(.adkText)
+            Spacer()
+            if let finished = care.lastFinishedAt, care.phase != .scanning {
+                TimelineView(.periodic(from: .now, by: 30)) { _ in
+                    Text(OverviewCopy.lastScan(Formatting.relative(finished))).font(.caption).foregroundStyle(.adkText3)
+                }
+            }
         }
-        .padding(12).frame(maxWidth: .infinity, alignment: .leading)
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
-        .accessibilityElement(children: .combine)
-    }
-}
-
-extension OverviewView where Slot == EmptyView {
-    init(scan: ScanViewModel, inspect: @escaping (ScanItem.ID) -> Void, showWarnings: @escaping () -> Void) {
-        self.init(scan: scan, inspect: inspect, showWarnings: showWarnings) { EmptyView() }
     }
 }

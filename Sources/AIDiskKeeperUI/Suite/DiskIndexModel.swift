@@ -64,6 +64,26 @@ public final class DiskIndexModel {
         }
     }
 
+    /// Builds the index and waits for it (the Care Scan's index stage). Same run bookkeeping as `start`: Disk Map and the
+    /// other screens see the tree and the new `generation`. Cancelling the caller cancels the build; a build that was
+    /// replaced or cancelled elsewhere throws `CancellationError`.
+    public func build(_ scope: DiskIndexer.Scope) async throws -> DiskTree {
+        start(scope)
+        guard phase == .indexing, let task else { throw DiskIndexBuildError.refused }
+        let id = runID
+        await withTaskCancellationHandler { await task.value } onCancel: {
+            Task { @MainActor [weak self] in if self?.runID == id { self?.cancel() } }
+        }
+        guard runID == id else { throw CancellationError() }
+        switch phase {
+        case .ready:
+            if let tree { return tree }
+            throw CancellationError()
+        case .failed(let message): throw DiskIndexBuildError.failed(message)
+        default: throw CancellationError()
+        }
+    }
+
     public func cancel() {
         guard phase == .indexing else { return }
         abandonCurrent()
@@ -112,4 +132,10 @@ public final class DiskIndexModel {
         indexer = nil
         phase = .failed(String(describing: error))
     }
+}
+
+public enum DiskIndexBuildError: Error, Equatable {
+    /// Whole-disk indexing was asked for without Full Disk Access.
+    case refused
+    case failed(String)
 }
