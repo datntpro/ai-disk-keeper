@@ -6,6 +6,7 @@ struct DuplicateMemberRow: View {
     let model: DuplicatesModel
     let group: DuplicateGroup
     let member: DuplicateMember
+    @State private var hovering = false
 
     var body: some View {
         let isKeeper = model.isKeeper(member, in: group)
@@ -32,6 +33,10 @@ struct DuplicateMemberRow: View {
                 }
             }
             Spacer(minLength: ADKTheme.Spacing.sm)
+            if !isKeeper && hovering {
+                Button(loc("dup.action.keepThis", "Keep this one")) { model.keepInstead(member.path, in: group.id) }
+                    .controlSize(.small)
+            }
             if member.sharesAllStorage && !isKeeper {
                 StatusPill(kind: .sharedStorage)
             } else {
@@ -40,6 +45,7 @@ struct DuplicateMemberRow: View {
         }
         .padding(.vertical, 2)
         .contentShape(Rectangle())
+        .onHover { hovering = $0 }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(DuplicatesCopy.a11yRow(member: member, group: group, selected: selected))
         .accessibilityAddTraits(canSelect ? .isButton : [])

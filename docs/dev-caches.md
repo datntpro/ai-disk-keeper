@@ -7,8 +7,26 @@ Tiers: a regenerable cache that costs a re-download is **Review**; a pure build 
 changed in the last day is **Keep** (a build may be running). Xcode archives, iOS backups and installers are never
 Safe. DeviceSupport becomes Safe after 180 days unused (decision N12: rules cannot see the Xcode version).
 
-`brew cleanup` and `xcrun simctl delete unavailable` need the `toolCommand` runner (T17a, landed) plus their own specs and are tracked in the
-follow-up T39b.
+## Simulators (T39b)
+
+Unavailable simulators (their runtime is no longer installed) are found by a small read-only scanner, not a JSON rule:
+"unavailable" is runtime state only `simctl` knows, and `~/Library/Developer/CoreSimulator/Devices` holds every simulator.
+
+- The scanner runs `xcrun simctl list devices unavailable --json` (the only read command), and only when the Devices
+  folder exists **and** `xcode-select -p` finds developer tools, so it never triggers the "install developer tools" dialog.
+- One item per unavailable device folder, measured by its own size, tier **Review** (rule id
+  `tool.devtools.simulator.unavailable`). Booted devices and symlinked folders are skipped.
+- Cleanup is the allowlisted tool command `xcrun simctl delete <UDID>` (UDID must equal the folder name), shown verbatim in
+  the dry-run sheet. Right before it runs, a fresh list must still show the device as unavailable and not booted, and
+  afterwards the folder must be gone. It is not moved to the Trash: `simctl delete` also updates CoreSimulator's device set.
+- Never run: `delete unavailable`, `delete all`, `erase`, `shutdown`, `boot`, `runtime`. Tests use a fake `xcrun` script only.
+
+## Homebrew (`brew cleanup`)
+
+Not a tool command, and the app never runs `brew`. `brew cleanup` mainly removes old formula versions in the Cellar
+(`/opt/homebrew/Cellar`, `/usr/local/Cellar`), which is outside the home folder and so outside the scan guard (invariant 1).
+Its other effect, the download cache, is already the reversible Trash rule `dev-caches.homebrew`. That rule's
+explanation tells the user to run `brew cleanup` in Terminal for old formula versions.
 
 ## Sources
 
