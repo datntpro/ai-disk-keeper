@@ -156,6 +156,61 @@ final class StartupItemScannerTests: XCTestCase {
         XCTAssertEqual(inv.items.first?.loadState, .unknown)
         XCTAssertEqual(inv.warnings.count, 1)
     }
+
+    // MARK: Uncertain is never broken
+
+    func testProbeOnlyCallsConfirmedMissingPathsMissing() throws {
+        let fx = try StartupFixture()
+        let present = try fx.home.file("bin/real")
+        XCTAssertEqual(StartupItemScanner.probe(present), .exists)
+        XCTAssertEqual(StartupItemScanner.probe(fx.home.abs("bin/nope")), .missing)
+        XCTAssertEqual(StartupItemScanner.probe(present + "/child"), .missing)   // ENOTDIR
+        // A mounted volume: /dev is its own mount, so a missing entry under it is genuinely missing.
+        XCTAssertEqual(StartupItemScanner.probe("/dev/adkqa-nope", mountParent: "/"), .missing)
+    }
+
+    func testUnmountedVolumeIsUncertain() throws {
+        let fx = try StartupFixture()
+        let volumes = try fx.home.dir("$TMP/Volumes")
+        XCTAssertEqual(StartupItemScanner.probe(volumes + "/ADKExt/Apps/Foo.app/x", mountParent: volumes), .uncertain)
+        // A plain folder on the same device is not a mount either.
+        _ = try fx.home.dir("$TMP/Volumes/Plain")
+        XCTAssertEqual(StartupItemScanner.probe(volumes + "/Plain/x", mountParent: volumes), .uncertain)
+        XCTAssertEqual(StartupItemScanner.probe("/Volumes/ADKQA-never-mounted/x"), .uncertain)
+    }
+
+    func testPermissionErrorIsUncertain() throws {
+        let fx = try StartupFixture()
+        let locked = try fx.home.dir("locked")
+        _ = try fx.home.file("locked/prog")
+        chmod(locked, 0o000)
+        defer { chmod(locked, 0o755) }
+        guard getuid() != 0 else { throw XCTSkip("root bypasses permissions") }
+        XCTAssertEqual(StartupItemScanner.probe(locked + "/prog"), .uncertain)
+    }
+
+    func testScannerTreatsUncertainAsNotBroken() async throws {
+        let fx = try StartupFixture()
+        try fx.plist(fx.roots.userAgents, "ext.plist", ["Label": "com.test.ext", "Program": "/Volumes/ADKQA-gone/x"])
+        let scanner = StartupItemScanner(roots: fx.roots, signatures: FakeSignatures(), loaded: nil, userID: getuid(),
+                                         probe: { _ in .uncertain })
+        let inv = try await scanner.inventory()
+        let item = try XCTUnwrap(inv.items.first)
+        XCTAssertEqual(item.programState, .unresolvable)
+        XCTAssertFalse(item.isRemovable)
+        XCTAssertEqual(item.makeScanItem().cleanupMethod, .none)
+    }
+
+    func testBundleProgramWinsOverMissingProgramArguments() async throws {
+        let fx = try StartupFixture()
+        try fx.plist(fx.roots.userAgents, "smapp.plist",
+                     ["Label": "com.test.smapp", "BundleProgram": "Contents/Library/x", "ProgramArguments": ["/gone/x"]])
+        let inv = try await fx.scanner().inventory()
+        let item = try XCTUnwrap(inv.items.first)
+        XCTAssertTrue(item.isBundleManaged)
+        XCTAssertEqual(item.programState, .unresolvable)
+        XCTAssertFalse(item.isRemovable)
+    }
 }
 
 actor ItemCollector {

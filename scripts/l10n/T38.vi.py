@@ -18,6 +18,7 @@ VI = {
     "startup.runs.keepAlive": "luôn chạy",
     "startup.runs.every": "mỗi %@",
     "startup.runs.calendar": "theo lịch",
+    "startup.runs.unknown": "không rõ",
     "startup.runs.onDemand": "khi cần",
     "startup.unit.day": "%@ ngày",
     "startup.unit.hour": "%@ giờ",

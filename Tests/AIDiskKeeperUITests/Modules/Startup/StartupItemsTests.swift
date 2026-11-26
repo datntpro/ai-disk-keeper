@@ -122,6 +122,12 @@ final class StartupItemsTests: XCTestCase {
         }
     }
 
+    func testDamagedRowHasRunsInItsA11yLabel() {
+        let damaged = Self.sample[5]
+        XCTAssertFalse(StartupCopy.runs(damaged).isEmpty)
+        XCTAssertFalse(StartupCopy.rowA11y(damaged).contains(", ,"))
+    }
+
     func testStatusText() {
         XCTAssertEqual(StartupCopy.status(Self.sample[0]), "Program missing · Safe to remove")
         XCTAssertEqual(StartupCopy.status(Self.sample[1]), "Running · TEAM1 (signed)")

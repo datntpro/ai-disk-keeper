@@ -92,7 +92,8 @@ enum StartupCopy {
 
     /// "at login, every 4 h".
     static func runs(_ item: StartupItem, spoken: Bool = false) -> String {
-        item.schedules.map { schedule($0, spoken: spoken) }.joined(separator: ", ")
+        if item.schedules.isEmpty { return loc("startup.runs.unknown", "unknown") }
+        return item.schedules.map { schedule($0, spoken: spoken) }.joined(separator: ", ")
     }
 
     // MARK: Status

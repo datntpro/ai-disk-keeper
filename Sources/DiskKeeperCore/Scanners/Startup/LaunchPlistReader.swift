@@ -37,12 +37,12 @@ enum LaunchPlistReader {
         parsed.label = label
         let args = (dict["ProgramArguments"] as? [Any])?.compactMap { $0 as? String } ?? []
         parsed.arguments = args
+        // BundleProgram (SMAppService) wins: the app manages the item, whatever ProgramArguments says.
+        if dict["BundleProgram"] is String { parsed.isBundleManaged = true }
         if let program = dict["Program"] as? String, !program.isEmpty {
             parsed.program = program
         } else if let first = args.first, !first.isEmpty {
             parsed.program = first
-        } else if dict["BundleProgram"] is String {
-            parsed.isBundleManaged = true
         }
         if (dict["RunAtLoad"] as? Bool) == true { parsed.schedules.append(.atLoad) }
         switch dict["KeepAlive"] {
