@@ -21,6 +21,9 @@ public struct ToolCommandRegistry: Sendable {
     /// Every failure becomes `toolCommandNotAllowed(reason)`.
     public func match(_ item: ScanItem, environment: PathEnvironment) -> Result<Match, ToolCommandRefusal> {
         guard case .toolCommand(let command, let args) = item.cleanupMethod else { return .failure(.init("not a tool command")) }
+        guard item.ruleID.hasPrefix(ToolCommandSpec.reservedRuleIDPrefix) else {
+            return .failure(.init("only built-in scanners may run a command"))
+        }
         let candidates = specs.filter { $0.isDestructive && $0.command == command && $0.ruleIDs.contains(item.ruleID) }
         guard !candidates.isEmpty else { return .failure(.init("no allowlisted command '\(command)' for this item")) }
         guard candidates.count == 1, let spec = candidates.first else { return .failure(.init("ambiguous command")) }
@@ -34,7 +37,8 @@ public struct ToolCommandRegistry: Sendable {
         }
         guard spec.accepts(args) else { return .failure(.init("arguments do not match the template")) }
         guard let bound = spec.bind(item) else { return .failure(.init("cannot bind to the item")) }
-        guard bound == args else { return .failure(.init("arguments do not belong to this item")) }
+        guard ToolCommandSpec.sameBytes(bound, args) else { return .failure(.init("arguments do not belong to this item")) }
+        guard spec.accepts(bound) else { return .failure(.init("bound arguments do not match the template")) }
         return .success(Match(spec: spec, argv: bound))
     }
 }

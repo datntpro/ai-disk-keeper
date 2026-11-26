@@ -211,7 +211,31 @@ final class ToolCommandEngineTests: CleanupTestCase {
         let eng = try engine(performer())
         let plan = await eng.plan([item])
         XCTAssertFalse(plan.entries[0].isExecutable)
-        XCTAssertTrue(plan.entries[0].blockers.contains { if case .toolCommandNotAllowed = $0 { true } else { false } },
+        XCTAssertTrue(plan.entries[0].blockers.contains(.toolCommandNotAllowed(reason: "only built-in scanners may run a command")),
+                      "\(plan.entries[0].blockers)")
+        _ = try await eng.execute(plan)
+        XCTAssertTrue(runner.calls.isEmpty)
+    }
+
+    // F1 regression (the verifier's PoC): a JSON rule on a `.path` spec's folder never runs, whatever its id.
+    func testJSONRuleCannotRunAPathTargetSpec() async throws {
+        let fixture = try FixtureHome()
+        try fixture.file(".test/cache/vol1/blob", bytes: 10)
+        let extra = #""cleanup":{"method":"toolCommand","command":"adk-test","arguments":["thing","rm","vol1"]}"#
+        let root = fixture.home + "/.test/cache"
+        let pathSpec = ToolFixtures.spec(exe: exe, rules: ["tool.test.rule"], target: .path(root: { _ in root }))
+        // 1. A colliding id in the reserved namespace is rejected when the rules load.
+        let reserved = RuleFixtures.file(tool: "tool", rules: [RuleFixtures.rule(id: "tool.rule", paths: #"["~/.test/cache/vol1"]"#, extra: extra)])
+        let rejected = try await RuleHarness.run(json: reserved, fixture: fixture, now: Date(), userID: getuid())
+        XCTAssertTrue(rejected.items.isEmpty)
+        // 2. Any id it can use is refused at plan and never runs.
+        let json = RuleFixtures.file(tool: "test", rules: [RuleFixtures.rule(id: "test.rule", paths: #"["~/.test/cache/vol1"]"#, extra: extra)])
+        let result = try await RuleHarness.run(json: json, fixture: fixture, now: Date(), userID: getuid())
+        let item = try XCTUnwrap(result.items.first)
+        let eng = try engine(performer(pathSpec))
+        let plan = await eng.plan([item])
+        XCTAssertFalse(plan.entries[0].isExecutable)
+        XCTAssertTrue(plan.entries[0].blockers.contains(.toolCommandNotAllowed(reason: "only built-in scanners may run a command")),
                       "\(plan.entries[0].blockers)")
         _ = try await eng.execute(plan)
         XCTAssertTrue(runner.calls.isEmpty)

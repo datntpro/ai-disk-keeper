@@ -43,6 +43,11 @@ final class RuleValidatorTests: XCTestCase {
         XCTAssertTrue(ok.errors.isEmpty, "\(ok.errors)")
     }
 
+    func testReservedToolNamespaceIsRejected() throws {
+        // A tool literally named "tool" would otherwise satisfy the prefix rule.
+        expectOne(try load([RuleFixtures.file(tool: "tool", rules: [RuleFixtures.rule(id: "tool.rule")])]), .invalidRuleID, path: "rules[0].id")
+    }
+
     func testModelWeightsCannotBeSafe() throws {
         expectOne(try load([RuleFixtures.file(rules: [RuleFixtures.rule(category: "modelWeights", tier: "safe")])]),
                   .invalidValue, path: "rules[0].tier")

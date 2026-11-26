@@ -40,7 +40,7 @@ enum ToolFixtures {
     }
 
     /// `adk-test thing rm <id>` for virtual items under namespace "adktest".
-    static func spec(exe: String, revalidate: Toggle = Toggle(), rules: Set<String> = ["test.rule"],
+    static func spec(exe: String, revalidate: Toggle = Toggle(), rules: Set<String> = ["tool.adktest.rule"],
                      target: ToolTarget = .virtual(namespace: "adktest"), extraEnv: [String: String] = ["ADK_TARGET": "t1"],
                      id: String = "adktest.thing.rm", timeout: Duration = .seconds(5)) -> ToolCommandSpec {
         ToolCommandSpec(
@@ -53,7 +53,7 @@ enum ToolFixtures {
             revalidate: { _, _ in revalidate.blockers })
     }
 
-    static func virtualItem(id: String = imageID, rule: String = "test.rule", method: CleanupMethod? = nil,
+    static func virtualItem(id: String = imageID, rule: String = "tool.adktest.rule", method: CleanupMethod? = nil,
                             tier: RiskTier = .review, bytes: Int64 = 1000) -> ScanItem {
         let path = VirtualItemPath.build(namespace: "adktest", target: "t1", kind: "image", id: id)!
         return ScanItem(url: URL(fileURLWithPath: path), displayName: "thing", tool: "adktest", category: .aiToolData,

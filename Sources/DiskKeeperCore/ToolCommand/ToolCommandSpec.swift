@@ -94,6 +94,15 @@ public final class ToolProbeCache: @unchecked Sendable {
 
 /// A compiled-in, allowlisted tool command. See PLAN §7 invariant 19.
 public struct ToolCommandSpec: Sendable {
+    /// Every spec's `ruleIDs` live in this namespace. `RuleValidator` rejects JSON rule ids that start with it,
+    /// and `ScanEngine` drops reserved-id items that come from the JSON `RuleScanner`: a JSON rule can never
+    /// produce an item a spec accepts.
+    public static let reservedRuleIDPrefix = "tool."
+
+    /// Raw UTF-8 comparison: Swift `String ==` treats compatibility-equivalent text (Kelvin sign vs K) as equal.
+    static func sameBytes(_ a: [String], _ b: [String]) -> Bool {
+        a.count == b.count && zip(a, b).allSatisfy { $0.utf8.elementsEqual($1.utf8) }
+    }
     public let id: String
     /// Must equal `CleanupMethod.toolCommand.command` ("docker", "xcrun").
     public let command: String
@@ -120,6 +129,8 @@ public struct ToolCommandSpec: Sendable {
                 revalidate: @escaping @Sendable (ToolCommandContext, ScanItem) async -> [CleanupBlocker] = { _, _ in [] },
                 verifyAfter: (@Sendable (ToolCommandContext, ScanItem, ToolCommandResult) async -> String?)? = nil,
                 isDestructive: Bool = true) {
+        precondition(ruleIDs.allSatisfy { $0.hasPrefix(Self.reservedRuleIDPrefix) },
+                     "tool command spec rule ids must start with \(Self.reservedRuleIDPrefix)")
         self.id = id
         self.command = command
         self.ruleIDs = ruleIDs
@@ -140,7 +151,7 @@ public struct ToolCommandSpec: Sendable {
         for (t, token) in template.enumerated() {
             switch token {
             case .literal(let s):
-                guard i < args.count, args[i] == s else { return false }
+                guard i < args.count, args[i].utf8.elementsEqual(s.utf8) else { return false }
                 i += 1
             case .param(let p):
                 guard i < args.count, p.matches(args[i]) else { return false }

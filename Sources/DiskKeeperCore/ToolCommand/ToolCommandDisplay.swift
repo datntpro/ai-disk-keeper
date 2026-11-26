@@ -26,6 +26,18 @@ public enum ToolCommandDisplay {
             (b >= 0x30 && b <= 0x39) || (b >= 0x41 && b <= 0x5A) || (b >= 0x61 && b <= 0x7A) || "_@%+=:,./-".utf8.contains(b)
         }
         if !s.isEmpty && safe { return s }
-        return "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'"
+        return "'" + escaped(s).replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
+
+    /// Control and bidi/format characters would let a refused row's arguments look like something else: show \u{…}.
+    static func escaped(_ s: String) -> String {
+        var out = ""
+        for u in s.unicodeScalars {
+            switch u.properties.generalCategory {
+            case .control, .format, .lineSeparator, .paragraphSeparator: out += "\\u{" + String(u.value, radix: 16, uppercase: true) + "}"
+            default: out.unicodeScalars.append(u)
+            }
+        }
+        return out
     }
 }

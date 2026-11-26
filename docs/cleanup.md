@@ -24,7 +24,7 @@ Per-item failures never abort the batch. Cancellation is honoured between items,
 | `notActionable` | Cleanup method is `none` (report only). |
 | `methodNotSupported` | `trashWorktree` has no performer yet. |
 | `toolCommandUnavailable` | A `.toolCommand` item but no performer is installed (fail closed). |
-| `toolCommandNotAllowed` | The command is not on the compiled-in allowlist, or its arguments are not the ones bound to the item. Every JSON-rule `toolCommand` lands here. |
+| `toolCommandNotAllowed` | The command is not on the compiled-in allowlist, or its arguments are not the ones bound to the item. Every JSON-rule `toolCommand` lands here: spec rule ids all start with the reserved `tool.` namespace, `RuleValidator` rejects JSON rule ids in it, `ScanEngine` drops reserved-id items from the JSON `RuleScanner`, and the registry refuses any item outside it. The bound argv is re-checked against the spec's patterns and compared as raw UTF-8 bytes (no Unicode equivalence). |
 | `toolUnavailable` | The tool's executable is missing, failed the owner/mode checks, or differs from the one shown in the dry run. |
 | `toolNotRunning` | The tool's service (for example a container runtime) is not running. |
 | `inUseByTool` | The tool reports the object is in use right now. |

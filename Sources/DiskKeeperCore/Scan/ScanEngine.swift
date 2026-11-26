@@ -132,6 +132,8 @@ public actor ScanEngine {
             for scanner in scanners {
                 let sink = ScanSink(
                     item: { [self] item in
+                        // JSON rules never own the reserved tool-command namespace (the validator rejects it too).
+                        if scanner is RuleScanner, item.ruleID.hasPrefix(ToolCommandSpec.reservedRuleIDPrefix) { return }
                         // Virtual items (no file behind them) skip the guard, but only from the scanner that owns
                         // their namespace and only with a tool command (or none): everything else is dropped.
                         if let virtual = VirtualItemPath.parse(item.path) {

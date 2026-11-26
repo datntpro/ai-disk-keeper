@@ -43,13 +43,13 @@ final class ToolCommandRegistryTests: XCTestCase {
         // A real path for a virtual spec.
         let real = ScanItem(url: URL(fileURLWithPath: "/Users/x/cache"), displayName: "c", tool: "t", category: .aiToolData,
                             sizeAllocated: 1, sizeLogical: 1, fileCount: 1, lastModified: nil, tier: .review, explanation: "x",
-                            ruleID: "test.rule", cleanupMethod: .toolCommand(command: "adk-test", arguments: ["thing", "rm", ToolFixtures.imageID]))
+                            ruleID: "tool.adktest.rule", cleanupMethod: .toolCommand(command: "adk-test", arguments: ["thing", "rm", ToolFixtures.imageID]))
         XCTAssertEqual(refusal(real), "wrong target kind")
         // Another namespace.
         let path = VirtualItemPath.build(namespace: "other", target: "t", kind: "image", id: ToolFixtures.imageID)!
         var other = ToolFixtures.virtualItem()
         other = ScanItem(url: URL(fileURLWithPath: path), displayName: "x", tool: "t", category: .aiToolData, sizeAllocated: 1,
-                         sizeLogical: 1, fileCount: 1, lastModified: nil, tier: .review, explanation: "x", ruleID: "test.rule",
+                         sizeLogical: 1, fileCount: 1, lastModified: nil, tier: .review, explanation: "x", ruleID: "tool.adktest.rule",
                          cleanupMethod: other.cleanupMethod)
         XCTAssertEqual(refusal(other), "wrong target kind")
     }
@@ -64,7 +64,7 @@ final class ToolCommandRegistryTests: XCTestCase {
         let r = ToolCommandRegistry(specs: [spec])
         func item(_ path: String) -> ScanItem {
             ScanItem(url: URL(fileURLWithPath: path), displayName: "d", tool: "t", category: .aiToolData, sizeAllocated: 1,
-                     sizeLogical: 1, fileCount: 1, lastModified: nil, tier: .review, explanation: "x", ruleID: "test.rule",
+                     sizeLogical: 1, fileCount: 1, lastModified: nil, tier: .review, explanation: "x", ruleID: "tool.adktest.rule",
                      cleanupMethod: .toolCommand(command: "adk-test", arguments: ["thing", "rm", ToolFixtures.imageID]))
         }
         // `bind` reads the virtual path, so a real path cannot bind: refused even under the root.
@@ -89,7 +89,7 @@ final class ToolCommandRegistryTests: XCTestCase {
     }
 
     func testVariadicBounds() {
-        let spec = ToolCommandSpec(id: "v", command: "c", ruleIDs: ["r"], target: .virtual(namespace: "n"),
+        let spec = ToolCommandSpec(id: "v", command: "c", ruleIDs: ["tool.r"], target: .virtual(namespace: "n"),
                                    template: [.literal("rm"), .params(.dockerVolumeName, max: 2)], bind: { _ in nil },
                                    timeout: .seconds(1), executable: { _, _ in ExecutableChoice(candidates: []) },
                                    environment: { _, _ in [:] })
@@ -97,5 +97,50 @@ final class ToolCommandRegistryTests: XCTestCase {
         XCTAssertTrue(spec.accepts(["rm", "a"]))
         XCTAssertTrue(spec.accepts(["rm", "a", "b"]))
         XCTAssertFalse(spec.accepts(["rm", "a", "b", "c"]))
+    }
+
+    // F2: Swift `==` treats the Kelvin sign as K. The bound argv must be checked and compared as raw bytes.
+    func testCompatibilityEquivalentUnicodeIsRefused() {
+        let spec = ToolCommandSpec(
+            id: "x", command: "adk-test", ruleIDs: ["tool.adktest.rule"], target: .virtual(namespace: "adktest"),
+            template: [.literal("thing"), .literal("rm"), .param(.dockerVolumeName)],
+            bind: { item in VirtualItemPath.parse(item.path).map { ["thing", "rm", $0.id] } },
+            timeout: .seconds(5), executable: { _, _ in ExecutableChoice(candidates: []) }, environment: { _, _ in [:] })
+        XCTAssertTrue("\u{212A}" == "K", "premise: String == is canonical equivalence")
+        let r = ToolCommandRegistry(specs: [spec])
+        for lookalike in ["vol\u{212A}", "vol\u{FF4B}", "vo\u{0131}", "vol\u{0430}", "vol\u{200B}", "e\u{0301}", "\u{FB01}le"] {
+            let path = VirtualItemPath.build(namespace: "adktest", target: "t1", kind: "volume", id: lookalike)!
+            let item = ScanItem(url: URL(fileURLWithPath: path), displayName: "x", tool: "adktest", category: .aiToolData,
+                                sizeAllocated: 1, sizeLogical: 1, fileCount: 1, lastModified: nil, tier: .review, explanation: "x",
+                                ruleID: "tool.adktest.rule",
+                                cleanupMethod: .toolCommand(command: "adk-test", arguments: ["thing", "rm", "volK"]))
+            XCTAssertNotNil(refusal(item, r), "\(lookalike.unicodeScalars.map(\.value))")
+            let own = ScanItem(url: URL(fileURLWithPath: path), displayName: "x", tool: "adktest", category: .aiToolData,
+                               sizeAllocated: 1, sizeLogical: 1, fileCount: 1, lastModified: nil, tier: .review, explanation: "x",
+                               ruleID: "tool.adktest.rule",
+                               cleanupMethod: .toolCommand(command: "adk-test", arguments: ["thing", "rm", lookalike]))
+            XCTAssertNotNil(refusal(own, r), "bound argv must pass the pattern: \(lookalike.unicodeScalars.map(\.value))")
+        }
+        XCTAssertFalse(spec.accepts(["thing", "rm", "vol\u{212A}"]))
+        XCTAssertFalse(ToolCommandSpec.sameBytes(["\u{212A}"], ["K"]))
+        XCTAssertTrue(ToolCommandSpec.sameBytes(["a", "b"], ["a", "b"]))
+    }
+
+    // F1: an item whose rule id is outside the reserved namespace (what a JSON rule can produce) never matches,
+    // for both target kinds, even when a spec lists that exact id (specs cannot be built that way: see the precondition).
+    func testItemsOutsideTheReservedNamespaceNeverMatch() {
+        let virtualItem = ToolFixtures.virtualItem(rule: "test.rule")
+        XCTAssertEqual(refusal(virtualItem), "only built-in scanners may run a command")
+        let r = ToolCommandRegistry(specs: [ToolFixtures.spec(exe: "/bin/echo", target: .path(root: { $0.home + "/.test/cache" }))])
+        let pathItem = ScanItem(url: URL(fileURLWithPath: "/Users/x/.test/cache/vol1"), displayName: "v", tool: "test", category: .aiToolData,
+                                sizeAllocated: 1, sizeLogical: 1, fileCount: 1, lastModified: nil, tier: .review, explanation: "x",
+                                ruleID: "test.rule", cleanupMethod: .toolCommand(command: "adk-test", arguments: ["thing", "rm", "vol1"]))
+        XCTAssertEqual(refusal(pathItem, r), "only built-in scanners may run a command")
+    }
+
+    func testDisplayEscapesControlAndBidiCharacters() {
+        let line = ToolCommandDisplay.line(command: "docker", arguments: ["a\nb", "x\u{202E}y"])
+        XCTAssertFalse(line.unicodeScalars.contains { $0 == "\n" || $0 == "\u{202E}" })
+        XCTAssertEqual(line, "docker 'a\\u{A}b' 'x\\u{202E}y'")
     }
 }
