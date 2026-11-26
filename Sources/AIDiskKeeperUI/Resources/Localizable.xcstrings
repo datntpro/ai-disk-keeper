@@ -8337,6 +8337,22 @@
         }
       }
     },
+    "startup.runs.unknown" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "unknown"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "không rõ"
+          }
+        }
+      }
+    },
     "startup.status.damaged" : {
       "localizations" : {
         "en" : {
