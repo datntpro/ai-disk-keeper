@@ -27,18 +27,38 @@ enum StrataGlyph {
         return make(topWidth: barWidth * f, pointSize: pointSize)
     }
 
+    /// Draws the three bars into the current context (black). `scale` is `pointSize / 18`.
+    static func drawBars(topWidth: CGFloat, scale: CGFloat = 1) {
+        NSColor.black.setFill()
+        for i in 0..<barCount {
+            // i = 0 is the top bar. Pitch 5 pt keeps every edge on a whole pixel at 1× and 2×.
+            let y = bottom + CGFloat(barCount - 1 - i) * (barHeight + gap)
+            let w = i == 0 ? topWidth : barWidth
+            guard w > 0 else { continue }
+            let rect = NSRect(x: left * scale, y: y * scale, width: w * scale, height: barHeight * scale)
+            NSBezierPath(roundedRect: rect, xRadius: min(radius * scale, w * scale / 2), yRadius: radius * scale).fill()
+        }
+    }
+
+    /// Live strata: each bar is a meter (0…1) over a faint track. Missing bars show an empty track.
+    static func drawMeters(_ levels: [CGFloat]) {
+        for i in 0..<barCount {
+            let y = bottom + CGFloat(barCount - 1 - i) * (barHeight + gap)
+            let track = NSRect(x: left, y: y, width: barWidth, height: barHeight)
+            NSColor.black.withAlphaComponent(0.3).setFill()
+            NSBezierPath(roundedRect: track, xRadius: radius, yRadius: radius).fill()
+            let level = i < levels.count ? min(max(levels[i], 0), 1) : 0
+            guard level > 0 else { continue }
+            let w = max(barWidth * level, barHeight)
+            NSColor.black.setFill()
+            NSBezierPath(roundedRect: NSRect(x: left, y: y, width: w, height: barHeight), xRadius: radius, yRadius: radius).fill()
+        }
+    }
+
     private static func make(topWidth: CGFloat, pointSize: CGFloat) -> NSImage {
         let scale = pointSize / basePointSize
         let image = NSImage(size: NSSize(width: pointSize, height: pointSize), flipped: false) { _ in
-            NSColor.black.setFill()
-            for i in 0..<barCount {
-                // i = 0 is the top bar. Pitch 5 pt keeps every edge on a whole pixel at 1× and 2×.
-                let y = bottom + CGFloat(barCount - 1 - i) * (barHeight + gap)
-                let w = i == 0 ? topWidth : barWidth
-                guard w > 0 else { continue }
-                let rect = NSRect(x: left * scale, y: y * scale, width: w * scale, height: barHeight * scale)
-                NSBezierPath(roundedRect: rect, xRadius: min(radius * scale, w * scale / 2), yRadius: radius * scale).fill()
-            }
+            drawBars(topWidth: topWidth, scale: scale)
             return true
         }
         image.isTemplate = true

@@ -12,6 +12,8 @@ public final class AppModels {
     public let suite: SuiteModel
     let cleanupSelection: SelectionModel
     let menuBar: MenuBarModel
+    let monitor: SystemMonitorModel
+    let scheduler: MonitorScheduler
 
     /// Used by `RootView(env:)` (tests): nothing is posted and nothing polls.
     public convenience init(env: AppEnvironment) {
@@ -29,9 +31,11 @@ public final class AppModels {
             storage: StorageModule.model(env: env, suite: suite),
             care: OverviewModule.careModel(env: env, scan: scan, suite: suite),
             scan: scan, settings: env.settings, notifier: notifier, defaults: defaults)
+        self.monitor = SystemMonitorModel(settings: env.settings, menuBar: menuBar)
+        self.scheduler = MonitorScheduler(monitor: monitor, menuBar: menuBar, settings: env.settings)
     }
 
-    /// The real app: live environment, real notifications, and the 60 s volume poll running.
+    /// The real app: live environment, real notifications, and the one monitor scheduler running (it also drives the 60 s volume poll).
     public static func live() -> AppModels {
         let notifier = LiveLowSpaceNotifier()
         let models = AppModels(env: .live(), notifier: notifier, defaults: .standard)
@@ -39,7 +43,7 @@ public final class AppModels {
             suite.navigation.selection = .overview
             NSApp.activate()
         }
-        models.menuBar.start()
+        models.scheduler.start()
         return models
     }
 }
@@ -47,6 +51,6 @@ public final class AppModels {
 // The menu bar's views are internal to the UI module; the App target gets them as opaque views.
 extension AppModels {
     public var menuBarInserted: Binding<Bool> { MenuBarModel.insertedBinding(env.settings) }
-    public var menuBarPopover: some View { MenuBarPopover(model: menuBar, suite: suite) }
-    public var menuBarLabel: some View { MenuBarLabel(model: menuBar) }
+    public var menuBarPopover: some View { MenuBarPopover(model: menuBar, monitor: monitor, suite: suite) }
+    public var menuBarLabel: some View { MenuBarLabel(monitor: monitor) }
 }

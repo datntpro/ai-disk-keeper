@@ -2,10 +2,11 @@ import AppKit
 import DiskKeeperCore
 import SwiftUI
 
-/// The menu bar popover (300 pt). Report-only: the one way to act on results is "Review in app", which opens the
+/// The menu bar popover (320 pt). Report-only: the one way to act on results is "Review in app", which opens the
 /// window on Overview, where every cleanup still goes through the dry-run sheet. There is no cleanup path here.
 struct MenuBarPopover: View {
     let model: MenuBarModel
+    let monitor: SystemMonitorModel
     let suite: SuiteModel
     var open: () -> Void = {}
     @Environment(\.openWindow) private var openWindow
@@ -16,6 +17,10 @@ struct MenuBarPopover: View {
             Divider()
             scanSummary
             if !model.topTools.isEmpty { topTools }
+            if !monitor.settings.settings.enabledMetricsInOrder.filter({ $0 != .disk }).isEmpty {
+                Divider()
+                SystemMonitorSection(monitor: monitor)
+            }
             if let next = model.nextScheduledScan {
                 Text(MenuBarCopy.nextScan(Formatting.absolute(next))).font(.caption).foregroundStyle(.secondary)
             }
@@ -26,11 +31,13 @@ struct MenuBarPopover: View {
                 .buttonStyle(.plain).keyboardShortcut("q")
         }
         .padding(14)
-        .frame(width: 300)
+        .frame(width: 320)
         .background(Color.adkBg)
         .tint(.adkAccent)
         .environment(\.locale, L10n.locale)
-        .onAppear { model.popoverOpened() }
+        .background(WindowAccessor { monitor.popoverWindow = $0 })
+        .onAppear { model.popoverOpened(); monitor.setPopoverOpen(true) }
+        .onDisappear { monitor.setPopoverOpen(false) }
     }
 
     private var volumeRow: some View {

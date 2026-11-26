@@ -1,15 +1,13 @@
 import SwiftUI
 
-/// The status item: the Strata glyph (template image) and, when the setting is on, the free space next to it.
+/// The status item: one template image drawn by `MenuBarLabelRenderer` (glyph, and the metrics the user put in the bar).
+/// With nothing extra in the bar it is exactly the T47 item.
 struct MenuBarLabel: View {
-    let model: MenuBarModel
+    let monitor: SystemMonitorModel
 
     var body: some View {
-        HStack(spacing: 4) {
-            Image(nsImage: StrataGlyph.image())
-            if let text = model.labelFreeText { Text(verbatim: text) }
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(model.labelAccessibility)
+        Image(nsImage: monitor.labelImage)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(monitor.labelAccessibility)
     }
 }
