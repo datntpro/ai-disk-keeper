@@ -106,7 +106,7 @@ struct CareTally {
     mutating func add(_ item: ScanItem, physical: String, link: InodeKey? = nil, stage: CareStage) {
         let (bytes, counted) = CareCounting.contribution(of: item)
         // Claim even a 0-byte or keeper member, so what sits inside it is not counted again.
-        var net = claims.claim(physical, bytes: counted ? bytes : 0)
+        var net = claims.claim(physical, bytes: counted ? bytes : 0, link: counted ? link : nil)
         if counted, net != nil, let link, !seenLinks.insert(link).inserted { net = 0 }
         guard counted else { return }
         let module = CareModule(category: item.category)
@@ -137,10 +137,11 @@ struct CareByteTrie: Sendable {
         var children: [String: Int] = [:]
         var counted = false
         var subtree: Int64 = 0   // bytes counted at or below this node
+        var links = Set<InodeKey>()   // hard-linked inodes already counted at or below this node
     }
     private var nodes: [Node] = [Node()]
 
-    mutating func claim(_ path: String, bytes: Int64) -> Int64? {
+    mutating func claim(_ path: String, bytes: Int64, link: InodeKey? = nil) -> Int64? {
         var trail = [0]
         for component in PathCanonicalizer.key(path).components {
             if nodes[trail.last!].counted { return nil }
@@ -156,7 +157,12 @@ struct CareByteTrie: Sendable {
         if nodes[last].counted { return nil }
         let net = max(0, bytes - nodes[last].subtree)
         nodes[last].counted = true
-        for i in trail { nodes[i].subtree += net }
+        // A hard link adds to a subtree only the first time that subtree sees its inode: a folder's size counts
+        // the inode once, so its later subtraction must too.
+        for i in trail {
+            if let link, !nodes[i].links.insert(link).inserted { continue }
+            nodes[i].subtree += net
+        }
         return net
     }
 }
