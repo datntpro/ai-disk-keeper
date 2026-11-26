@@ -30,6 +30,10 @@ public final class AppEnvironment {
         let probe = FullDiskAccessProbe.standard(environment: env)
         let settings = SettingsModel(store: SettingsStore(environment: env), environment: env,
                                      probe: { probe.check() })
+        L10n.apply(settings.language)   // before the first scene builds
+        #if DEBUG
+        if CommandLine.arguments.contains("--pseudo-localize") { L10n.applyPseudo() }
+        #endif
         // The tool list comes from the loaded rules; loading reads disk, so keep it off the main actor.
         Task.detached {
             let loaded = RuleLoader(
@@ -38,6 +42,7 @@ public final class AppEnvironment {
             var seen = Set<ToolID>()
             let tools = loaded.ruleSets.map(\.tool).filter { seen.insert($0.id).inserted }
                 .map { ToolChoice(id: $0.id, name: $0.name) }
+            RuleTexts.install(RuleTextIndex(rules: loaded.allRules))
             await MainActor.run { settings.availableTools = tools }
         }
         let cleanup = CleanupEngineHolder()

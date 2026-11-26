@@ -61,12 +61,18 @@ mkdir -p "$STAGE/Contents/MacOS" "$STAGE/Contents/Resources"
 echo "==> Assembling app bundle"
 cp "$BIN/AIDiskKeeper" "$STAGE/Contents/MacOS/AIDiskKeeper"
 found_core=0
+found_ui=0
 for b in "$BIN"/*.bundle; do
   [ -d "$b" ] || continue
   ditto "$b" "$STAGE/Contents/Resources/$(basename "$b")"
   if [ "$(basename "$b")" = "AIDiskKeeper_DiskKeeperCore.bundle" ]; then found_core=1; fi
+  if [ "$(basename "$b")" = "AIDiskKeeper_AIDiskKeeperUI.bundle" ]; then found_ui=1; fi
 done
 [ "$found_core" = 1 ] || die "AIDiskKeeper_DiskKeeperCore.bundle not found in $BIN"
+[ "$found_ui" = 1 ] || die "AIDiskKeeper_AIDiskKeeperUI.bundle not found in $BIN (is Xcode selected? xcstringstool ships only with Xcode)"
+[ -d "$STAGE/Contents/Resources/AIDiskKeeper_AIDiskKeeperUI.bundle/Contents/Resources/vi.lproj" ] \
+  || [ -d "$STAGE/Contents/Resources/AIDiskKeeper_AIDiskKeeperUI.bundle/vi.lproj" ] \
+  || die "UI bundle has no vi.lproj (Vietnamese localization missing)"
 
 # Escape sed-replacement specials (& \ |) and XML specials (& < >) in values.
 esc() { printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' | sed -e 's/[&|\\]/\\&/g'; }
@@ -105,6 +111,10 @@ if [ "$VERIFY" = 1 ]; then
     *) die "resource bundle did not resolve inside the .app" ;;
   esac
   [ "$(printf '%s\n' "$OUT" | sed -n 's/^rules=//p')" != "MISSING" ] || die "rules directory missing"
+  case ",$(printf '%s\n' "$OUT" | sed -n 's/^ui_localizations=//p')," in
+    *,vi,*) ;;
+    *) die "UI localizations missing vi: $OUT" ;;
+  esac
   if [ "$UNIVERSAL" = 1 ]; then
     case " $ARCHS " in *" arm64 "*) ;; *) die "missing arm64 slice ($ARCHS)" ;; esac
     case " $ARCHS " in *" x86_64 "*) ;; *) die "missing x86_64 slice ($ARCHS)" ;; esac

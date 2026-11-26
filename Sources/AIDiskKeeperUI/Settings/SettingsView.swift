@@ -2,16 +2,28 @@ import SwiftUI
 
 public struct SettingsView: View {
     let model: SettingsModel
+    @State private var tab = Tab.general
+
+    private enum Tab: Hashable { case general, scope, tools }
 
     public init(model: SettingsModel) { self.model = model }
 
     public var body: some View {
-        TabView {
-            GeneralSettingsView(model: model).tabItem { Label(loc("settings.tab.general", "General"), systemImage: "gearshape") }
-            ScanScopeSettingsView(model: model).tabItem { Label(loc("settings.tab.scope", "Scan scope"), systemImage: "folder.badge.gearshape") }
-            ToolsSettingsView(model: model).tabItem { Label(loc("settings.tab.tools", "Tools"), systemImage: "wrench.and.screwdriver") }
+        content
+            .id(model.languageRevision)
+            .environment(\.locale, L10n.locale)
+    }
+
+    private var content: some View {
+        TabView(selection: $tab) {
+            GeneralSettingsView(model: model).tag(Tab.general)
+                .tabItem { Label(loc("settings.tab.general", "General"), systemImage: "gearshape") }
+            ScanScopeSettingsView(model: model).tag(Tab.scope)
+                .tabItem { Label(loc("settings.tab.scope", "Scan scope"), systemImage: "folder.badge.gearshape") }
+            ToolsSettingsView(model: model).tag(Tab.tools)
+                .tabItem { Label(loc("settings.tab.tools", "Tools"), systemImage: "wrench.and.screwdriver") }
         }
-        .frame(width: 520, height: 420)
+        .frame(minWidth: 560, minHeight: 420)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             model.refreshFullDiskAccess()
         }

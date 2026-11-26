@@ -69,7 +69,8 @@ public struct RuleScanner: Scanner {
                     if earlier != rule.rule.id, warnedPairs.insert(rule.rule.id + "\u{0}" + earlier).inserted {
                         await sink.warning(ScanWarning(
                             kind: .ruleError, path: candidate.path, ruleID: rule.rule.id,
-                            message: "overlaps items of \(earlier); the earlier rule wins"))
+                            message: "overlaps items of \(earlier); the earlier rule wins",
+                            code: .ruleOverlap(earlierRuleID: earlier)))
                     }
                     continue
                 }
@@ -156,10 +157,11 @@ public struct RuleScanner: Scanner {
         } catch FileSizerError.rootInaccessible(_, let code) {
             let kind: ScanWarning.Kind = code == EPERM ? .needsFullDiskAccess : .permissionDenied
             return .warning(ScanWarning(kind: kind, path: path, ruleID: p.rule.rule.id,
-                                        message: "cannot size \(path): \(String(cString: strerror(code)))"))
+                                        message: "cannot size \(path): \(String(cString: strerror(code)))",
+                                        code: .cannotSize(errno: code)))
         } catch {
             return .warning(ScanWarning(kind: .permissionDenied, path: path, ruleID: p.rule.rule.id,
-                                        message: "cannot size \(path): \(error)"))
+                                        message: "cannot size \(path): \(error)", code: .cannotSize(errno: nil)))
         }
         return .item(buildItem(p, report: report, now: context.now))
     }

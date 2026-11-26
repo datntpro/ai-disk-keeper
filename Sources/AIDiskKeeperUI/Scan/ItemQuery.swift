@@ -71,6 +71,7 @@ public struct ItemQuery: Sendable, Equatable {
             }
             guard !needle.isEmpty else { return true }
             return item.displayName.localizedCaseInsensitiveContains(needle)
+                || item.uiDisplayName().localizedCaseInsensitiveContains(needle)
                 || item.path.localizedCaseInsensitiveContains(needle)
         }
     }
@@ -85,7 +86,7 @@ public struct ItemQuery: Sendable, Equatable {
         let result: ComparisonResult
         switch sort.key {
         case .size: result = compare(a.sizeAllocated, b.sizeAllocated)
-        case .name: result = a.displayName.localizedCaseInsensitiveCompare(b.displayName)
+        case .name: result = a.uiDisplayName().localizedCaseInsensitiveCompare(b.uiDisplayName())
         case .lastUsed: result = compare(a.lastModified ?? .distantPast, b.lastModified ?? .distantPast)
         case .tier: result = compare(a.tier, b.tier)
         }

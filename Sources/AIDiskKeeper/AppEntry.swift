@@ -1,3 +1,4 @@
+import AIDiskKeeperUI
 import DiskKeeperCore
 import Foundation
 
@@ -27,6 +28,7 @@ enum ResourceSelfCheck {
         print("bundle=\(bundleURL?.path ?? "MISSING")")
         print("rules=\(rulesURL?.path ?? "MISSING")")
         print("ruleFiles=\(count)")
+        print("ui_localizations=\(L10n.availableLanguages.joined(separator: ","))")
         return rulesURL == nil ? 1 : 0
     }
 }

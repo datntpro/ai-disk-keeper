@@ -44,7 +44,7 @@ struct ItemTableView: View {
                 }.width(28)
                 TableColumn(loc("column.name", "Name"), sortUsing: ItemSortComparator(key: .name, order: .forward)) { item in
                     HStack(spacing: 6) {
-                        Text(item.nameWithProject).lineLimit(1)
+                        Text(item.uiNameWithProject()).lineLimit(1)
                         if item.isSelectable, let bundleID = item.requiresAppQuit { QuitAppBadge(bundleID: bundleID) }
                     }
                     .accessibilityElement(children: .combine)
@@ -56,9 +56,9 @@ struct ItemTableView: View {
                 }.width(min: 70, ideal: 80, max: 100)
                 TableColumn(loc("column.lastUsed", "Last used"), sortUsing: ItemSortComparator(key: .lastUsed)) { item in
                     Text(Formatting.relative(item.lastModified)).foregroundStyle(.secondary)
-                }.width(min: 90, ideal: 110, max: 140)
+                }.width(min: 110, ideal: 130, max: 170)
                 TableColumn(loc("column.tier", "Tier"), sortUsing: ItemSortComparator(key: .tier)) { item in TierBadge(tier: item.tier) }
-                    .width(min: 100, ideal: 110, max: 120)
+                    .width(min: 100, ideal: 120, max: 150)
                 TableColumn(loc("column.path", "Path")) { item in
                     Text(item.path).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                 }.width(min: 120, ideal: 220)

@@ -33,10 +33,45 @@ public struct ScannerRule: Sendable, Hashable {
     public let tierWhen: [TierWhen]
     public let explanation: String
     public let cleanup: RuleCleanup
+    /// Optional translations of `title` / `explanation`, keyed by language tag ("vi", "zh-Hans"). English is the
+    /// base fields and is never listed here.
+    public let localized: [String: LocalizedRuleText]
 
     static let allowedKeys: Set<String> = [
-        "id", "title", "category", "paths", "match", "project", "tier", "tierWhen", "explanation", "cleanup",
+        "id", "title", "category", "paths", "match", "project", "tier", "tierWhen", "explanation", "cleanup", "localized",
     ]
+
+    /// Title and explanation for the first language in `languages` that has them: exact tag, then its language
+    /// prefix (`vi-VN` → `vi`), then English. Each field falls back independently.
+    public func text(for languages: [String]) -> (title: String, explanation: String) {
+        var title: String?, explanation: String?
+        for tag in languages {
+            for candidate in Self.candidates(for: tag) {
+                guard let t = localized[candidate] else { continue }
+                if title == nil { title = t.title }
+                if explanation == nil { explanation = t.explanation }
+            }
+            if title != nil, explanation != nil { break }
+        }
+        return (title ?? self.title, explanation ?? self.explanation)
+    }
+
+    private static func candidates(for tag: String) -> [String] {
+        let t = tag.replacingOccurrences(of: "_", with: "-")
+        guard let dash = t.firstIndex(of: "-") else { return [t] }
+        return [t, String(t[..<dash])]
+    }
+
+    static func isValidLanguageTag(_ s: String) -> Bool {
+        s.range(of: "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$", options: .regularExpression) != nil
+    }
+}
+
+public struct LocalizedRuleText: Sendable, Hashable {
+    public let title: String?
+    public let explanation: String?
+
+    static let allowedKeys: Set<String> = ["title", "explanation"]
 }
 
 public enum MatchKind: String, Decodable, Sendable, Hashable, CaseIterable {
@@ -200,7 +235,7 @@ extension ToolInfo: Decodable {
 
 extension ScannerRule: Decodable {
     private enum CodingKeys: String, CodingKey {
-        case id, title, category, paths, match, project, tier, tierWhen, explanation, cleanup
+        case id, title, category, paths, match, project, tier, tierWhen, explanation, cleanup, localized
     }
     private struct ProjectBody: Decodable {
         let from: ProjectStrategy
@@ -228,6 +263,33 @@ extension ScannerRule: Decodable {
         explanation = try c.decode(String.self, forKey: .explanation)
         try checkLength(explanation, 1...1000, CodingKeys.explanation, c, "explanation")
         cleanup = try c.decodeIfPresent(RuleCleanup.self, forKey: .cleanup) ?? .default
+        let raw = try c.decodeIfPresent([String: LocalizedRuleText].self, forKey: .localized) ?? [:]
+        guard raw.count <= 16 else { throw invalid(CodingKeys.localized, c, "localized must have at most 16 languages (got \(raw.count))") }
+        for tag in raw.keys {
+            guard tag != "en" else {
+                throw invalid(CodingKeys.localized, c, "localizedBaseLanguage: English is the base title/explanation; remove the 'en' entry")
+            }
+            guard Self.isValidLanguageTag(tag) else {
+                throw invalid(CodingKeys.localized, c, "'\(tag)' is not a language tag such as 'vi' or 'zh-Hans'")
+            }
+        }
+        localized = raw
+    }
+}
+
+extension LocalizedRuleText: Decodable {
+    private enum CodingKeys: String, CodingKey { case title, explanation }
+
+    public init(from decoder: Decoder) throws {
+        try decoder.rejectUnknownKeys(allowed: Self.allowedKeys)
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        title = try c.decodeIfPresent(String.self, forKey: .title)
+        explanation = try c.decodeIfPresent(String.self, forKey: .explanation)
+        guard title != nil || explanation != nil else {
+            throw invalid(CodingKeys.title, c, "a localized entry needs a title, an explanation or both")
+        }
+        if let title { try checkLength(title, 1...80, CodingKeys.title, c, "title") }
+        if let explanation { try checkLength(explanation, 1...1000, CodingKeys.explanation, c, "explanation") }
     }
 }
 

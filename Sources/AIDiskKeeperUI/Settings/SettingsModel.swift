@@ -27,6 +27,8 @@ public final class SettingsModel {
     public private(set) var loadWarning: ScanWarning?
     public private(set) var fdaStatus: FullDiskAccessStatus = .unknown
     public var availableTools: [ToolChoice]
+    /// Bumped on every language change; views read it (and use it as an `.id`) so they rebuild with the new language.
+    public private(set) var languageRevision = 0
 
     @ObservationIgnored public let scopeProvider: ScopeProvider
     @ObservationIgnored private let store: SettingsStore
@@ -35,12 +37,7 @@ public final class SettingsModel {
 
     public init(store: SettingsStore, environment: PathEnvironment, availableTools: [ToolChoice] = [],
                 probe: @escaping @Sendable () -> FullDiskAccessStatus) {
-        var (loaded, warning) = store.load()
-        // Core's message is English-only; show a localized one for the same event.
-        if warning != nil {
-            warning?.message = loc("settings.warning.corrupt",
-                                   "Your previous settings were unreadable and were backed up. Default settings are in use.")
-        }
+        var (loaded, warning) = store.load()   // carries a `code`; the UI words it via `uiMessage`
         let bad = loaded.dropInvalidProjectRoots(environment: environment)
         if !bad.isEmpty {
             warning = warning ?? ScanWarning(
@@ -74,6 +71,21 @@ public final class SettingsModel {
     public func addProjectRoot(_ url: URL) { mutate { try $0.addProjectRoot(url, environment: environment) } }
     public func removeProjectRoot(_ stored: String) { mutate { $0.removeProjectRoot(stored) } }
     public func resetScopeToDefaults() { mutate { $0.resetScopeToDefaults() } }
+    public var language: AppLanguage { AppLanguage(storedValue: settings.language) }
+
+    /// Persists the choice, switches the in-app language immediately and remembers it for AppKit's own menus
+    /// (`AppleLanguages`), which follow after a relaunch.
+    public func setLanguage(_ new: AppLanguage) {
+        mutate { $0.language = new.rawValue }
+        L10n.apply(new)
+        languageRevision += 1
+        Self.persistAppleLanguages(new)
+    }
+
+    static func persistAppleLanguages(_ l: AppLanguage, defaults: UserDefaults = .standard) {
+        if l == .system { defaults.removeObject(forKey: "AppleLanguages") } else { defaults.set([l.rawValue], forKey: "AppleLanguages") }
+    }
+
     public func setOnboardingCompleted(_ done: Bool) { mutate { $0.hasCompletedOnboarding = done } }
 
     /// Applies `change` to a copy; on failure the settings stay unchanged and `lastError` explains why.

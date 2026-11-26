@@ -32,7 +32,8 @@ public struct SettingsStore: Sendable {
             let note = moved ? "Your previous settings were unreadable and were backed up as \(backup.lastPathComponent)."
                              : "Your previous settings were unreadable."
             return (.defaults, ScanWarning(kind: .other, path: fileURL.path,
-                                           message: note + " Default settings are in use."))
+                                           message: note + " Default settings are in use.",
+                                           code: .settingsUnreadable(backupName: moved ? backup.lastPathComponent : nil)))
         }
     }
 

@@ -19,7 +19,7 @@ struct WarningsView: View {
                         }
                         ForEach(Array(group.enumerated()), id: \.offset) { _, w in
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(w.message)
+                                Text(w.uiMessage)
                                 if let p = w.path {
                                     Text(p).font(.caption.monospaced()).foregroundStyle(.secondary)
                                         .lineLimit(1).truncationMode(.middle).textSelection(.enabled)

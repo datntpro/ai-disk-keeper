@@ -6,16 +6,31 @@ public struct ScanWarning: Codable, Sendable, Hashable {
         case permissionDenied, needsFullDiskAccess, notFound, ruleError, scannerFailed, timeout, other
     }
 
+    /// Stable identifier of what happened, so a UI can word it in the user's language. `message` stays the English
+    /// text for the CLI and logs. Optional so older saved results (without a code) still decode.
+    public enum Code: Codable, Sendable, Hashable {
+        case itemCapExceeded(cap: Int)
+        case pathError(errno: Int32)
+        case ruleOverlap(earlierRuleID: String)
+        case cannotSize(errno: Int32?)
+        case ruleFileInvalid(file: String)
+        case scannerFailed(scannerID: String)
+        case itemOverlap(earlierRuleID: String)
+        case settingsUnreadable(backupName: String?)
+    }
+
     public var kind: Kind
     public var path: String?
     public var ruleID: String?
-    /// User-facing, English.
+    /// English text (CLI, logs). UIs prefer `code` when present.
     public var message: String
+    public var code: Code?
 
-    public init(kind: Kind, path: String? = nil, ruleID: String? = nil, message: String) {
+    public init(kind: Kind, path: String? = nil, ruleID: String? = nil, message: String, code: Code? = nil) {
         self.kind = kind
         self.path = path
         self.ruleID = ruleID
         self.message = message
+        self.code = code
     }
 }

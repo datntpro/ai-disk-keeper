@@ -49,7 +49,7 @@ public struct OnboardingView: View {
             }
             .padding(16)
         }
-        .frame(width: 560, height: 520)
+        .frame(minWidth: 560, idealWidth: 600, minHeight: 520, idealHeight: 580)
         .onAppear { titleFocused = true }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             model.refreshFullDiskAccess()

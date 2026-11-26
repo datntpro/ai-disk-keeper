@@ -95,6 +95,9 @@ public struct PathDenial: Error, Sendable, Hashable, CustomStringConvertible {
         return s
     }
 
+    /// Stable identifier of `why` (see ``ProtectedPattern/id``) for localized reason text; nil without a reason.
+    public var whyID: String? { why.map(ProtectedPattern.slug) }
+
     private var matched: String {
         guard let p = matchedPattern else { return "" }
         if let w = why { return ": \(p) (\(w))" }

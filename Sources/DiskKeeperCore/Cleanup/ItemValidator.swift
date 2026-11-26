@@ -40,7 +40,7 @@ struct ItemValidator: Sendable {
         -> (blockers: [CleanupBlocker], fingerprint: ItemFingerprint?) {
         var out: [CleanupBlocker] = []
         if let denial = pathGuard.check(item.path).denial {
-            out.append(.protectedPath(denial.reason, message: denial.message))
+            out.append(.protectedPath(denial.reason, message: denial.message, pattern: denial.matchedPattern, whyID: denial.whyID))
         }
 
         var st = stat()
