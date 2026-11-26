@@ -21,6 +21,8 @@ public struct RootView: View {
     /// Model state lives in this view (outside the identity), so a language change keeps the scan results.
     public var body: some View {
         mainContent
+            .adkThemeRoot()
+            .tint(.adkAccent)
             .id(env.settings.languageRevision)
             .environment(\.locale, L10n.locale)
     }
