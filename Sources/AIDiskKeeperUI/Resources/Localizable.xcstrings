@@ -353,6 +353,22 @@
         }
       }
     },
+    "apps.bar.summaryOne" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "app + %@ related item"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ứng dụng + %@ mục liên quan"
+          }
+        }
+      }
+    },
     "apps.empty.message" : {
       "localizations" : {
         "en" : {
@@ -593,6 +609,22 @@
         }
       }
     },
+    "apps.leftovers.failed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't read related files — Uninstall moves only the app."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không đọc được các tệp liên quan — Gỡ cài đặt chỉ chuyển ứng dụng vào Thùng rác."
+          }
+        }
+      }
+    },
     "apps.loading" : {
       "localizations" : {
         "en" : {
@@ -646,13 +678,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "vendor name · may be shared"
+            "value" : "name match · may be shared"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "tên nhà phát triển · có thể dùng chung"
+            "value" : "khớp theo tên · có thể dùng chung"
           }
         }
       }
@@ -678,13 +710,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "never opened"
+            "value" : "no usage record"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "chưa từng mở"
+            "value" : "chưa có dữ liệu sử dụng"
           }
         }
       }
@@ -710,13 +742,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Documents you made with %@ are not touched. Its settings in ~/Library/Preferences stay. Everything else goes to the Trash, so you can put it back."
+            "value" : "Documents outside its container are not touched. Its settings in ~/Library/Preferences stay. Everything else goes to the Trash, so you can put it back."
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Các tài liệu bạn tạo bằng %@ không bị động đến. Cài đặt của nó trong ~/Library/Preferences được giữ lại. Mọi thứ khác được chuyển vào Thùng rác, nên bạn có thể khôi phục."
+            "value" : "Các tài liệu nằm ngoài vùng chứa của nó không bị động đến. Cài đặt của nó trong ~/Library/Preferences được giữ lại. Mọi thứ khác được chuyển vào Thùng rác, nên bạn có thể khôi phục."
           }
         }
       }
@@ -813,6 +845,22 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "đã chọn %@"
+          }
+        }
+      }
+    },
+    "apps.orphans.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orphaned leftovers"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tệp sót lại mồ côi"
           }
         }
       }
@@ -1089,6 +1137,22 @@
         }
       }
     },
+    "apps.tab.orphansPlain" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orphaned leftovers"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tệp sót lại mồ côi"
+          }
+        }
+      }
+    },
     "apps.title" : {
       "localizations" : {
         "en" : {
@@ -1111,6 +1175,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "app %@ + %@ related items"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ứng dụng %1$@ + %2$@ mục liên quan"
+          }
+        }
+      }
+    },
+    "apps.totalOne" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "app %@ + %@ related item"
           }
         },
         "vi" : {
