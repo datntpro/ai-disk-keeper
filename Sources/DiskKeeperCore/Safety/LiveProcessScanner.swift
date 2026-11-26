@@ -23,13 +23,16 @@ public enum LiveProcessScanner {
     public struct UnresolvedProcess: Sendable, Hashable {
         public let pid: pid_t
         public let uid: uid_t?
-        /// Kernel process name (`pbi_comm`, at most `MAXCOMLEN` = 16 chars), case-folded.
+        /// Kernel process name (`pbi_comm`: at most 15 bytes, `MAXCOMLEN` - 1), case-folded.
         public let comm: String
+        /// Longer kernel name (`pbi_name`: at most 31 bytes), case-folded; `""` when unavailable.
+        public let name: String
 
-        public init(pid: pid_t, uid: uid_t?, comm: String) {
+        public init(pid: pid_t, uid: uid_t?, comm: String, name: String = "") {
             self.pid = pid
             self.uid = uid
             self.comm = comm
+            self.name = name
         }
     }
 
@@ -48,28 +51,55 @@ public enum LiveProcessScanner {
     /// default (match on the bundle's executable name only).
     public static let blockOnAnyUnresolvedUserProcess = false
 
+    /// Byte limits the kernel applies to `pbi_comm` (`MAXCOMLEN` - 1) and `pbi_name` (`2 * MAXCOMLEN` - 1).
+    static let commBytes = Int(MAXCOMLEN) - 1
+    static let nameBytes = 2 * Int(MAXCOMLEN) - 1
+
     /// `true` if any process image lives under `bundlePath` (compared resolved and case-folded).
     /// `nil` = the process list could not be read (fail closed). Processes that vanish mid-scan are
     /// ignored; processes whose path can't be read (other users' daemons) can't live in a user-owned bundle.
-    /// Also `true` when an unresolved process of the current user looks like this bundle's executable
-    /// (see ``unresolvedMatches(executableName:currentUID:in:conservative:)``).
+    /// Also `true` when an unresolved process of the current user looks like one of this bundle's executables
+    /// (see ``unresolvedMatches(executableNames:currentUID:in:conservative:)``).
     public static func isAnyProcessRunning(insideBundleAt bundlePath: String) -> Bool? {
-        guard let snap = fullSnapshot() else { return nil }
-        if !entries(insideBundleAt: bundlePath, in: snap.entries).isEmpty { return true }
-        return !unresolvedMatches(executableName: bundleExecutableName(at: bundlePath), currentUID: getuid(),
-                                  in: snap.unresolved).isEmpty
+        isAnyProcessRunning(insideBundleAt: bundlePath, in: fullSnapshot(), currentUID: getuid())
     }
 
-    /// Unresolved processes owned by `currentUID` that may belong to the bundle: `comm` equals the first
-    /// `MAXCOMLEN` characters of its `CFBundleExecutable` (or, in conservative mode, any of them). Other
-    /// users' processes and processes with unknown owner are ignored. Pure.
-    public static func unresolvedMatches(executableName: String?, currentUID: uid_t, in unresolved: [UnresolvedProcess],
+    /// Same decision against an already-taken (or injected) snapshot. `nil` snapshot = unreadable (fail closed).
+    public static func isAnyProcessRunning(insideBundleAt bundlePath: String, in snapshot: Snapshot?,
+                                           currentUID: uid_t) -> Bool? {
+        guard let snap = snapshot else { return nil }
+        if !entries(insideBundleAt: bundlePath, in: snap.entries).isEmpty { return true }
+        return !unresolvedMatches(for: bundlePath, currentUID: currentUID, in: snap.unresolved).isEmpty
+    }
+
+    /// ``unresolvedMatches(executableNames:currentUID:in:conservative:)`` for the bundle at `path`. Skips the
+    /// bundle walk when the current user has no unresolved process at all (the usual case).
+    public static func unresolvedMatches(for bundlePath: String, currentUID: uid_t,
+                                         in unresolved: [UnresolvedProcess]) -> [UnresolvedProcess] {
+        guard unresolved.contains(where: { $0.uid == currentUID }) else { return [] }
+        return unresolvedMatches(executableNames: bundleExecutableNames(at: bundlePath), currentUID: currentUID,
+                                 in: unresolved)
+    }
+
+    /// Unresolved processes owned by `currentUID` that may belong to the bundle: the kernel name (`comm`,
+    /// 15 bytes, or the longer `name`, 31 bytes) equals the same-length byte prefix of one of the bundle's
+    /// executable names (or, in conservative mode, any of them). Other users' processes and processes with
+    /// unknown owner are ignored. Pure.
+    public static func unresolvedMatches(executableNames: [String], currentUID: uid_t, in unresolved: [UnresolvedProcess],
                                          conservative: Bool = blockOnAnyUnresolvedUserProcess) -> [UnresolvedProcess] {
         let mine = unresolved.filter { $0.uid == currentUID }
         if conservative { return mine }
-        guard let executableName, !executableName.isEmpty else { return [] }
-        let key = String(PathCanonicalizer.fold(executableName).prefix(Int(MAXCOMLEN)))
-        return mine.filter { $0.comm == key }
+        let names = executableNames.filter { !$0.isEmpty }
+        guard !names.isEmpty else { return [] }
+        let commKeys = Set(names.map { truncated($0, bytes: commBytes) })
+        let nameKeys = Set(names.map { truncated($0, bytes: nameBytes) })
+        return mine.filter { commKeys.contains($0.comm) || (!$0.name.isEmpty && nameKeys.contains($0.name)) }
+    }
+
+    /// Cut at a byte count like the kernel does (possibly mid-character), then decode and case-fold; the
+    /// process side is decoded the same way, so a split multibyte character compares equal on both sides.
+    static func truncated(_ s: String, bytes: Int) -> String {
+        PathCanonicalizer.fold(String(decoding: Array(s.utf8.prefix(bytes)), as: UTF8.self))
     }
 
     /// `CFBundleExecutable` of the bundle at `path`, `nil` if unreadable.
@@ -77,6 +107,42 @@ public enum LiveProcessScanner {
         let plist = (path as NSString).appendingPathComponent("Contents/Info.plist")
         guard let d = NSDictionary(contentsOfFile: plist) else { return nil }
         return d["CFBundleExecutable"] as? String
+    }
+
+    /// Executable names of the bundle and everything nested in it that can run on its own: the main
+    /// `CFBundleExecutable`, files in `Contents/MacOS` and `Contents/Helpers`, and the executables of nested
+    /// `.app` / `.xpc` bundles (LoginItems, XPCServices, helper apps). Bounded walk; read-only.
+    public static func bundleExecutableNames(at path: String, maxVisited: Int = 20_000) -> [String] {
+        var names: [String] = []
+        func addExecutable(ofBundle b: String) {
+            for plist in ["Contents/Info.plist", "Info.plist"] {
+                if let d = NSDictionary(contentsOfFile: (b as NSString).appendingPathComponent(plist)),
+                   let e = d["CFBundleExecutable"] as? String { names.append(e); break }
+            }
+        }
+        func addFiles(in dir: String) {
+            guard let items = try? FileManager.default.contentsOfDirectory(atPath: dir) else { return }
+            for i in items {
+                var isDir: ObjCBool = false
+                let full = (dir as NSString).appendingPathComponent(i)
+                if FileManager.default.fileExists(atPath: full, isDirectory: &isDir), !isDir.boolValue { names.append(i) }
+            }
+        }
+        addExecutable(ofBundle: path)
+        guard let walker = FileManager.default.enumerator(atPath: path) else { return Array(Set(names)) }
+        var visited = 0
+        while let rel = walker.nextObject() as? String {
+            visited += 1
+            if visited > maxVisited || walker.level > 8 { break }
+            let name = (rel as NSString).lastPathComponent
+            let full = (path as NSString).appendingPathComponent(rel)
+            switch (name as NSString).pathExtension.lowercased() {
+            case "app", "xpc": addExecutable(ofBundle: full); addFiles(in: full + "/Contents/MacOS")
+            default:
+                if name == "MacOS" || name == "Helpers" { addFiles(in: full) }
+            }
+        }
+        return Array(Set(names))
     }
 
     /// Every process whose image path can be read, in one walk. `nil` = the list couldn't be read (fail closed).
@@ -106,7 +172,11 @@ public enum LiveProcessScanner {
             let comm = withUnsafeBytes(of: info.pbi_comm) { raw in
                 String(decoding: raw.prefix { $0 != 0 }, as: UTF8.self)
             }
-            unresolved.append(UnresolvedProcess(pid: pid, uid: info.pbi_uid, comm: PathCanonicalizer.fold(comm)))
+            let longName = withUnsafeBytes(of: info.pbi_name) { raw in
+                String(decoding: raw.prefix { $0 != 0 }, as: UTF8.self)
+            }
+            unresolved.append(UnresolvedProcess(pid: pid, uid: info.pbi_uid, comm: PathCanonicalizer.fold(comm),
+                                                name: PathCanonicalizer.fold(longName)))
         }
         return Snapshot(entries: result, unresolved: unresolved)
     }

@@ -62,8 +62,7 @@ struct AppRunState: Equatable, Sendable {
             let root = Self.resolved(URL(fileURLWithPath: app.path)) ?? ""
             if !root.isEmpty, roots.contains(where: { $0 == root || $0.hasPrefix(root + "/") }) { ids.insert(app.id); continue }
             if !LiveProcessScanner.entries(insideBundleAt: app.path, in: snap).isEmpty { ids.insert(app.id); continue }
-            if !LiveProcessScanner.unresolvedMatches(executableName: LiveProcessScanner.bundleExecutableName(at: app.path),
-                                                     currentUID: getuid(), in: unresolved).isEmpty { ids.insert(app.id) }
+            if !LiveProcessScanner.unresolvedMatches(for: app.path, currentUID: getuid(), in: unresolved).isEmpty { ids.insert(app.id) }
         }
         return ids
     }
@@ -104,8 +103,7 @@ struct AppRunState: Equatable, Sendable {
         }
         // Processes whose image was replaced/removed: shown as background instances (never quit-able; `allowed`
         // refuses non-main kinds), so the Uninstaller keeps saying "still running" instead of passing.
-        for u in LiveProcessScanner.unresolvedMatches(executableName: LiveProcessScanner.bundleExecutableName(at: app.path),
-                                                      currentUID: getuid(), in: full.unresolved) where !seen.contains(u.pid) {
+        for u in LiveProcessScanner.unresolvedMatches(for: app.path, currentUID: getuid(), in: full.unresolved) where !seen.contains(u.pid) {
             seen.insert(u.pid)
             instances.append(AppInstance(token: UUID(), pid: u.pid, kind: .background, name: u.comm, bundleID: nil,
                                          location: nil, ownedByCurrentUser: true))
