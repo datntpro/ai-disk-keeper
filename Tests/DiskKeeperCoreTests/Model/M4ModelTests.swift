@@ -123,12 +123,12 @@ final class M4ModelTests: CleanupTestCase {
         XCTAssertEqual(byCat[.startupItem]?.allocatedBytes, 110)
     }
 
-    func testTrashApplicationIsNotSupportedYet() async throws {
+    func testTrashApplicationWithoutPolicyFailsClosed() async throws {
         try fx.file("home/cache/App.app/f", bytes: 10)
         let it = try item("home/cache/App.app", method: .trashApplication(bundleID: "com.example.App"))
         let engine = try makeEngine()
         let plan = await engine.plan([it])
-        XCTAssertEqual(plan.entries[0].blockers, [.methodNotSupported("trashApplication")])
+        XCTAssertEqual(plan.entries[0].blockers, [.appBundleRefused(.notApplicationMethod)])
         let report = try await engine.execute(plan)
         XCTAssertEqual(report.results.count, 1)
         XCTAssertTrue(exists("home/cache/App.app/f"))

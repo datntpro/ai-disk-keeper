@@ -148,6 +148,29 @@ public enum CleanupCopy {
             loc("cleanup.blocker.survivorChanged", "The copy you're keeping changed or disappeared. Rescan before deleting this duplicate.")
         case .duplicateGroupUnknown:
             loc("cleanup.blocker.groupUnknown", "Duplicate details are missing. Rescan and review the group.")
+        case .appBundleRefused(let refusal): appRefusal(refusal)
+        case .requiresAdmin:
+            loc("cleanup.blocker.app.requiresAdmin", "Installed for all users. Drag it to the Trash in Finder (you may need an administrator password).")
+        case .needsAppManagementPermission:
+            loc("cleanup.blocker.app.needsAppManagement", "macOS blocked this. Allow AI Disk Keeper in System Settings › Privacy & Security › App Management, then try again.")
+        }
+    }
+
+    static func appRefusal(_ r: AppBundleRefusal) -> String {
+        switch r {
+        case .invalidPath: loc("cleanup.blocker.app.invalidPath", "This app's location isn't valid, so it was left alone.")
+        case .notTopLevel: loc("cleanup.blocker.app.notTopLevel", "Only apps directly in Applications can be removed here.")
+        case .insideBundle: loc("cleanup.blocker.app.insideBundle", "This is inside another app, so it can't be removed on its own.")
+        case .rootItself: loc("cleanup.blocker.app.rootItself", "The Applications folder itself can't be removed.")
+        case .notAnAppBundle: loc("cleanup.blocker.app.notAnAppBundle", "This isn't a valid app, so it was left alone.")
+        case .symlink: loc("cleanup.blocker.app.symlink", "This is a link to an app stored elsewhere.")
+        case .resolvedElsewhere: loc("cleanup.blocker.app.resolvedElsewhere", "This app's location points somewhere else, so it was left alone.")
+        case .appleOrSystem: loc("cleanup.blocker.app.appleOrSystem", "Part of macOS or Apple software. It can't be removed.")
+        case .signatureUnreadable: loc("cleanup.blocker.app.signatureUnreadable", "The app's signature couldn't be read, so it was left alone.")
+        case .bundleIDMismatch: loc("cleanup.blocker.app.bundleIDMismatch", "The app was replaced after the scan. Scan again.")
+        case .missingInfoPlist: loc("cleanup.blocker.app.missingInfoPlist", "The app's information file is missing or unreadable, so it was left alone.")
+        case .permanentDelete: loc("cleanup.blocker.app.permanentDelete", "Apps can only be moved to the Trash.")
+        case .notApplicationMethod: loc("cleanup.blocker.app.notApplicationMethod", "App removal isn't available here.")
         }
     }
 }

@@ -149,6 +149,26 @@ public struct ProtectedPaths: Sendable {
         return evaluate(raw: path, resolution: resolver.resolve(path))
     }
 
+    /// Only the anchored protect patterns (built-in table + rule patterns), lexical and resolved form, with
+    /// none of the system-root / allowed-root logic. Used by the app-bundle exception so that waiving
+    /// `systemLocation` can never hide a protect pattern. `check` itself is unchanged.
+    public func anchoredPatternDenial(_ path: String) -> PathDenial? {
+        guard PathNormalization.isAbsolute(path), !PathNormalization.containsNUL(path),
+              !PathNormalization.containsParentReference(path) else { return nil }
+        var forms = [path]
+        if case .resolved(let r) = resolver.resolve(path) { forms.append(r) }
+        for (i, form) in forms.enumerated() {
+            let kc = PathCanonicalizer.key(form).components
+            for p in anchored where kc.count >= p.components.count {
+                if zip(p.components, kc).allSatisfy({ GlobMatcher.matches(pattern: $0, component: $1) }) {
+                    return PathDenial(path: path, reason: .protectedPath, matchedPattern: p.template, why: p.why,
+                                      viaSymlink: i > 0, resolvedPath: i > 0 ? form : nil)
+                }
+            }
+        }
+        return nil
+    }
+
     public func check(_ url: URL) -> PathVerdict {
         guard url.isFileURL else {
             return .denied(PathDenial(path: url.absoluteString, reason: .invalidPath))

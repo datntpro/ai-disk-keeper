@@ -26,9 +26,10 @@ public actor CleanupEngine {
                 runningApps: any RunningAppChecking = UnknownRunningApps(),
                 options: CleanupOptions = .init(),
                 userID: uid_t = getuid(),
+                appPolicy: ApplicationBundlePolicy? = nil,
                 now: @escaping @Sendable () -> Date = { Date() }) {
         self.validator = ItemValidator(pathGuard: pathGuard, userID: userID, runningApps: runningApps,
-                                       tolerance: options.tolerance)
+                                       tolerance: options.tolerance, appPolicy: appPolicy)
         self.auditLog = auditLog
         self.trash = trash
         self.remover = remover
@@ -50,6 +51,7 @@ public actor CleanupEngine {
         let action: CleanupAction = options.requestPermanentDelete ? .deletePermanently : .trash
         var blockers: [[CleanupBlocker]] = []
         var fingerprints: [ItemFingerprint?] = []
+        var appBundles: [AppBundleFingerprint?] = []
         var seenIDs: Set<String> = []
         var accepted: [(key: PathKey, id: String)] = []
 
@@ -57,11 +59,20 @@ public actor CleanupEngine {
             if !seenIDs.insert(item.id).inserted {
                 blockers.append([.duplicate])
                 fingerprints.append(nil)
+                appBundles.append(nil)
                 continue
             }
             var b = validator.policyBlockers(item, action: action, options: options)
-            let fast = validator.fastChecks(item, expected: nil)
-            b += fast.blockers
+            let fast: (blockers: [CleanupBlocker], fingerprint: ItemFingerprint?)
+            var bundle: AppBundleFingerprint?
+            if case .trashApplication = item.cleanupMethod {
+                let app = validator.appFastChecks(item, action: action, expected: nil)
+                fast = (app.blockers, app.fingerprint)
+                bundle = app.bundle
+            } else {
+                fast = validator.fastChecks(item, expected: nil)
+            }
+            b = (b + fast.blockers).uniqued()
             if b.isEmpty {
                 let key = PathCanonicalizer.key(item.path)
                 if let other = accepted.first(where: { Self.overlaps($0.key, key) }) {
@@ -72,6 +83,7 @@ public actor CleanupEngine {
             }
             blockers.append(b)
             fingerprints.append(fast.fingerprint)
+            appBundles.append(bundle)
         }
 
         // Slow re-size for the entries still unblocked, bounded sliding window.
@@ -102,7 +114,7 @@ public actor CleanupEngine {
 
         let entries = items.indices.map {
             CleanupPlanEntry(item: items[$0], action: action, blockers: blockers[$0], fingerprint: fingerprints[$0],
-                             survivors: survivorSets[$0])
+                             survivors: survivorSets[$0], appBundle: appBundles[$0])
         }
         let plan = CleanupPlan(createdAt: now(), entries: entries)
         issued[plan.id] = Issued(plan: plan, monotonic: ContinuousClock.now)
@@ -193,7 +205,18 @@ public actor CleanupEngine {
         // Slow checks first, fast checks last: the window before the action is as short as possible.
         var blockers = validator.policyBlockers(item, action: entry.action, options: options)
         blockers += await validator.changeCheck(item)
-        blockers += validator.fastChecks(item, expected: entry.fingerprint).blockers
+        var bundleID: String?
+        if case .trashApplication(let id) = item.cleanupMethod {
+            // Apps are only ever moved to the Trash: there is no remover path, whatever the plan says.
+            bundleID = id
+            guard entry.action == .trash else { return (.skipped([.appBundleRefused(.permanentDelete)]), nil) }
+            if entry.appBundle == nil { blockers.append(.identityChanged) }
+            blockers += validator.appFastChecks(item, action: entry.action, expected: entry.appBundle,
+                                                expectedGeneric: entry.fingerprint).blockers
+        } else {
+            blockers += validator.fastChecks(item, expected: entry.fingerprint).blockers
+        }
+        blockers = blockers.uniqued()
         if !blockers.isEmpty { return (.skipped(blockers), nil) }
         if let gate = await keepOneGate(entry, trashedKeys: trashedKeys, claimed: claimed) { return (.skipped([gate]), nil) }
 
@@ -211,6 +234,13 @@ public actor CleanupEngine {
                 }
                 return (.trashed(trashPath: resulting?.path), resulting?.path)
             } catch {
+                if let bundleID {
+                    switch Self.posixCode(of: error) {
+                    case EPERM: return (.skipped([.needsAppManagementPermission(bundleID: bundleID)]), nil)
+                    case EACCES: return (.skipped([.requiresAdmin(bundleID: bundleID)]), nil)
+                    default: break
+                    }
+                }
                 return (.failed(error.localizedDescription), nil)
             }
         case .deletePermanently:
@@ -221,6 +251,18 @@ public actor CleanupEngine {
                 return (.failed(error.localizedDescription), nil)
             }
         }
+    }
+
+    /// The POSIX errno behind a Foundation error (`NSUnderlyingErrorKey` chain), if any.
+    static func posixCode(of error: Error) -> Int32? {
+        var current: NSError? = error as NSError
+        var depth = 0
+        while let e = current, depth < 5 {
+            if e.domain == NSPOSIXErrorDomain { return Int32(truncatingIfNeeded: e.code) }
+            current = e.userInfo[NSUnderlyingErrorKey] as? NSError
+            depth += 1
+        }
+        return nil
     }
 
     private func result(_ entry: CleanupPlanEntry, _ outcome: CleanupOutcome) -> CleanupItemResult {
@@ -234,10 +276,12 @@ public actor CleanupEngine {
         var reasons: [String] = []
         var error: String?
         var path = trashPath
+        var bundleID: String?
+        if case .trashApplication(let id) = entry.item.cleanupMethod { bundleID = id }
         switch outcome {
         case .trashed: kind = "trashed"
         case .deleted: kind = "deleted"
-        case .skipped(let b): kind = "skipped"; reasons = b.map(\.code)
+        case .skipped(let b): kind = "skipped"; reasons = b.map(\.auditReason)
         case .failed(let e): error = e
         case .notAttempted: break
         }
@@ -245,6 +289,6 @@ public actor CleanupEngine {
         return AuditRecord(timestamp: now(), runID: runID, itemID: entry.item.id, path: entry.item.path,
                            bytes: entry.item.sizeAllocated, action: entry.action, result: kind,
                            trashPath: path, ruleID: entry.item.ruleID, tool: entry.item.tool,
-                           reasons: reasons, error: error)
+                           reasons: reasons, error: error, bundleID: bundleID)
     }
 }

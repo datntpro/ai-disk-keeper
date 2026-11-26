@@ -49,6 +49,15 @@ public struct ChangeDetail: Codable, Sendable, Hashable {
     }
 }
 
+extension Array where Element == CleanupBlocker {
+    /// Same blockers once, first occurrence wins (policy + validator can both report one).
+    func uniqued() -> [CleanupBlocker] {
+        var seen: [CleanupBlocker] = []
+        for b in self where !seen.contains(b) { seen.append(b) }
+        return seen
+    }
+}
+
 /// A reason an item will not be cleaned.
 public enum CleanupBlocker: Codable, Sendable, Hashable {
     case keepTier
@@ -74,6 +83,12 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
     case survivorChanged(groupID: String)
     /// A duplicate item without its group (plan(_:) without groups): fail closed.
     case duplicateGroupUnknown(groupID: String)
+    /// `ApplicationBundlePolicy` refused an app bundle (see ``AppBundleRefusal``).
+    case appBundleRefused(AppBundleRefusal)
+    /// Root- or other-owned app (typical App Store install): remove it in Finder, there is no helper.
+    case requiresAdmin(bundleID: String)
+    /// The Trash move failed with `EPERM`: macOS App Management (TCC) has not been allowed.
+    case needsAppManagementPermission(bundleID: String)
 
     /// Stable machine code used in audit lines and tests.
     public var code: String {
@@ -97,7 +112,16 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
         case .wouldRemoveAllCopies: "wouldRemoveAllCopies"
         case .survivorChanged: "survivorChanged"
         case .duplicateGroupUnknown: "duplicateGroupUnknown"
+        case .appBundleRefused: "appBundleRefused"
+        case .requiresAdmin: "requiresAdmin"
+        case .needsAppManagementPermission: "needsAppManagementPermission"
         }
+    }
+
+    /// The code written to the audit log's `reasons`: `appBundleRefused:<refusal>` keeps each refusal distinguishable.
+    public var auditReason: String {
+        if case .appBundleRefused(let r) = self { return "appBundleRefused:\(r.rawValue)" }
+        return code
     }
 
     /// User-facing English.
@@ -122,6 +146,9 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
         case .wouldRemoveAllCopies: "No copy of this duplicate group would be left. Keep at least one."
         case .survivorChanged: "The copy you're keeping changed or disappeared. Rescan before deleting this duplicate."
         case .duplicateGroupUnknown: "Duplicate details are missing. Rescan and review the group."
+        case .appBundleRefused(let r): "This app can't be removed here (\(r.rawValue))."
+        case .requiresAdmin: "Installed for all users. Drag it to the Trash in Finder (you may need an administrator password)."
+        case .needsAppManagementPermission: "macOS blocked this. Allow AI Disk Keeper in System Settings › Privacy & Security › App Management, then try again."
         }
     }
 }

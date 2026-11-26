@@ -1,0 +1,17 @@
+VI = {
+    "cleanup.blocker.app.invalidPath": "Vị trí của ứng dụng này không hợp lệ nên đã được bỏ qua.",
+    "cleanup.blocker.app.notTopLevel": "Chỉ có thể gỡ ứng dụng nằm trực tiếp trong thư mục Ứng dụng.",
+    "cleanup.blocker.app.insideBundle": "Mục này nằm bên trong một ứng dụng khác nên không thể gỡ riêng.",
+    "cleanup.blocker.app.rootItself": "Không thể gỡ chính thư mục Ứng dụng.",
+    "cleanup.blocker.app.notAnAppBundle": "Đây không phải ứng dụng hợp lệ nên đã được bỏ qua.",
+    "cleanup.blocker.app.symlink": "Đây là liên kết tới ứng dụng ở nơi khác.",
+    "cleanup.blocker.app.resolvedElsewhere": "Vị trí của ứng dụng này trỏ tới nơi khác nên đã được bỏ qua.",
+    "cleanup.blocker.app.appleOrSystem": "Thuộc macOS hoặc phần mềm của Apple. Không thể gỡ.",
+    "cleanup.blocker.app.signatureUnreadable": "Không đọc được chữ ký của ứng dụng nên đã được bỏ qua.",
+    "cleanup.blocker.app.bundleIDMismatch": "Ứng dụng đã bị thay thế sau khi quét. Hãy quét lại.",
+    "cleanup.blocker.app.missingInfoPlist": "Tệp thông tin của ứng dụng bị thiếu hoặc không đọc được nên đã được bỏ qua.",
+    "cleanup.blocker.app.permanentDelete": "Ứng dụng chỉ có thể được chuyển vào Thùng rác.",
+    "cleanup.blocker.app.notApplicationMethod": "Chưa thể gỡ ứng dụng ở đây.",
+    "cleanup.blocker.app.requiresAdmin": "Được cài cho mọi người dùng. Hãy kéo nó vào Thùng rác trong Finder (có thể cần mật khẩu quản trị viên).",
+    "cleanup.blocker.app.needsAppManagement": "macOS đã chặn thao tác này. Hãy cho phép AI Disk Keeper trong Cài đặt hệ thống › Quyền riêng tư & Bảo mật › Quản lý ứng dụng, rồi thử lại.",
+}

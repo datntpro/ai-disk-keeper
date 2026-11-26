@@ -13,6 +13,8 @@ extension CleanupEngine {
         let pathGuard = try ScanGuard(environment: environment, protectPatterns: loaded.protectPatterns)
         return CleanupEngine(pathGuard: pathGuard.protectedPaths,
                              auditLog: AuditLog(fileURL: AuditLog.defaultURL(environment: environment)),
-                             runningApps: runningApps)
+                             runningApps: runningApps,
+                             appPolicy: ApplicationBundlePolicy(roots: .live(environment), userID: getuid(),
+                                                                probe: LiveAppBundleProbe()))
     }
 }

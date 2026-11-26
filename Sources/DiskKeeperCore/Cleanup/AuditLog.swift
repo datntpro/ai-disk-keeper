@@ -17,10 +17,13 @@ public struct AuditRecord: Codable, Sendable, Hashable {
     /// Blocker codes for skipped items.
     public let reasons: [String]
     public let error: String?
+    /// Set for every `.trashApplication` entry. Additive: schemaVersion stays 1, old lines decode without it.
+    public let bundleID: String?
 
     public init(schemaVersion: Int = 1, timestamp: Date, runID: UUID, itemID: String, path: String,
                 bytes: Int64, action: CleanupAction, result: String, trashPath: String?, ruleID: String,
-                tool: ToolID, reasons: [String], error: String?) {
+                tool: ToolID, reasons: [String], error: String?, bundleID: String? = nil) {
+        self.bundleID = bundleID
         self.schemaVersion = schemaVersion
         self.timestamp = timestamp
         self.runID = runID
