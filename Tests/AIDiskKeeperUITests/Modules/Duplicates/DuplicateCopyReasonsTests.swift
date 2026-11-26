@@ -14,12 +14,38 @@ final class DuplicateCopyReasonsTests: XCTestCase {
 
     func testCopyNamesEnglishAndVietnamese() {
         for name in ["report copy.pdf", "report copy 2.pdf", "report (1).pdf", "report - Copy.pdf", "report_copy.pdf",
-                     "report-2.pdf", "báo cáo bản sao.pdf", "báo cáo bản sao 3.pdf", "REPORT COPY.pdf"] {
+                     "report 2.pdf", "báo cáo bản sao.pdf", "báo cáo bản sao 3.pdf", "REPORT COPY.pdf"] {
             XCTAssertTrue(DuplicateCopyReasons.hasCopyInName("/x/\(name)"), name)
         }
-        for name in ["report.pdf", "copyright.pdf", "copy of report.pdf", "report-final.pdf", "photo 1.pdf"] {
+        for name in ["report.pdf", "copyright.pdf", "copy of report.pdf", "report-final.pdf", "photo 1.pdf", "invoice-2024.pdf", "report-v2.pdf", "report-2.pdf", "report 2024.pdf"] {
             XCTAssertFalse(DuplicateCopyReasons.hasCopyInName("/x/\(name)"), name)
         }
+    }
+
+    func testDashNumberNeedsSiblingWithoutSuffix() {
+        let sibs = ["/a/invoice.pdf", "/b/invoice-2.pdf", "/c/report-2.pdf", "/c/invoice-2024.pdf"]
+        XCTAssertTrue(DuplicateCopyReasons.hasCopyInName("/b/invoice-2.pdf", siblingPaths: sibs))
+        XCTAssertFalse(DuplicateCopyReasons.hasCopyInName("/c/report-2.pdf", siblingPaths: sibs))
+        XCTAssertFalse(DuplicateCopyReasons.hasCopyInName("/c/invoice-2024.pdf", siblingPaths: sibs))
+        XCTAssertFalse(DuplicateCopyReasons.hasCopyInName("/a/invoice.pdf", siblingPaths: sibs))
+        XCTAssertFalse(DuplicateCopyReasons.hasCopyInName("/c/report-v2.pdf", siblingPaths: ["/c/report.pdf"]))
+        XCTAssertFalse(DuplicateCopyReasons.hasCopyInName("/b/invoice-2.txt", siblingPaths: sibs))
+    }
+
+    func testCloneChipFollowsCurrentKeeper() {
+        let original = DupUI.member("\(home)/a.bin", inode: 1, created: 100)
+        let clone = DupUI.member("\(home)/b.bin", inode: 2, all: true, created: 200)
+        let g = DupUI.group("m", [original, clone])
+        XCTAssertEqual(DuplicateCopyReasons.reasons(for: clone, in: g, rule: .oldest, isManualKeeper: false, home: home)
+            .first, .cloneOfKept)
+        XCTAssertFalse(DuplicateCopyReasons.reasons(for: original, in: g, rule: .oldest, isManualKeeper: false, home: home)
+            .contains(.cloneOfKept))
+        let swapped = g.reordered(keeper: clone.path)!
+        let orig2 = DupUI.member("\(home)/a.bin", inode: 1, shares: true, created: 100)
+        let g2 = DupUI.group("m", [clone, orig2])
+        XCTAssertTrue(DuplicateCopyReasons.reasons(for: orig2, in: g2, rule: .oldest, isManualKeeper: true, home: home)
+            .contains(.cloneOfKept))
+        XCTAssertEqual(swapped.keeper.path, clone.path)
     }
 
     func testLocationReasons() {
