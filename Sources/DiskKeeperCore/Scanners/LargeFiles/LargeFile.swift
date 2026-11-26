@@ -17,13 +17,24 @@ public struct LargeFile: Sendable, Hashable, Identifiable {
     /// Deleting frees nothing: every block is shared with another file (clone or hard link).
     public let sharesAllStorage: Bool
     public let linkCount: UInt16
+    /// The file backs a disk image that is attached right now: eject it before anything else. Keep tier, not selectable.
+    public let isMountedImage: Bool
+
+    /// The "shares storage" pill is worth showing: all of it, a link, an unknown amount, or at least 1% of the file.
+    /// A sliver of shared blocks (< 1%) is noise and stays hidden.
+    public var showsSharedStoragePill: Bool {
+        guard sharesStorage else { return false }
+        if sharesAllStorage || linkCount > 1 { return true }
+        guard let reclaimable = reclaimableBytes, allocatedBytes > 0 else { return true }
+        return Double(allocatedBytes - reclaimable) / Double(allocatedBytes) >= 0.01
+    }
 
     public var name: String { (path as NSString).lastPathComponent }
     public var parentPath: String { (path as NSString).deletingLastPathComponent }
 
     public init(path: String, logicalBytes: Int64, allocatedBytes: Int64, reclaimableBytes: Int64?, kind: LargeFileKind,
                 dates: FileDates, lastOpened: Date, lastOpenedSource: LastOpenedSource, installedAppMatch: String?,
-                sharesStorage: Bool, sharesAllStorage: Bool = false, linkCount: UInt16) {
+                sharesStorage: Bool, sharesAllStorage: Bool = false, linkCount: UInt16, isMountedImage: Bool = false) {
         self.path = path
         self.logicalBytes = logicalBytes
         self.allocatedBytes = allocatedBytes
@@ -36,6 +47,7 @@ public struct LargeFile: Sendable, Hashable, Identifiable {
         self.sharesStorage = sharesStorage
         self.sharesAllStorage = sharesAllStorage
         self.linkCount = linkCount
+        self.isMountedImage = isMountedImage
     }
 }
 

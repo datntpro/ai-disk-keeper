@@ -16,6 +16,10 @@ enum LargeOldCopy {
     static var copyPath: String { loc("largeOld.action.copyPath", "Copy path") }
     static var shared: String { loc("largeOld.shared", "shared storage — frees little") }
     static var sharedHelp: String { loc("largeOld.shared.help", "This file shares its storage with another file, so moving it to the Trash would free little or nothing.") }
+    static var mountedImage: String { loc("largeOld.mounted", "Mounted disk image: eject it first") }
+    static var mountedNote: String {
+        loc("largeOld.inspector.mounted", "Keep: this disk image is attached right now. Eject it in Finder first; then it can be reviewed like any other file.")
+    }
     static var hintInstalled: String { loc("largeOld.hint.installed", "app already installed") }
     static var emptyTitle: String { loc("largeOld.empty.title", "No large, old files") }
     static var showAll: String { loc("largeOld.empty.showAll", "Show all sizes") }
@@ -112,13 +116,14 @@ enum LargeOldCopy {
 
     static func selectedCount(_ n: Int) -> String { count(n) }
 
-    /// "A video you last opened 14 months ago. Moving it to the Trash frees up to 9 GB; you can put it back from the Trash."
+    /// "Last opened 14 months ago. Moving it to the Trash frees up to 9 GB; you can put it back from the Trash."
     static func explanation(_ f: LargeFile, now: Date) -> String {
+        if f.isMountedImage { return mountedImage }
         if f.linkCount > 1 || f.sharesAllStorage {
             return loc("largeOld.explain.shared", "This file shares all of its storage with another file, so moving it to the Trash frees almost nothing.")
         }
         let bytes = Formatting.bytes(f.reclaimableBytes ?? f.allocatedBytes)
-        var text = loc("largeOld.explain.base", "A \(kindOne(f.kind).lowercased()) you last opened \(lastOpened(f, now: now)). Moving it to the Trash frees up to \(bytes); you can put it back from the Trash.")
+        var text = loc("largeOld.explain.base", "Last opened \(lastOpened(f, now: now)). Moving it to the Trash frees up to \(bytes); you can put it back from the Trash.")
         if let app = f.installedAppMatch {
             text += " " + loc("largeOld.explain.installer", "The app it installs (\(app)) is already in Applications.")
         }

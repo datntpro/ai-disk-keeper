@@ -14,7 +14,7 @@ VI = {
     "largeOld.empty.body": "Không có tệp nào lớn hơn %@ mà bạn chưa mở trong %@.",
     "largeOld.empty.showAll": "Hiện mọi kích thước",
     "largeOld.empty.title": "Không có tệp lớn và cũ",
-    "largeOld.explain.base": "Một %@ bạn mở lần cuối %@. Chuyển vào Thùng rác sẽ giải phóng tối đa %@; bạn có thể khôi phục từ Thùng rác.",
+    "largeOld.explain.base": "Mở lần cuối %@. Chuyển vào Thùng rác sẽ giải phóng tối đa %@; bạn có thể khôi phục từ Thùng rác.",
     "largeOld.explain.installer": "Ứng dụng mà tệp này cài đặt (%@) đã có trong Applications.",
     "largeOld.explain.shared": "Tệp này dùng chung toàn bộ bộ nhớ với một tệp khác, nên chuyển vào Thùng rác gần như không giải phóng thêm dung lượng.",
     "largeOld.failed.title": "Không thể phân tích tệp của bạn",

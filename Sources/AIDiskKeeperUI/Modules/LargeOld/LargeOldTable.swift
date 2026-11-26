@@ -50,13 +50,17 @@ struct LargeOldTable: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(f.name).lineLimit(1).truncationMode(.middle)
             PathText(f.parentPath)
-            if f.installedAppMatch != nil || f.sharesStorage {
+            if f.installedAppMatch != nil || f.showsSharedStoragePill || f.isMountedImage {
                 HStack(spacing: 6) {
                     if let app = f.installedAppMatch {
                         Label(LargeOldCopy.hintInstalled, systemImage: "checkmark.app")
                             .help(LargeOldCopy.installedNamed(app))
                     }
-                    if f.sharesStorage {
+                    if f.isMountedImage {
+                        Label(LargeOldCopy.mountedImage, systemImage: "externaldrive.badge.xmark")
+                            .foregroundStyle(.adkKeep)
+                    }
+                    if f.showsSharedStoragePill {
                         Label(LargeOldCopy.shared, systemImage: "externaldrive.connected.to.line.below")
                             .help(LargeOldCopy.sharedHelp)
                     }

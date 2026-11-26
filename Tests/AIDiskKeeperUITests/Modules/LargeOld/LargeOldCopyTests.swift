@@ -7,7 +7,7 @@ final class LargeOldCopyTests: XCTestCase {
         L10n.withLanguage(.en) {
             let f = LargeOldFix.file("Movies/demo.mov", mb: 1200, kind: .video, months: 12)
             let text = LargeOldCopy.explanation(f, now: LargeOldFix.now)
-            XCTAssertTrue(text.hasPrefix("A video you last opened"), text)
+            XCTAssertTrue(text.hasPrefix("Last opened"), text)
             XCTAssertTrue(text.contains("Trash"))
             XCTAssertEqual(LargeOldCopy.count(1), "1 file")
             XCTAssertEqual(LargeOldCopy.sizeFilter(.mb500), "Bigger than 500 MB")

@@ -10,13 +10,13 @@ enum LargeOldFix {
 
     static func file(_ path: String, mb: Int64, kind: LargeFileKind = .other, months m: Double = 12,
                      source: LastOpenedSource = .modified, match: String? = nil, links: UInt16 = 1,
-                     sharesAll: Bool = false) -> LargeFile {
+                     sharesAll: Bool = false, mounted: Bool = false) -> LargeFile {
         let d = months(m)
         return LargeFile(path: root + "/" + path, logicalBytes: mb * 1_000_000, allocatedBytes: mb * 1_000_000,
                          reclaimableBytes: mb * 1_000_000, kind: kind,
                          dates: FileDates(spotlightLastUsed: nil, accessed: d, modified: d, created: d), lastOpened: d,
                          lastOpenedSource: source, installedAppMatch: match, sharesStorage: links > 1 || sharesAll,
-                         sharesAllStorage: sharesAll, linkCount: links)
+                         sharesAllStorage: sharesAll, linkCount: links, isMountedImage: mounted)
     }
 
     static var sample: [LargeFile] {

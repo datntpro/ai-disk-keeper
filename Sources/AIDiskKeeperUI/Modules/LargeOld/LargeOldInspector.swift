@@ -10,8 +10,8 @@ struct LargeOldInspector: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: ADKTheme.Spacing.md) {
                     Text(f.name).font(.title2.weight(.semibold)).textSelection(.enabled)
-                    TierBadge(tier: .review)
-                    Text(LargeOldCopy.tierNote).font(.callout).foregroundStyle(.adkText2)
+                    TierBadge(tier: f.isMountedImage ? .keep : .review)
+                    Text(f.isMountedImage ? LargeOldCopy.mountedNote : LargeOldCopy.tierNote).font(.callout).foregroundStyle(.adkText2)
                     SectionCard {
                         Text(LargeOldCopy.explanation(f, now: now)).frame(maxWidth: .infinity, alignment: .leading)
                     }

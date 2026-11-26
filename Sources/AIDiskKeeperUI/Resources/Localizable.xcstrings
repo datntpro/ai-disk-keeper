@@ -6938,13 +6938,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A %@ you last opened %@. Moving it to the Trash frees up to %@; you can put it back from the Trash."
+            "value" : "Last opened %@. Moving it to the Trash frees up to %@; you can put it back from the Trash."
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Một %@ bạn mở lần cuối %@. Chuyển vào Thùng rác sẽ giải phóng tối đa %@; bạn có thể khôi phục từ Thùng rác."
+            "value" : "Mở lần cuối %@. Chuyển vào Thùng rác sẽ giải phóng tối đa %@; bạn có thể khôi phục từ Thùng rác."
           }
         }
       }
@@ -7173,6 +7173,22 @@
         }
       }
     },
+    "largeOld.inspector.mounted" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep: this disk image is attached right now. Eject it in Finder first; then it can be reviewed like any other file."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Giữ lại: ảnh đĩa này đang được gắn. Hãy tháo (eject) nó trong Finder trước; sau đó bạn có thể xem xét như mọi tệp khác."
+          }
+        }
+      }
+    },
     "largeOld.inspector.tier" : {
       "localizations" : {
         "en" : {
@@ -7361,6 +7377,22 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%@: %@"
+          }
+        }
+      }
+    },
+    "largeOld.mounted" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mounted disk image: eject it first"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ảnh đĩa đang gắn: hãy tháo trước"
           }
         }
       }
