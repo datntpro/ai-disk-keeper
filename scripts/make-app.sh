@@ -46,11 +46,12 @@ ARCH_ARGS=()
 if [ "$UNIVERSAL" = 1 ]; then ARCH_ARGS=(--arch arm64 --arch x86_64); fi
 
 echo "==> Building ($CONFIG, universal=$UNIVERSAL)"
-if ! swift build -c "$CONFIG" --product AIDiskKeeper ${ARCH_ARGS[@]+"${ARCH_ARGS[@]}"}; then
+# The Swift Build engine compiles the .xcstrings catalog; the older native engine only copies it (no vi.lproj).
+if ! swift build --build-system swiftbuild -c "$CONFIG" --product AIDiskKeeper ${ARCH_ARGS[@]+"${ARCH_ARGS[@]}"}; then
   [ "$UNIVERSAL" = 1 ] && echo "hint: --universal requires full Xcode (not just Command Line Tools)" >&2
   die "swift build failed"
 fi
-BIN="$(swift build -c "$CONFIG" ${ARCH_ARGS[@]+"${ARCH_ARGS[@]}"} --show-bin-path)"
+BIN="$(swift build --build-system swiftbuild -c "$CONFIG" ${ARCH_ARGS[@]+"${ARCH_ARGS[@]}"} --show-bin-path)"
 [ -x "$BIN/AIDiskKeeper" ] || die "executable not found at $BIN/AIDiskKeeper"
 
 WORK="$(mktemp -d)"

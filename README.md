@@ -22,7 +22,7 @@ Requires macOS 14+ and **Xcode 16+** (full Xcode is needed for `swift test`; Com
 can `swift build` but have no XCTest).
 
 ```sh
-swift build            # build core library + app executable
+swift build            # build core library + app executable (Swift 6.3+; on 6.2 add --build-system swiftbuild)
 swift test             # run XCTest suite
 swift run AIDiskKeeper # launch the (scaffold) app
 ```
@@ -31,7 +31,7 @@ You can also open `Package.swift` in Xcode.
 
 > **Select the full Xcode toolchain.** The UI's String Catalog (`.xcstrings`) is compiled by `xcstringstool`, which
 > ships with Xcode, not the Command Line Tools. If `swift build` fails with `xcstringstool is not an executable file`:
-> `export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` (or `sudo xcode-select -s /Applications/Xcode.app`).
+> `export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` (or `sudo xcode-select -s /Applications/Xcode.app`). The catalog is only compiled by the Swift Build engine (the default from Swift 6.3; on 6.2 pass `--build-system swiftbuild`). The old native engine merely copies it, so Vietnamese would be missing.
 
 ### Localization (English + Vietnamese)
 
