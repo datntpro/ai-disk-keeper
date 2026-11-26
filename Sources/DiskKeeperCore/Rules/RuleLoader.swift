@@ -13,6 +13,13 @@ public struct ResolvedRule: Sendable, Hashable {
     public let expandedPaths: [String]
     /// Templates that couldn't be expanded here (e.g. an unset env var). Not an error.
     public let unavailablePaths: [UnavailablePath]
+
+    public init(rule: ScannerRule, tool: ToolID, expandedPaths: [String], unavailablePaths: [UnavailablePath]) {
+        self.rule = rule
+        self.tool = tool
+        self.expandedPaths = expandedPaths
+        self.unavailablePaths = unavailablePaths
+    }
 }
 
 public struct RuleSet: Sendable, Hashable {
@@ -256,5 +263,37 @@ public struct RuleLoader: Sendable {
             return .failure(RuleLoadError(
                 kind: .unreadableFile, file: url, source: source, message: error.localizedDescription))
         }
+    }
+}
+
+/// Per-rule title/explanation translations, resolved at render time so a language switch needs no rescan.
+public struct RuleTextIndex: Sendable {
+    private struct Entry: Sendable {
+        let rule: ScannerRule
+    }
+
+    private let entries: [String: Entry]
+
+    public static let empty = RuleTextIndex(rules: [])
+
+    public init(rules: [ResolvedRule]) {
+        var out: [String: Entry] = [:]
+        for r in rules { out[r.rule.id] = Entry(rule: r.rule) }
+        entries = out
+    }
+
+    /// Localized title for `ruleID`, or nil when the rule is unknown (callers keep the English text).
+    public func title(ruleID: String, languages: [String]) -> String? {
+        entries[ruleID]?.rule.text(for: languages).title
+    }
+
+    public func explanation(ruleID: String, languages: [String]) -> String? {
+        entries[ruleID]?.rule.text(for: languages).explanation
+    }
+
+    /// True when the rule's title is the item's name (`match.kind == .self`); for other kinds the item name is a
+    /// file or folder name, which is never translated.
+    public func titleIsItemName(ruleID: String) -> Bool {
+        entries[ruleID]?.rule.match.kind == .self
     }
 }

@@ -39,6 +39,28 @@ accepted or rejected as a whole: one bad rule rejects the file, and the other fi
 | `tierWhen` | [object] | no | ≤ 8 entries; of the entries that match, the most restrictive tier wins (see Tiers); none matching → `tier` |
 | `explanation` | string | yes | 1–1000 chars. Shown to the user: what it is, what you lose, whether it regenerates |
 | `cleanup` | object | no | default `{ "method": "trash" }` |
+| `localized` | object | no | translations of `title` / `explanation`, see Localized text |
+
+### Localized text
+
+`title` and `explanation` are English. A rule may add translations; the app shows the one for the language the user
+picked and falls back to English for anything missing.
+
+```json
+{ "id": "claude-code.transcripts",
+  "title": "Conversation transcripts",
+  "explanation": "One Claude Code conversation for this project. …",
+  "localized": {
+    "vi": { "title": "Bản ghi hội thoại", "explanation": "Một cuộc hội thoại Claude Code của dự án này. …" } } }
+```
+
+- Keys are language tags matching `^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$` (`vi`, `vi-VN`, `zh-Hans`), at most 16. `en` is
+  rejected (`invalidValue`, "localizedBaseLanguage"): English is the base fields.
+- Each value allows only `title` (1–80 chars) and `explanation` (1–1000 chars), at least one of them.
+- Lookup per field: exact tag, then its language prefix (`vi-VN` → `vi`), then the English field.
+- `schemaVersion` stays 1 (the field is additive). A rule file that uses `localized` fails to load in builds before
+  T49 (`unknownKey`). That only matters for user rule folders.
+- Bundled rules must have a `vi` title and explanation (enforced by a test); third-party rules may stay English-only.
 
 `category: modelWeights` can never be `safe`, neither in `tier` nor in any `tierWhen` entry ("model weights are
 always Review").

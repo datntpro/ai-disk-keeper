@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "AIDiskKeeper",
+    defaultLocalization: "en",
     platforms: [.macOS(.v14)],
     products: [
         .executable(name: "AIDiskKeeper", targets: ["AIDiskKeeper"]),
@@ -19,6 +20,7 @@ let package = Package(
         .target(
             name: "AIDiskKeeperUI",
             dependencies: ["DiskKeeperCore"],
+            resources: [.process("Resources/Localizable.xcstrings")],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
         // SwiftUI app entry (window + menu bar). Thin layer over AIDiskKeeperUI.

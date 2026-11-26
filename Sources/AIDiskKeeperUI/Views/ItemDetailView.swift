@@ -8,19 +8,19 @@ struct ItemDetailView: View {
         if let item {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text(item.displayName).font(.title2.weight(.semibold)).textSelection(.enabled)
+                    Text(item.uiDisplayName()).font(.title2.weight(.semibold)).textSelection(.enabled)
                     let s = TierStyle.style(for: item.tier)
                     TierBadge(tier: item.tier)
                     if item.isSelectable, let id = item.requiresAppQuit { QuitAppNote(bundleID: id) }
                     Text(s.longExplanation).font(.callout).foregroundStyle(.secondary)
-                    section(loc("detail.why", "Why this tier")) { Text(item.explanation) }
+                    section(loc("detail.why", "Why this tier")) { Text(item.uiExplanation()) }
                     section(loc("detail.size", "Size")) {
                         Text(Formatting.bytes(item.sizeAllocated)).font(.title3)
                         Text(loc("detail.sizeDetail", "\(Formatting.bytes(item.sizeLogical)) apparent · \(item.fileCount) files · modified \(Formatting.absolute(item.lastModified))"))
                             .font(.caption).foregroundStyle(.secondary)
                     }
                     section(loc("detail.where", "Where")) {
-                        Text("\(item.tool.uiName) · \(item.category.displayName)")
+                        Text(verbatim: "\(item.tool.uiName) · \(item.category.uiName)")
                         if let p = item.project { Text(loc("detail.project", "Project: \(p.displayName)")) }
                         Text(loc("detail.rule", "Rule: \(item.ruleID)")).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
                         Text(item.path).font(.callout.monospaced()).textSelection(.enabled)

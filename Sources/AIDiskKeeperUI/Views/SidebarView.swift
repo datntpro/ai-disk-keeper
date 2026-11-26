@@ -18,7 +18,7 @@ struct SidebarView: View {
             }
             Section(loc("sidebar.byCategory", "By category")) {
                 ForEach(cats, id: \.key) { cat, t in
-                    row(cat.displayName, "folder", t.allocatedBytes).tag(SidebarSelection.category(cat))
+                    row(cat.uiName, "folder", t.allocatedBytes).tag(SidebarSelection.category(cat))
                 }
             }
             if !scan.warnings.isEmpty {

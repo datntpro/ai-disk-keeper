@@ -44,6 +44,12 @@
       },
       "tier": "safe",
       "explanation": "Orca is an Electron app; these are Chromium HTTP, code, GPU and shader caches. They are rebuilt automatically when the app starts.",
+      "localized": {
+        "vi": {
+          "title": "Cache web của Orca",
+          "explanation": "Orca là ứng dụng Electron; đây là các cache HTTP, mã, GPU và shader của Chromium. Chúng được tạo lại tự động khi ứng dụng khởi động."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.stablyai.orca"
@@ -70,6 +76,12 @@
         }
       ],
       "explanation": "Diagnostic logs written by Orca. Safe to delete; new logs are created as it runs. Logs from the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Nhật ký Orca",
+          "explanation": "Nhật ký chẩn đoán do Orca ghi. Có thể xóa an toàn; nhật ký mới sẽ được tạo khi Orca chạy. Nhật ký có thay đổi trong 24 giờ qua được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash"
       }
@@ -87,6 +99,12 @@
       },
       "tier": "safe",
       "explanation": "Crash reports written by Orca's crash handler. Safe to delete.",
+      "localized": {
+        "vi": {
+          "title": "Bản ghi sự cố của Orca",
+          "explanation": "Các báo cáo sự cố do trình xử lý sự cố của Orca ghi. Có thể xóa an toàn."
+        }
+      },
       "cleanup": {
         "method": "trash"
       }

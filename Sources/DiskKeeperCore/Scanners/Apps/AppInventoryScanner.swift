@@ -98,17 +98,17 @@ public struct AppInventoryScanner: Sendable {
             do {
                 info = try AppBundleReader.read(bundlePath: infoPath)
             } catch AppBundleReadError.permissionDenied {
-                warnings.append(ScanWarning(kind: .permissionDenied, path: c.path, message: "Couldn't read this app's details (permission denied)."))
+                warnings.append(ScanWarning(kind: .permissionDenied, path: c.path, message: "Couldn't read this app's details (permission denied).", code: .pathError(errno: EACCES)))
                 continue
             } catch AppBundleReadError.missingPlist {
-                warnings.append(ScanWarning(kind: .scannerFailed, path: c.path, message: "Skipped: this app has no Info.plist."))
+                warnings.append(ScanWarning(kind: .scannerFailed, path: c.path, message: "Skipped: this app has no Info.plist.", code: .appSkipped(reason: .noInfoPlist)))
                 continue
             } catch {
-                warnings.append(ScanWarning(kind: .scannerFailed, path: c.path, message: "Skipped: this app's Info.plist is damaged."))
+                warnings.append(ScanWarning(kind: .scannerFailed, path: c.path, message: "Skipped: this app's Info.plist is damaged.", code: .appSkipped(reason: .damagedInfoPlist)))
                 continue
             }
             guard let bundleID = info.bundleID, RuleCleanup.isValidBundleID(bundleID) else {
-                warnings.append(ScanWarning(kind: .other, path: c.path, message: "Skipped: this app has no valid bundle identifier."))
+                warnings.append(ScanWarning(kind: .other, path: c.path, message: "Skipped: this app has no valid bundle identifier.", code: .appSkipped(reason: .noBundleID)))
                 continue
             }
             var source = signatures.source(ofBundleAt: infoPath)
@@ -144,7 +144,8 @@ public struct AppInventoryScanner: Sendable {
                     fileCount: report.fileCount, lastUsed: a.lastUsed, isRunning: a.isRunning, viewOnlyReason: a.viewOnlyReason)
                 if report.issueCount > 0 {
                     warnings.append(ScanWarning(kind: .permissionDenied, path: a.path,
-                                                message: "Some files inside this app couldn't be read, so its size may be too low."))
+                                                message: "Some files inside this app couldn't be read, so its size may be too low.",
+                                                code: .sizeIncomplete))
                 }
             }
             apps.append(a)
@@ -178,8 +179,8 @@ public struct AppInventoryScanner: Sendable {
         case .failure(let e):
             switch e.code {
             case .ENOENT, .ENOTDIR: break
-            case .EPERM: warnings.append(ScanWarning(kind: .needsFullDiskAccess, path: dir, message: "Couldn't list this folder. Full Disk Access may be needed."))
-            default: warnings.append(ScanWarning(kind: .permissionDenied, path: dir, message: "Couldn't list this folder (permission denied)."))
+            case .EPERM: warnings.append(ScanWarning(kind: .needsFullDiskAccess, path: dir, message: "Couldn't list this folder. Full Disk Access may be needed.", code: .pathError(errno: EPERM)))
+            default: warnings.append(ScanWarning(kind: .permissionDenied, path: dir, message: "Couldn't list this folder (permission denied).", code: .pathError(errno: EACCES)))
             }
             return nil
         }

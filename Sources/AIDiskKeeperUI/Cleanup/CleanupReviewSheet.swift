@@ -110,7 +110,7 @@ public struct CleanupReviewSheet: View {
                 Text(CleanupCopy.wontCleanHeading(others.count)).font(.headline)
                 ForEach(others) { e in
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(e.item.displayName)
+                        Text(e.item.uiDisplayName())
                         ForEach(e.blockers, id: \.self) { b in
                             Text(CleanupCopy.sentence(for: b)).font(.caption).foregroundStyle(.secondary)
                         }
@@ -124,13 +124,13 @@ public struct CleanupReviewSheet: View {
         let style = TierStyle.style(for: e.item.tier)
         return HStack {
             Label(style.label, systemImage: style.symbolName).foregroundStyle(style.color)
-                .font(.caption).frame(width: 80, alignment: .leading)
+                .font(.caption).fixedSize().frame(minWidth: 80, alignment: .leading)
             VStack(alignment: .leading) {
-                Text(e.item.displayName)
+                Text(e.item.uiDisplayName())
                 Text(e.item.path).font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
             }
             Spacer()
-            Text(CleanupCopy.bytes(e.item.sizeAllocated)).monospacedDigit()
+            Text(Formatting.bytes(e.item.sizeAllocated)).monospacedDigit()
         }
     }
 }

@@ -13,21 +13,21 @@ public struct SelectionCheckbox: View {
 
     public var body: some View {
         if item.isSelectable {
-            Toggle(CleanupCopy.selectItem(item.displayName), isOn: Binding(
+            Toggle(CleanupCopy.selectItem(item.uiDisplayName()), isOn: Binding(
                 get: { selection.isSelected(item) },
                 set: { selection.setSelected(item, $0) }))
                 .toggleStyle(.checkbox)
                 .labelsHidden()
-                .accessibilityLabel(CleanupCopy.itemAndTier(name: item.displayName, tier: TierStyle.style(for: item.tier).label))
+                .accessibilityLabel(CleanupCopy.itemAndTier(name: item.uiDisplayName(), tier: TierStyle.style(for: item.tier).label))
                 .accessibilityHint(Text(item.tier == .review ? CleanupCopy.reviewHint : ""))
         } else if item.tier == .keep {
             Image(systemName: "lock.fill").foregroundStyle(.secondary)
                 .help(CleanupCopy.keepHelp)
-                .accessibilityLabel(CleanupCopy.itemAndReason(name: item.displayName, reason: CleanupCopy.keepHelp))
+                .accessibilityLabel(CleanupCopy.itemAndReason(name: item.uiDisplayName(), reason: CleanupCopy.keepHelp))
         } else {
             Image(systemName: "minus.circle").foregroundStyle(.secondary)
                 .help(CleanupCopy.reportOnlyHelp)
-                .accessibilityLabel(CleanupCopy.itemAndReason(name: item.displayName, reason: CleanupCopy.reportOnlyHelp))
+                .accessibilityLabel(CleanupCopy.itemAndReason(name: item.uiDisplayName(), reason: CleanupCopy.reportOnlyHelp))
         }
     }
 }

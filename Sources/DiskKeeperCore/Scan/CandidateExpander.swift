@@ -46,7 +46,8 @@ enum CandidateExpander {
         if run.capped {
             run.result.warnings.append(ScanWarning(
                 kind: .other, ruleID: rule.rule.id,
-                message: "rule \(rule.rule.id) produced more than \(cap) items; the rest were skipped"))
+                message: "rule \(rule.rule.id) produced more than \(cap) items; the rest were skipped",
+                code: .itemCapExceeded(cap: cap)))
         }
         return run.result
     }
@@ -72,17 +73,18 @@ enum CandidateExpander {
         var match: RuleMatch { rule.rule.match }
         var ruleID: String { rule.rule.id }
 
-        mutating func warn(_ kind: ScanWarning.Kind, _ path: String, _ message: String) {
-            result.warnings.append(ScanWarning(kind: kind, path: path, ruleID: ruleID, message: message))
+        mutating func warn(_ kind: ScanWarning.Kind, _ path: String, _ message: String, errno code: Int32) {
+            result.warnings.append(ScanWarning(kind: kind, path: path, ruleID: ruleID, message: message,
+                                               code: .pathError(errno: code)))
         }
 
         /// Reports an errno from touching `path`; ENOENT/ENOTDIR are silent (vanished or tool not installed).
         mutating func report(errno code: Int32, path: String, what: String) {
             switch code {
             case ENOENT, ENOTDIR: break
-            case EACCES: warn(.permissionDenied, path, "cannot read \(path): permission denied")
-            case EPERM: warn(.needsFullDiskAccess, path, "cannot read \(path): not permitted (Full Disk Access?)")
-            default: warn(.other, path, "cannot \(what) \(path): \(String(cString: strerror(code)))")
+            case EACCES: warn(.permissionDenied, path, "cannot read \(path): permission denied", errno: code)
+            case EPERM: warn(.needsFullDiskAccess, path, "cannot read \(path): not permitted (Full Disk Access?)", errno: code)
+            default: warn(.other, path, "cannot \(what) \(path): \(String(cString: strerror(code)))", errno: code)
             }
         }
 
@@ -100,7 +102,7 @@ enum CandidateExpander {
                 offer(container, container: container, st: st)
             case .children, .find:
                 guard isDir else {
-                    warn(.other, container, "\(container) is not a directory or is a symlink")
+                    warn(.other, container, "\(container) is not a directory or is a symlink", errno: ENOTDIR)
                     return
                 }
                 containerDevice = deviceOf(container)

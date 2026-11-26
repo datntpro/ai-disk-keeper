@@ -54,7 +54,8 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
     case keepTier
     case notActionable
     case methodNotSupported(String)
-    case protectedPath(PathDenial.Reason, message: String)
+    /// `pattern` and `whyID` (optional, so older audit lines still decode) let a UI word the denial itself.
+    case protectedPath(PathDenial.Reason, message: String, pattern: String? = nil, whyID: String? = nil)
     case missing
     case isSymlink
     case notOwnedByUser(uid: UInt32)
@@ -96,7 +97,7 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
         case .keepTier: "Marked Keep: this is never cleaned."
         case .notActionable: "Report only: there is no cleanup action for this item."
         case .methodNotSupported(let m): "Cleanup method '\(m)' is not supported yet."
-        case .protectedPath(_, let message): message
+        case .protectedPath(_, let message, _, _): message
         case .missing: "The item no longer exists."
         case .isSymlink: "The item is now a symbolic link."
         case .notOwnedByUser: "The item is not owned by you."

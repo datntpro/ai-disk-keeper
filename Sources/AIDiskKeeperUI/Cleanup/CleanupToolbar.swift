@@ -13,7 +13,8 @@ struct CleanupToolbar: ToolbarContent {
             let s = selection.summary(in: scan.items)
             if let err = holder.error {
                 Label(CleanupCopy.unavailable(err), systemImage: "exclamationmark.triangle").foregroundStyle(.orange)
-                    .lineLimit(1).frame(maxWidth: 260)
+                    .lineLimit(1).minimumScaleFactor(0.85).frame(maxWidth: 260)
+                    .help(CleanupCopy.unavailable(err))
             } else if s.count > 0 {
                 Text(CleanupCopy.selectedSummary(count: s.count, bytes: s.bytes)).foregroundStyle(.secondary)
             }

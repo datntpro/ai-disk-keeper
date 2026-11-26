@@ -42,6 +42,12 @@
         }
       ],
       "explanation": "One day of Codex session rollouts (YYYY/MM/DD). Deleting it removes those sessions from `codex resume`; your code is not affected. Days from the last 7 days are kept.",
+      "localized": {
+        "vi": {
+          "title": "Phiên Codex (theo ngày)",
+          "explanation": "Các phiên Codex của một ngày (YYYY/MM/DD). Xóa đi thì các phiên đó biến mất khỏi `codex resume`; mã nguồn của bạn không bị ảnh hưởng. Các ngày có thay đổi trong 7 ngày qua được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash"
       }
@@ -67,6 +73,12 @@
         }
       ],
       "explanation": "Sessions you archived in Codex. Deleting them removes them permanently from the archive; your code is not affected.",
+      "localized": {
+        "vi": {
+          "title": "Phiên Codex đã lưu trữ",
+          "explanation": "Các phiên bạn đã lưu trữ trong Codex. Xóa đi là xóa vĩnh viễn khỏi kho lưu trữ; mã nguồn của bạn không bị ảnh hưởng."
+        }
+      },
       "cleanup": {
         "method": "trash"
       }
@@ -92,6 +104,12 @@
         }
       ],
       "explanation": "Diagnostic logs written by Codex. Safe to delete; new logs are created as it runs. Logs from the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Nhật ký Codex",
+          "explanation": "Nhật ký chẩn đoán do Codex ghi. Có thể xóa an toàn; nhật ký mới sẽ được tạo khi Codex chạy. Nhật ký có thay đổi trong 24 giờ qua được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash"
       }

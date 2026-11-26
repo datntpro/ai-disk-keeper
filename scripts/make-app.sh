@@ -46,11 +46,12 @@ ARCH_ARGS=()
 if [ "$UNIVERSAL" = 1 ]; then ARCH_ARGS=(--arch arm64 --arch x86_64); fi
 
 echo "==> Building ($CONFIG, universal=$UNIVERSAL)"
-if ! swift build -c "$CONFIG" --product AIDiskKeeper ${ARCH_ARGS[@]+"${ARCH_ARGS[@]}"}; then
+# The Swift Build engine compiles the .xcstrings catalog; the older native engine only copies it (no vi.lproj).
+if ! swift build --build-system swiftbuild -c "$CONFIG" --product AIDiskKeeper ${ARCH_ARGS[@]+"${ARCH_ARGS[@]}"}; then
   [ "$UNIVERSAL" = 1 ] && echo "hint: --universal requires full Xcode (not just Command Line Tools)" >&2
   die "swift build failed"
 fi
-BIN="$(swift build -c "$CONFIG" ${ARCH_ARGS[@]+"${ARCH_ARGS[@]}"} --show-bin-path)"
+BIN="$(swift build --build-system swiftbuild -c "$CONFIG" ${ARCH_ARGS[@]+"${ARCH_ARGS[@]}"} --show-bin-path)"
 [ -x "$BIN/AIDiskKeeper" ] || die "executable not found at $BIN/AIDiskKeeper"
 
 WORK="$(mktemp -d)"
@@ -61,12 +62,18 @@ mkdir -p "$STAGE/Contents/MacOS" "$STAGE/Contents/Resources"
 echo "==> Assembling app bundle"
 cp "$BIN/AIDiskKeeper" "$STAGE/Contents/MacOS/AIDiskKeeper"
 found_core=0
+found_ui=0
 for b in "$BIN"/*.bundle; do
   [ -d "$b" ] || continue
   ditto "$b" "$STAGE/Contents/Resources/$(basename "$b")"
   if [ "$(basename "$b")" = "AIDiskKeeper_DiskKeeperCore.bundle" ]; then found_core=1; fi
+  if [ "$(basename "$b")" = "AIDiskKeeper_AIDiskKeeperUI.bundle" ]; then found_ui=1; fi
 done
 [ "$found_core" = 1 ] || die "AIDiskKeeper_DiskKeeperCore.bundle not found in $BIN"
+[ "$found_ui" = 1 ] || die "AIDiskKeeper_AIDiskKeeperUI.bundle not found in $BIN (is Xcode selected? xcstringstool ships only with Xcode)"
+[ -d "$STAGE/Contents/Resources/AIDiskKeeper_AIDiskKeeperUI.bundle/Contents/Resources/vi.lproj" ] \
+  || [ -d "$STAGE/Contents/Resources/AIDiskKeeper_AIDiskKeeperUI.bundle/vi.lproj" ] \
+  || die "UI bundle has no vi.lproj (Vietnamese localization missing)"
 
 # Escape sed-replacement specials (& \ |) and XML specials (& < >) in values.
 esc() { printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' | sed -e 's/[&|\\]/\\&/g'; }
@@ -100,11 +107,18 @@ if [ "$VERIFY" = 1 ]; then
   echo "==> Verifying bundled resources"
   OUT="$("$APP/Contents/MacOS/AIDiskKeeper" --verify-resources)" || die "--verify-resources failed: $OUT"
   echo "$OUT"
-  case "$(printf '%s\n' "$OUT" | sed -n 's/^bundle=//p')" in
-    "$APP/Contents/Resources/"*) ;;
+  # Compare physical paths: the binary reports /private/tmp where $APP may say /tmp.
+  APP_REAL="$(cd -P "$APP" && pwd -P)"
+  BUNDLE_REAL="$(cd -P "$(printf '%s\n' "$OUT" | sed -n 's/^bundle=//p')" 2>/dev/null && pwd -P || true)"
+  case "$BUNDLE_REAL" in
+    "$APP_REAL/Contents/Resources/"*) ;;
     *) die "resource bundle did not resolve inside the .app" ;;
   esac
   [ "$(printf '%s\n' "$OUT" | sed -n 's/^rules=//p')" != "MISSING" ] || die "rules directory missing"
+  case ",$(printf '%s\n' "$OUT" | sed -n 's/^ui_localizations=//p')," in
+    *,vi,*) ;;
+    *) die "UI localizations missing vi: $OUT" ;;
+  esac
   if [ "$UNIVERSAL" = 1 ]; then
     case " $ARCHS " in *" arm64 "*) ;; *) die "missing arm64 slice ($ARCHS)" ;; esac
     case " $ARCHS " in *" x86_64 "*) ;; *) die "missing x86_64 slice ($ARCHS)" ;; esac

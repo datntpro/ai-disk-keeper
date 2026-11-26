@@ -59,7 +59,8 @@ public actor ScanEngine {
         let context = ScanContext(environment: environment, pathGuard: pathGuard, now: now,
                                   maxConcurrentSizing: maxConcurrentSizing)
         let warnings = (loaded.errors + loaded.warnings).map {
-            ScanWarning(kind: .ruleError, path: $0.file?.path, message: $0.description)
+            ScanWarning(kind: .ruleError, path: $0.file?.path, message: $0.description,
+                        code: .ruleFileInvalid(file: $0.file?.lastPathComponent ?? ""))
         }
         // Disabled tools are never scanned at all.
         let rules = loaded.allRules.filter { !scope.disabledTools.contains($0.tool) }
@@ -144,7 +145,8 @@ public actor ScanEngine {
                         try await scanner.scan(context: context, sink: sink)
                     } catch is CancellationError where Task.isCancelled {
                     } catch {
-                        await self.accept(ScanWarning(kind: .scannerFailed, message: "\(scanner.id): \(error)"),
+                        await self.accept(ScanWarning(kind: .scannerFailed, message: "\(scanner.id): \(error)",
+                                                    code: .scannerFailed(scannerID: scanner.id)),
                                           generation: gen)
                     }
                     await self.scannerFinished(generation: gen)
@@ -178,7 +180,8 @@ public actor ScanEngine {
             // One warning per (rule, earlier rule) pair, not per item.
             if warnedOverlaps.insert(item.ruleID + "\u{0}" + earlier).inserted {
                 accept(ScanWarning(kind: .ruleError, path: item.path, ruleID: item.ruleID,
-                                   message: "\(item.ruleID): \(item.path) overlaps another item (\(earlier)); skipped"),
+                                   message: "\(item.ruleID): \(item.path) overlaps another item (\(earlier)); skipped",
+                                   code: .itemOverlap(earlierRuleID: earlier)),
                        generation: gen)
             }
             return

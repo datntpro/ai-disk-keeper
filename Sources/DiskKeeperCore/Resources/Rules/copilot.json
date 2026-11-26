@@ -40,6 +40,12 @@
         }
       ],
       "explanation": "Copilot Chat extension data for one workspace (local code index, buffered tool output). Rebuilt as needed; VS Code keeps your chat list separately. Workspaces touched in the last 14 days are kept.",
+      "localized": {
+        "vi": {
+          "title": "Dữ liệu workspace của Copilot Chat",
+          "explanation": "Dữ liệu tiện ích Copilot Chat cho một workspace (chỉ mục mã cục bộ, đầu ra công cụ lưu tạm). Được tạo lại khi cần; VS Code lưu danh sách chat riêng. Các workspace có thay đổi trong 14 ngày qua được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.microsoft.VSCode"
@@ -68,6 +74,12 @@
         }
       ],
       "explanation": "Copilot Chat extension data for one workspace (local code index, buffered tool output). Rebuilt as needed; VS Code keeps your chat list separately. Workspaces touched in the last 14 days are kept.",
+      "localized": {
+        "vi": {
+          "title": "Dữ liệu workspace của Copilot Chat (Insiders)",
+          "explanation": "Dữ liệu tiện ích Copilot Chat cho một workspace (chỉ mục mã cục bộ, đầu ra công cụ lưu tạm). Được tạo lại khi cần; VS Code lưu danh sách chat riêng. Các workspace có thay đổi trong 14 ngày qua được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.microsoft.VSCodeInsiders"

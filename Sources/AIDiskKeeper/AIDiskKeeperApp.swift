@@ -15,7 +15,8 @@ struct AIDiskKeeperApp: App {
     @State private var env = AppEnvironment.live()
 
     var body: some Scene {
-        WindowGroup("AI Disk Keeper") {
+        _ = env.settings.languageRevision   // re-evaluate menus (Scan menu title, shortcuts) after a language switch
+        return WindowGroup(Text(verbatim: "AI Disk Keeper")) {
             RootView(env: env)
         }
         .defaultSize(width: 1200, height: 760)

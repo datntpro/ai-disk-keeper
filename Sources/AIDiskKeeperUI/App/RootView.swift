@@ -17,7 +17,15 @@ public struct RootView: View {
         _scan = State(initialValue: ScanViewModel(makeEngine: env.makeScanEngine))
     }
 
+    /// The language revision is the view identity of the whole tree, so every `loc()` call re-runs after a switch.
+    /// Model state lives in this view (outside the identity), so a language change keeps the scan results.
     public var body: some View {
+        mainContent
+            .id(env.settings.languageRevision)
+            .environment(\.locale, L10n.locale)
+    }
+
+    private var mainContent: some View {
         NavigationSplitView {
             SidebarView(scan: scan, selection: $selection)
                 .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 280)
@@ -92,7 +100,7 @@ public struct RootView: View {
     private var scopeName: String? {
         switch selection {
         case .tool(let t): t.uiName
-        case .category(let c): c.displayName
+        case .category(let c): c.uiName
         default: nil
         }
     }

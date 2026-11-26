@@ -56,6 +56,12 @@
         }
       ],
       "explanation": "Per-project chat checkpoints, logs and shell history from Gemini CLI. Deleting removes `/chat resume` checkpoints for that project. Projects touched in the last 7 days are kept.",
+      "localized": {
+        "vi": {
+          "title": "Dữ liệu dự án của Gemini CLI",
+          "explanation": "Checkpoint chat, nhật ký và lịch sử shell theo dự án của Gemini CLI. Xóa đi là mất các checkpoint `/chat resume` của dự án đó. Các dự án có thay đổi trong 7 ngày qua được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash"
       }
@@ -72,6 +78,12 @@
       },
       "tier": "safe",
       "explanation": "Cached data used by Antigravity; recreated as needed.",
+      "localized": {
+        "vi": {
+          "title": "Cache Antigravity",
+          "explanation": "Dữ liệu cache do Antigravity dùng; được tạo lại khi cần."
+        }
+      },
       "cleanup": {
         "method": "trash"
       }
@@ -88,6 +100,12 @@
       },
       "tier": "safe",
       "explanation": "Crash reports written by Antigravity. Safe to delete.",
+      "localized": {
+        "vi": {
+          "title": "Báo cáo sự cố Antigravity",
+          "explanation": "Các báo cáo sự cố do Antigravity ghi. Có thể xóa an toàn."
+        }
+      },
       "cleanup": {
         "method": "trash"
       }
@@ -111,6 +129,12 @@
       },
       "tier": "safe",
       "explanation": "Antigravity is an Electron app; these are Chromium HTTP, code, GPU and shader caches. They are rebuilt automatically when the app starts.",
+      "localized": {
+        "vi": {
+          "title": "Cache web của Antigravity",
+          "explanation": "Antigravity là ứng dụng Electron; đây là các cache HTTP, mã, GPU và shader của Chromium. Chúng được tạo lại tự động khi ứng dụng khởi động."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.google.antigravity"
@@ -137,6 +161,12 @@
         }
       ],
       "explanation": "Diagnostic logs written by Antigravity. Safe to delete; new logs are created as it runs. Logs from the last day are kept in case the app is running.",
+      "localized": {
+        "vi": {
+          "title": "Nhật ký ứng dụng Antigravity",
+          "explanation": "Nhật ký chẩn đoán do Antigravity ghi. Có thể xóa an toàn; nhật ký mới sẽ được tạo khi ứng dụng chạy. Nhật ký có thay đổi trong 24 giờ qua được giữ lại phòng khi ứng dụng đang chạy."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.google.antigravity"
@@ -163,6 +193,12 @@
         }
       ],
       "explanation": "Per-workspace state for one folder opened in Antigravity (chat history, editor state, indexes). Deleting it loses that workspace's chat history and open-editor state; folders touched in the last 14 days are kept.",
+      "localized": {
+        "vi": {
+          "title": "Trạng thái workspace của Antigravity",
+          "explanation": "Trạng thái theo workspace cho một thư mục đã mở trong Antigravity (lịch sử hội thoại, trạng thái trình soạn thảo, chỉ mục). Xóa đi là mất lịch sử hội thoại và trạng thái các trình soạn thảo đang mở của workspace đó; các thư mục có thay đổi trong 14 ngày qua được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.google.antigravity"

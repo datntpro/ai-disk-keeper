@@ -15,21 +15,24 @@ public struct AppSettings: Codable, Sendable, Hashable {
     public var excludedPaths: [String]
     /// Empty = all enabled (new tools are on by default).
     public var disabledTools: Set<ToolID>
+    /// UI language choice: "system" (default), "en" or "vi". Kept as a raw string; the UI maps unknown values to system.
+    public var language: String = "system"
 
     public static let defaultProjectRoots = ["~", "~/orca/workspaces", "~/Developer", "~/code", "~/src", "~/projects"]
 
     public static let defaults = AppSettings(projectRoots: defaultProjectRoots, excludedPaths: [], disabledTools: [])
 
     public init(hasCompletedOnboarding: Bool = false, projectRoots: [String] = AppSettings.defaultProjectRoots,
-                excludedPaths: [String] = [], disabledTools: Set<ToolID> = []) {
+                excludedPaths: [String] = [], disabledTools: Set<ToolID> = [], language: String = "system") {
         self.hasCompletedOnboarding = hasCompletedOnboarding
         self.projectRoots = projectRoots
         self.excludedPaths = excludedPaths
         self.disabledTools = disabledTools
+        self.language = language
     }
 
     private enum CodingKeys: String, CodingKey {
-        case schemaVersion, hasCompletedOnboarding, projectRoots, excludedPaths, disabledTools
+        case schemaVersion, hasCompletedOnboarding, projectRoots, excludedPaths, disabledTools, language
     }
 
     /// Lenient: unknown keys are ignored and missing keys take defaults.
@@ -40,6 +43,7 @@ public struct AppSettings: Codable, Sendable, Hashable {
         projectRoots = try c.decodeIfPresent([String].self, forKey: .projectRoots) ?? Self.defaultProjectRoots
         excludedPaths = try c.decodeIfPresent([String].self, forKey: .excludedPaths) ?? []
         disabledTools = try c.decodeIfPresent(Set<ToolID>.self, forKey: .disabledTools) ?? []
+        language = try c.decodeIfPresent(String.self, forKey: .language) ?? "system"
     }
 
     public func scanScope(environment: PathEnvironment) -> ScanScope {

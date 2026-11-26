@@ -22,12 +22,34 @@ Requires macOS 14+ and **Xcode 16+** (full Xcode is needed for `swift test`; Com
 can `swift build` but have no XCTest).
 
 ```sh
-swift build            # build core library + app executable
+swift build            # build core library + app executable (Swift 6.3+; on 6.2 add --build-system swiftbuild)
 swift test             # run XCTest suite
 swift run AIDiskKeeper # launch the (scaffold) app
 ```
 
 You can also open `Package.swift` in Xcode.
+
+> **Select the full Xcode toolchain.** The UI's String Catalog (`.xcstrings`) is compiled by `xcstringstool`, which
+> ships with Xcode, not the Command Line Tools. If `swift build` fails with `xcstringstool is not an executable file`:
+> `export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` (or `sudo xcode-select -s /Applications/Xcode.app`). The catalog is only compiled by the Swift Build engine (the default from Swift 6.3; on 6.2 pass `--build-system swiftbuild`). The old native engine merely copies it, so Vietnamese would be missing.
+
+### Localization (English + Vietnamese)
+
+All UI text lives in `Sources/AIDiskKeeperUI/Resources/Localizable.xcstrings`. When you add or change UI text:
+
+1. Write it as `loc("area.screen.thing", "English default")`. Keys are dot-separated, lowerCamel, grouped by feature.
+   Never reuse a key for a different meaning. Never hard-code user-facing text (no bare `Text("…")`).
+2. Run `python3 -I scripts/l10n-extract.py --sync`, then fill in **both** `en` and `vi` in the catalog
+   (`scripts/l10n-apply.py` merges a `{key: text}` Python dict). `vi` may be `needs_review`, never `new`.
+   CI runs `scripts/l10n-extract.py --check` and `CatalogLintTests`.
+3. Text that Core produces (warnings, denials, categories) gets a stable code/enum case in Core and a mapping in
+   `Shared/CoreCopy.swift`; rule text gets `localized.vi` in the rule JSON (see `docs/rules.md`).
+4. Use `Formatting.*` for numbers, bytes and dates. Never interpolate a raw `Double` or `Date`.
+5. Check new screens with `swift run AIDiskKeeper --pseudo-localize` (debug builds) and with Vietnamese selected.
+
+Vietnamese copy follows the approved glossary (An toàn / Cần xem / Giữ lại, Quét, Dọn dẹp, Chuyển vào Thùng rác,
+Nhật ký thao tác, Toàn quyền truy cập ổ đĩa, Tệp mô hình; Worktree and cache stay in English; new-style tone marks:
+`xóa`, `hòa`), sentence case, natural wording, no pronoun unless needed.
 
 ### Package the app
 

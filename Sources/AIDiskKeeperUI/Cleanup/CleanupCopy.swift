@@ -40,9 +40,7 @@ public enum CleanupCopy {
         loc("cleanup.result.stoppedByAudit", "Stopped because the audit log couldn't be written")
     }
 
-    public static func bytes(_ n: Int64) -> String {
-        ByteCountFormatter.string(fromByteCount: n, countStyle: .file)
-    }
+    private static func bytes(_ n: Int64) -> String { Formatting.bytes(n) }
 
     public static func selectItem(_ name: String) -> String {
         loc("cleanup.select.item", "Select \(name)")
@@ -133,7 +131,7 @@ public enum CleanupCopy {
         case .keepTier: loc("cleanup.blocker.keepTier", "Marked Keep: this is never cleaned.")
         case .notActionable: loc("cleanup.blocker.notActionable", "Report only: there is no cleanup action for this item.")
         case .methodNotSupported(let m): loc("cleanup.blocker.methodNotSupported", "Cleanup method '\(m)' is not supported yet.")
-        case .protectedPath(_, let message): message
+        case .protectedPath(let reason, _, let pattern, let whyID): CoreCopy.denial(reason: reason, pattern: pattern, whyID: whyID)
         case .missing: loc("cleanup.blocker.missing", "The item no longer exists.")
         case .isSymlink: loc("cleanup.blocker.isSymlink", "The item is now a symbolic link.")
         case .notOwnedByUser: loc("cleanup.blocker.notOwned", "The item is not owned by you.")

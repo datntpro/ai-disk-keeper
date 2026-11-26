@@ -8,6 +8,24 @@ public struct ProtectedPattern: Sendable, Hashable {
         self.template = template
         self.why = why
     }
+
+    /// Stable identifier of the reason text ("Claude Code skills" → "claude.code.skills"). UIs key their
+    /// translations on it; two entries with the same `why` share an id.
+    public var id: String { Self.slug(why) }
+
+    public static func slug(_ why: String) -> String {
+        var out = "", pendingDot = false
+        for ch in why.lowercased() {
+            if ch.isASCII, ch.isLetter || ch.isNumber {
+                if pendingDot, !out.isEmpty { out.append(".") }
+                pendingDot = false
+                out.append(ch)
+            } else {
+                pendingDot = true
+            }
+        }
+        return out
+    }
 }
 
 /// Immutable, non-overridable protected-path policy. See docs/protected-paths.md.

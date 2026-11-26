@@ -42,7 +42,7 @@ struct OverviewView<Slot: View>: View {
                     ForEach(top10(scan.items)) { item in
                         Button { inspect(item.id) } label: {
                             HStack {
-                                Text(item.displayName).lineLimit(1)
+                                Text(item.uiDisplayName()).lineLimit(1)
                                 TierBadge(tier: item.tier)
                                 if item.isSelectable, let id = item.requiresAppQuit { QuitAppBadge(bundleID: id) }
                                 Spacer()

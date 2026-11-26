@@ -28,7 +28,8 @@ struct ScanStatusBar: View {
     var body: some View {
         HStack(spacing: 8) {
             if scan.isScanning { ProgressView().controlSize(.small) }
-            Text(statusText).font(.callout).foregroundStyle(.secondary).lineLimit(1)
+            Text(statusText).font(.callout).foregroundStyle(.secondary).lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
                 .accessibilityValue(statusText)
             Spacer()
             if case .failed = scan.phase { Button(loc("action.tryAgain", "Try again")) { scan.startScan() } }
