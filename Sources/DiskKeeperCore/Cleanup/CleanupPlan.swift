@@ -10,10 +10,13 @@ public struct CleanupPlanEntry: Identifiable, Codable, Sendable, Hashable {
     public let fingerprint: ItemFingerprint?
     /// Duplicate items only: the copies that stay behind, verified at plan time and again before the move.
     public let survivors: DuplicateSurvivorSet?
+    /// `.trashApplication` only: bundle + Info.plist snapshot, compared again right before the move.
+    public let appBundle: AppBundleFingerprint?
     public var isExecutable: Bool { blockers.isEmpty }
 
     public init(item: ScanItem, action: CleanupAction, blockers: [CleanupBlocker], fingerprint: ItemFingerprint?,
-                survivors: DuplicateSurvivorSet? = nil) {
+                survivors: DuplicateSurvivorSet? = nil, appBundle: AppBundleFingerprint? = nil) {
+        self.appBundle = appBundle
         self.item = item
         self.action = action
         self.blockers = blockers

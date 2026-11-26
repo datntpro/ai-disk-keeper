@@ -32,6 +32,14 @@ public struct FileManagerRemover: ItemRemover {
 /// Answers "is the app with this bundle id running?". `nil` means unknown (callers fail closed).
 public protocol RunningAppChecking: Sendable {
     func isRunning(bundleID: String) -> Bool?
+    /// Is any process (helper, login item, a copy with another id) executing from inside the bundle at `path`?
+    /// `nil` = unknown (fail closed).
+    func isAnyProcessRunning(insideBundleAt path: String) -> Bool?
+}
+
+extension RunningAppChecking {
+    /// Default: unknown, so old conformances fail closed for app bundles.
+    public func isAnyProcessRunning(insideBundleAt path: String) -> Bool? { nil }
 }
 
 /// Core default: always unknown, so items with `requiresAppQuit` are blocked (`appStateUnknown`) until the

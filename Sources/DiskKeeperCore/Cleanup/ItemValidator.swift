@@ -8,9 +8,13 @@ struct ItemValidator: Sendable {
     let runningApps: any RunningAppChecking
     let tolerance: ChangeTolerance
     let sizer: FileSizer
+    /// nil = every `.trashApplication` entry is blocked (fail closed).
+    let appPolicy: ApplicationBundlePolicy?
 
     init(pathGuard: ProtectedPaths, userID: uid_t, runningApps: any RunningAppChecking,
-         tolerance: ChangeTolerance = .default, sizer: FileSizer = FileSizer()) {
+         tolerance: ChangeTolerance = .default, sizer: FileSizer = FileSizer(),
+         appPolicy: ApplicationBundlePolicy? = nil) {
+        self.appPolicy = appPolicy
         self.pathGuard = pathGuard
         self.userID = userID
         self.runningApps = runningApps
@@ -26,7 +30,8 @@ struct ItemValidator: Sendable {
         case .none: out.append(.notActionable)
         case .trashWorktree: out.append(.methodNotSupported("trashWorktree"))
         case .toolCommand: out.append(.methodNotSupported("toolCommand"))
-        case .trashApplication: out.append(.methodNotSupported("trashApplication"))
+        case .trashApplication:
+            if action == .deletePermanently { out.append(.appBundleRefused(.permanentDelete)) }
         case .trash: break
         }
         if action == .deletePermanently && !options.permanentDeleteEnabled {
@@ -92,8 +97,30 @@ struct ItemValidator: Sendable {
         return (out, fingerprint)
     }
 
+    /// `.trashApplication`: the whole policy (checks 1-15) in place of the generic path/owner/parent checks.
+    /// Never re-sizes the bundle; identity is the bundle + Info.plist fingerprint.
+    func appFastChecks(_ item: ScanItem, action: CleanupAction, expected: AppBundleFingerprint?,
+                       expectedGeneric: ItemFingerprint? = nil)
+        -> (blockers: [CleanupBlocker], fingerprint: ItemFingerprint?, bundle: AppBundleFingerprint?) {
+        guard let appPolicy else { return ([.appBundleRefused(.notApplicationMethod)], nil, nil) }
+        var (blockers, bundle) = appPolicy.evaluate(item, action: action, expected: expected,
+                                                    pathGuard: pathGuard, runningApps: runningApps)
+        var fingerprint: ItemFingerprint?
+        if let bundle {
+            fingerprint = ItemFingerprint(device: bundle.bundleDevice, inode: bundle.bundleInode,
+                                          kind: .directory, ownerUID: bundle.ownerUID)
+            if let g = expectedGeneric, g.device != bundle.bundleDevice || g.inode != bundle.bundleInode,
+               !blockers.contains(.identityChanged) {
+                blockers.append(.identityChanged)
+            }
+        }
+        return (blockers, fingerprint, bundle)
+    }
+
     /// Slow check: re-size and compare with the scan.
     func changeCheck(_ item: ScanItem) async -> [CleanupBlocker] {
+        // Apps: identity is checked by `appFastChecks`; re-sizing a 10 GB bundle at execute time is too slow.
+        if case .trashApplication = item.cleanupMethod { return [] }
         let report: SizeReport
         do {
             report = try await sizer.size(of: item.url)

@@ -369,6 +369,246 @@
         }
       }
     },
+    "cleanup.blocker.app.appleOrSystem" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Part of macOS or Apple software. It can't be removed."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Thuộc macOS hoặc phần mềm của Apple. Không thể gỡ."
+          }
+        }
+      }
+    },
+    "cleanup.blocker.app.bundleIDMismatch" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The app was replaced after the scan. Scan again."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ứng dụng đã bị thay thế sau khi quét. Hãy quét lại."
+          }
+        }
+      }
+    },
+    "cleanup.blocker.app.insideBundle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is inside another app, so it can't be removed on its own."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mục này nằm bên trong một ứng dụng khác nên không thể gỡ riêng."
+          }
+        }
+      }
+    },
+    "cleanup.blocker.app.invalidPath" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app's location isn't valid, so it was left alone."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vị trí của ứng dụng này không hợp lệ nên đã được bỏ qua."
+          }
+        }
+      }
+    },
+    "cleanup.blocker.app.missingInfoPlist" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The app's information file is missing or unreadable, so it was left alone."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tệp thông tin của ứng dụng bị thiếu hoặc không đọc được nên đã được bỏ qua."
+          }
+        }
+      }
+    },
+    "cleanup.blocker.app.needsAppManagement" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS blocked this. Allow AI Disk Keeper in System Settings › Privacy & Security › App Management, then try again."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "macOS đã chặn thao tác này. Hãy cho phép AI Disk Keeper trong Cài đặt hệ thống › Quyền riêng tư & Bảo mật › Quản lý ứng dụng, rồi thử lại."
+          }
+        }
+      }
+    },
+    "cleanup.blocker.app.notAnAppBundle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This isn't a valid app, so it was left alone."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đây không phải ứng dụng hợp lệ nên đã được bỏ qua."
+          }
+        }
+      }
+    },
+    "cleanup.blocker.app.notApplicationMethod" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App removal isn't available here."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chưa thể gỡ ứng dụng ở đây."
+          }
+        }
+      }
+    },
+    "cleanup.blocker.app.notTopLevel" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only apps directly in Applications can be removed here."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chỉ có thể gỡ ứng dụng nằm trực tiếp trong thư mục Ứng dụng."
+          }
+        }
+      }
+    },
+    "cleanup.blocker.app.permanentDelete" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps can only be moved to the Trash."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ứng dụng chỉ có thể được chuyển vào Thùng rác."
+          }
+        }
+      }
+    },
+    "cleanup.blocker.app.requiresAdmin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installed for all users. Drag it to the Trash in Finder (you may need an administrator password)."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Được cài cho mọi người dùng. Hãy kéo nó vào Thùng rác trong Finder (có thể cần mật khẩu quản trị viên)."
+          }
+        }
+      }
+    },
+    "cleanup.blocker.app.resolvedElsewhere" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This app's location points somewhere else, so it was left alone."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vị trí của ứng dụng này trỏ tới nơi khác nên đã được bỏ qua."
+          }
+        }
+      }
+    },
+    "cleanup.blocker.app.rootItself" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Applications folder itself can't be removed."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không thể gỡ chính thư mục Ứng dụng."
+          }
+        }
+      }
+    },
+    "cleanup.blocker.app.signatureUnreadable" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The app's signature couldn't be read, so it was left alone."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không đọc được chữ ký của ứng dụng nên đã được bỏ qua."
+          }
+        }
+      }
+    },
+    "cleanup.blocker.app.symlink" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is a link to an app stored elsewhere."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đây là liên kết tới ứng dụng ở nơi khác."
+          }
+        }
+      }
+    },
     "cleanup.blocker.appRunning" : {
       "localizations" : {
         "en" : {

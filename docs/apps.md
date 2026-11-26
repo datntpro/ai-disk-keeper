@@ -9,8 +9,8 @@ Code: `Sources/DiskKeeperCore/Scanners/Apps/`. Nothing here writes, trashes, run
    bundles are *not* emitted through `ScanEngine`: its guard drops everything outside `~`, and
    `/Applications` is outside `~` (decision N9). `InstalledApp.makeScanItem()` builds the item
    (`category .application`, `tool .apps`, `tier .review`, `groupID "app:<bundleID>"`,
-   `ruleID "apps.bundle"`). Until T36 adds the guard exception, `.trashApplication` items are blocked by the
-   cleanup engine.
+   `ruleID "apps.bundle"`). `CleanupEngine` trashes `.trashApplication` items through `ApplicationBundlePolicy` (T36, see
+   `docs/protected-paths.md`); the engine needs the policy injected, otherwise every app entry is blocked.
 2. **`AppLeftoverScanner`** (id `app-leftovers`) is a normal `Scanner`. It only emits paths under `~/Library`,
    which the guard allows, so Care Scan can run it.
 
@@ -51,7 +51,7 @@ Safety rules:
   sentry, squirrel`.
 - Symlinked library entries are ignored. Entries owned by another user are dropped.
 - `~/Library/Preferences` (including `ByHost`) is protected by the scan guard, so Preferences matches are
-  dropped and never emitted today; T36 needs a guard exception before they can be offered.
+  dropped and never emitted today; a later task needs a guard exception before they can be offered (T36 only covers app bundles).
 - Apple's own apps from the App Store (Xcode, Pages, Keynote) do not satisfy `anchor apple`; any `com.apple.*`
   bundle id or Apple's team id (59GAB85EFG) is treated as Apple.
 - A `~/Library` location that is itself a symlink is not followed.

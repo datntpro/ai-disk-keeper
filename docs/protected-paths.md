@@ -68,11 +68,11 @@ tests. Summary:
 - `~/.claude/projects/<proj>` can never be an item (it contains `memory`); T06 must emit per-transcript
   (`*.jsonl`) items.
 
-## Application-bundle exception (design, implemented in T36)
+## Application-bundle exception (implemented in T36)
 
 Safety invariant 15 allows exactly one exception to "everything outside `~`/`$TMPDIR` is protected": trashing
-an installed application. T36 implements it as `ApplicationBundlePolicy` (a pure function plus a thin
-filesystem probe); **this document only specifies it**. Nothing in `ProtectedPaths` changes for it.
+an installed application. T36 implements it as `ApplicationBundlePolicy` (`Safety/ApplicationBundlePolicy.swift`, with a faked-in-tests
+filesystem probe in `Safety/AppBundleProbe.swift`). Nothing in `ProtectedPaths` changes for it.
 
 The exception is evaluated **only** when `item.cleanupMethod == .trashApplication`. `ProtectedPaths.check`
 stays unchanged for every other caller (scan, rules, other cleanup methods). The check runs at plan time and
@@ -80,20 +80,32 @@ again at execute time (after `fastChecks`), comparing (dev, inode) with the plan
 grant more than macOS does: TCC *App Management* (Ventura+) may still refuse the trash, and there is no
 privileged helper (D3).
 
-| # | Input | Verdict | Reason code (T36) |
+| # | Input | Verdict | Reason code (T36, `CleanupBlocker`) |
 |---|---|---|---|
 | 1 | `/Applications/Foo.app` (real dir, user-owned, Developer ID, not running) | **allowed for `trashApplication` only** | — |
 | 2 | `~/Applications/Foo.app` (same conditions) | allowed for `trashApplication` only | — |
-| 3 | `/Applications/Utilities/Foo.app` | denied | `notTopLevel` |
-| 4 | `/Applications/Vendor/Foo.app` | denied | `notTopLevel` |
-| 5 | `/Applications/Foo.app/Contents/…` or any path inside a bundle | denied | `insideBundle` |
-| 6 | `/Applications/Foo.app` that is a symlink (e.g. Safari → cryptex) | denied | `symlink` |
-| 7 | resolved path differs from lexical (symlinked parent, firmlink games) | denied | `resolvedElsewhere` |
-| 8 | Apple-signed (anchor apple) or under `/System`, or on a sealed volume | denied | `appleOrSystem` |
-| 9 | owned by root/another user (typical App Store install) | denied; UI shows "Move to Trash in Finder" guidance | `notOwnedByUser` |
-| 10 | running (`RunningAppChecking` true) or unknown (nil) | denied (fail closed) | `appRunning` / `appStateUnknown` |
-| 11 | name not ending in `.app` (case-insensitive), or `.app` with no `Contents/Info.plist` | denied | `notAnAppBundle` |
-| 12 | `CFBundleIdentifier` differs from the item's `trashApplication(bundleID:)` | denied | `identityChanged` |
-| 13 | any action other than Trash (permanent delete requested) | denied | `permanentDeleteDisabled` |
-| 14 | `/Applications` or `~/Applications` itself | denied | existing `systemLocation` / `protectedLocation` |
-| 15 | `trashItem` fails with `EPERM` (macOS App Management TCC) | skipped; UI deep-links to Privacy & Security › App Management | `needsAppManagement` |
+| 3 | `/Applications/Utilities/Foo.app` | denied | `appBundleRefused(notTopLevel)` |
+| 4 | `/Applications/Vendor/Foo.app` | denied | `appBundleRefused(notTopLevel)` |
+| 5 | `/Applications/Foo.app/Contents/…` or any path inside a bundle | denied | `appBundleRefused(insideBundle)` |
+| 6 | `/Applications/Foo.app` that is a symlink (e.g. Safari → cryptex) | denied | `appBundleRefused(symlink)` |
+| 7 | resolved path differs from lexical (symlinked parent, firmlink games) | denied | `appBundleRefused(resolvedElsewhere)` (+ `symlinkInParentChain`) |
+| 8 | Apple-signed (anchor apple) or under `/System`, or on a sealed volume | denied | `appBundleRefused(appleOrSystem)`; an unreadable signature is `signatureUnreadable` (fail closed) |
+| 9 | owned by root/another user (typical App Store install) | denied; UI shows "Move to Trash in Finder" guidance | `requiresAdmin` |
+| 10 | running (`RunningAppChecking` true) or unknown (nil) | denied (fail closed); also any process running from inside the bundle | `appRunning` / `appStateUnknown` |
+| 11 | name not ending in `.app` (case-insensitive), or `.app` with no `Contents/Info.plist` | denied | `appBundleRefused(notAnAppBundle)` / `missingInfoPlist` |
+| 12 | `CFBundleIdentifier` differs from the item's `trashApplication(bundleID:)` | denied | `appBundleRefused(bundleIDMismatch)`; changed between plan and execute: `identityChanged` |
+| 13 | any action other than Trash (permanent delete requested) | denied, whatever the Settings say | `appBundleRefused(permanentDelete)` |
+| 14 | `/Applications` or `~/Applications` itself | denied | `appBundleRefused(rootItself)` (and the guard's `systemLocation` / `protectedLocation`) |
+| 15 | `trashItem` fails with `EPERM` (macOS App Management TCC) | skipped; UI deep-links to Privacy & Security › App Management (`Privacy_AppBundles`) | `needsAppManagementPermission` (`EACCES` → `requiresAdmin`) |
+
+Implementation notes (T36):
+
+- The guard is called for app entries too. Its `systemLocation` verdict is waived only when the lexical parent is
+  exactly `/Applications` and every lexical check passed (`ApplicationBundlePolicy.waives`). Every other reason
+  (`outsideAllowedRoots`, `protectedPath`, `protectedName`, ...) still blocks as `protectedPath`.
+- Checked at plan time and again at execute time: the policy runs, then the bundle + `Info.plist` fingerprint
+  (dev/ino, size, mtime, bundle id, owner) is compared with the plan's, then the Trash move happens. The bundle is
+  not re-sized at execute time.
+- Sealed volume: `statfs` with `MNT_SNAPSHOT`/`MNT_RDONLY` or mount point `/`; unknown = refused. Measured on
+  macOS 27.2: `/Applications` is on `/System/Volumes/Data` (rw); `/System/Applications` and `/` are on `/`
+  (snapshot, read-only).

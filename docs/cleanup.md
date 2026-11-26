@@ -63,7 +63,17 @@ Off by default. It needs both `requestPermanentDelete` (this run) and `permanent
 
 `~/Library/Application Support/AIDiskKeeper/audit.jsonl`, directory 0700, file 0600, opened `O_APPEND | O_NOFOLLOW`, one JSON line per record, `fsync` after each. If the log cannot be opened, `execute` throws `auditLogUnavailable` **before any action**. If a write fails mid-run, the remaining items are `notAttempted` and the report carries `auditFailure`. `notAttempted` items write no line.
 
-Fields (schema version 1): `schemaVersion`, `timestamp`, `runID` (plan id), `itemID`, `path`, `bytes`, `action`, `result` (`trashed` | `deleted` | `skipped` | `failed`), `trashPath`, `ruleID`, `tool`, `reasons` (blocker codes for skipped), `error`.
+Fields (schema version 1): `schemaVersion`, `timestamp`, `runID` (plan id), `itemID`, `path`, `bytes`, `action`, `result` (`trashed` | `deleted` | `skipped` | `failed`), `trashPath`, `ruleID`, `tool`, `reasons` (blocker codes for skipped; an app refusal is `appBundleRefused:<refusal>`), `error`, and `bundleID` (optional, present for every app uninstall entry; additive, schema stays 1).
+
+## Uninstalling an app (`trashApplication`, T36)
+
+Handled by `ApplicationBundlePolicy`, not the generic path/owner checks: see `docs/protected-paths.md`. New blockers:
+`appBundleRefused(<AppBundleRefusal>)`, `requiresAdmin(bundleID)` (root-owned, remove in Finder; `EACCES` from the
+Trash maps here too) and `needsAppManagementPermission(bundleID)` (`EPERM`, macOS App Management; deep link
+`SystemSettingsLinks.appManagement`). The action is always Trash: with `requestPermanentDelete` an app entry is
+blocked (`appBundleRefused(permanentDelete)`) and the remover is never called. `CleanupEngine.init(appPolicy:)`
+defaults to nil, which blocks every app entry. The size/mtime change check is replaced by the bundle + `Info.plist`
+fingerprint, and `freedBytes` stays "up to".
 
 ## Known limits
 
