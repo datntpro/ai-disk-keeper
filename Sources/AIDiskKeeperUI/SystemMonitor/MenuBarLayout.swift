@@ -11,9 +11,8 @@ enum MenuBarLayout {
     static let ridgeWidth: CGFloat = 24
     static let spacing: CGFloat = 3
     static let separatorWidth: CGFloat = 1
-    /// Clear space on each side of a separator, so a full "100%" never touches it. The cell is `separatorCellWidth` wide.
-    static let separatorPadding: CGFloat = 2
-    static var separatorCellWidth: CGFloat { separatorWidth + 2 * separatorPadding }
+    // The `spacing` gap on each side of a separator already keeps a full "100%" clear of the line, so the cell stays
+    // `separatorWidth` wide and the T50 width budget behaviour is unchanged.
 
     /// The widest string each cell can show, so digits never move the item.
     /// Widest `Formatting.bytes` outputs (two decimals, every unit, English and Vietnamese). Measured, never guessed.
@@ -73,14 +72,13 @@ enum MenuBarLayout {
         }
         let start = style == .liveStrata ? 3 : 0
         for step in start...3 {
-            let r = build(style: style, step: step, entries: entries, measure: measure, measureDisk: measureDisk)
+            let r = build(style: style, step: step, entries: entries, measure: measure)
             if r.fits || step == 3 { return r }
         }
-        return build(style: style, step: 3, entries: entries, measure: measure, measureDisk: measureDisk)
+        return build(style: style, step: 3, entries: entries, measure: measure)
     }
 
-    private static func build(style: MenuBarStyle, step: Int, entries: [Entry], measure: @escaping (String) -> CGFloat,
-                              measureDisk: @escaping (String) -> CGFloat) -> Result {
+    private static func build(style: MenuBarStyle, step: Int, entries: [Entry], measure: @escaping (String) -> CGFloat) -> Result {
         if step >= 3 {
             let cells = [Cell(kind: .glyph, width: glyphWidth)]
             return Result(mode: .strata, cells: cells, width: glyphWidth, stepDown: 3)
@@ -92,11 +90,11 @@ enum MenuBarLayout {
         var cells = [Cell(kind: .glyph, width: glyphWidth)]
         var first = true
         for e in entries {
-            if separators, !first { cells.append(Cell(kind: .separator, width: separatorCellWidth)) }
+            if separators, !first { cells.append(Cell(kind: .separator, width: separatorWidth)) }
             first = false
             switch e.metric {
             case .disk:
-                cells.append(Cell(kind: .metric(.disk), text: e.text, width: reservedDiskWidth(measureDisk)))
+                cells.append(Cell(kind: .metric(.disk), text: e.text, width: reservedDiskWidth(measure)))
             case .cpu, .memory:
                 let w = ridge ? ridgeWidth + (values ? spacing + measure(reservedPercent) : 0)
                     : markWidth + spacing + measure(reservedPercent)
@@ -122,7 +120,8 @@ enum MenuBarLayout {
 
     static var font: NSFont { .monospacedDigitSystemFont(ofSize: 12, weight: .regular) }
 
-    /// The free-space text keeps the T47 look: the system menu bar font, not the monitor's 12 pt mono digits.
+    /// The free-space text keeps the T47 look (system menu bar font) only when it sits beside the glyph alone. Next to
+    /// other metrics it uses the monitor's 12 pt font, so the T50 width budget holds.
     static var diskFont: NSFont { .menuBarFont(ofSize: 0) }
     static func measureDiskText(_ s: String) -> CGFloat {
         ceil((s as NSString).size(withAttributes: [.font: diskFont]).width)
@@ -147,6 +146,10 @@ enum MenuBarLayout {
     static func preview(_ s: AppSettings) -> Result {
         layout(style: s.menuBarStyle, entries: previewEntries(s), measure: measureText, measureDisk: measureDiskText)
     }
+
+    /// True only when the bar really stepped down from the chosen style. Live strata is already the last step, so
+    /// picking it is never a step-down. Glyph has no layouts to name.
+    static func steppedDown(_ r: Result, style: MenuBarStyle) -> Bool { r.stepDown > 0 && style != .liveStrata }
 
     /// Which form the item takes, and why, for the Settings width preview.
     enum LayoutName: Equatable { case full, compact, ridgeNoValues, liveStrata }
