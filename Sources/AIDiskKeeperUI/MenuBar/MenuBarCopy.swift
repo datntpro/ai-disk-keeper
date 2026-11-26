@@ -11,6 +11,9 @@ enum MenuBarCopy {
     static func growthDown(_ bytes: String) -> String { loc("menubar.growthDown", "AI tools shrank since last scan \(bytes)") }
     static func topModule(_ name: String, _ bytes: String) -> String { loc("menubar.topModule", "\(name) · \(bytes) Safe") }
     static var topTools: String { loc("menubar.topTools", "Top AI tools") }
+    static var topToolsNote: String {
+        loc("menubar.topTools.note", "AI tool data only. Caches, worktrees and build files are counted separately.")
+    }
     static func nextScan(_ when: String) -> String { loc("menubar.nextScan", "Next Care Scan: \(when)") }
     static var reviewInApp: String { loc("menubar.reviewInApp", "Review in app") }
     static var scanNow: String { loc("menubar.scanNow", "Scan now") }

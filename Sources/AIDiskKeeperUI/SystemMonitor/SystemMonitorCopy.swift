@@ -103,5 +103,17 @@ enum SystemMonitorCopy {
     static var steppedDown: String {
         loc("settings.sysmon.stepped", "Too wide for the menu bar: the item shows a shorter form automatically.")
     }
+    static func layoutName(_ n: MenuBarLayout.LayoutName) -> String {
+        switch n {
+        case .full: loc("settings.sysmon.layout.full", "Full")
+        case .compact: loc("settings.sysmon.layout.compact", "Compact")
+        case .ridgeNoValues: loc("settings.sysmon.layout.ridge", "Ridge (no values)")
+        case .liveStrata: loc("settings.sysmon.layout.strata", "Live strata")
+        }
+    }
+    static func layoutLine(_ name: String) -> String { loc("settings.sysmon.layout", "Layout: \(name)") }
+    static func layoutLineWhy(_ name: String) -> String {
+        loc("settings.sysmon.layout.why", "Layout: \(name), because there are too many metrics for the bar width")
+    }
     static var monitorGroup: String { loc("settings.sysmon.group", "System monitor") }
 }

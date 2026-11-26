@@ -121,3 +121,55 @@ final class MenuBarLayoutTests: XCTestCase {
         XCTAssertEqual(MonitorFormatting.percent(1.4), "100%")
     }
 }
+
+@MainActor
+final class MenuBarF5Tests: XCTestCase {
+    func testSeparatorKeepsAtLeastTwoPointsClearOfAFull100Percent() {
+        let e: [MenuBarLayout.Entry] = [.init(metric: .cpu, text: "100%"), .init(metric: .memory, text: "100%")]
+        // a roomy measure keeps step 0 (separators); the real font gives the real "100%" width
+        let r = MenuBarLayout.layout(style: .readout, entries: e, measure: { _ in MenuBarLayout.measureText("100%") })
+        XCTAssertEqual(r.stepDown, 0)
+        var x: CGFloat = 0
+        var textRight: CGFloat?
+        for cell in r.cells {
+            if cell.kind == .separator, let right = textRight {
+                let ink = x + MenuBarLayout.separatorPadding
+                XCTAssertGreaterThanOrEqual(ink - right, 2)
+                // and the other side
+                textRight = nil
+                x += cell.width + MenuBarLayout.spacing
+                continue
+            }
+            if case .metric = cell.kind {
+                let text = MenuBarLayout.measureText("100%")
+                textRight = x + cell.width
+                XCTAssertEqual(cell.width, MenuBarLayout.markWidth + MenuBarLayout.spacing + text)
+            }
+            x += cell.width + MenuBarLayout.spacing
+        }
+        let drawn = x - MenuBarLayout.spacing
+        XCTAssertEqual(drawn, r.width, accuracy: 0.001)
+        // The 100% label renders without crashing and has the layout's width.
+        let img = MenuBarLabelRenderer.render(LabelContent(layout: r))
+        XCTAssertEqual(img.size.width, r.width, accuracy: 0.001)
+        XCTAssertGreaterThanOrEqual(MenuBarLayout.separatorCellWidth, MenuBarLayout.separatorWidth + 4)
+    }
+
+    func testLayoutNamesFollowTheStepDown() {
+        func r(_ step: Int) -> MenuBarLayout.Result { .init(mode: .readout, cells: [], width: 0, stepDown: step) }
+        XCTAssertEqual([0, 1, 2, 3].map { MenuBarLayout.layoutName(r($0)) }, [.full, .compact, .ridgeNoValues, .liveStrata])
+        XCTAssertEqual(SystemMonitorCopy.layoutName(.ridgeNoValues), "Ridge (no values)")
+        XCTAssertEqual(SystemMonitorCopy.layoutName(.liveStrata), "Live strata")
+        XCTAssertTrue(SystemMonitorCopy.layoutLineWhy("Compact").contains("too many metrics for the bar width"))
+    }
+
+    func testFreeSpaceUsesTheMenuBarFont() {
+        XCTAssertEqual(MenuBarLayout.diskFont.pointSize, NSFont.menuBarFont(ofSize: 0).pointSize)
+        XCTAssertEqual(MenuBarLayout.measureDiskText("182 GB"),
+                       ceil(("182 GB" as NSString).size(withAttributes: [.font: NSFont.menuBarFont(ofSize: 0)]).width))
+    }
+
+    func testTopToolsCaption() {
+        XCTAssertEqual(MenuBarCopy.topToolsNote, "AI tool data only. Caches, worktrees and build files are counted separately.")
+    }
+}

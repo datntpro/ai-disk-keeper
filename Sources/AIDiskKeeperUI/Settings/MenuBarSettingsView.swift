@@ -50,6 +50,9 @@ struct MenuBarSettingsView: View {
             let layout = MenuBarLayout.preview(s)
             Text(SystemMonitorCopy.widthPreview(Formatting.count(Int(layout.width)), Formatting.count(Int(MenuBarLayout.budget))))
                 .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+            let name = SystemMonitorCopy.layoutName(MenuBarLayout.layoutName(layout))
+            Text(layout.stepDown > 0 ? SystemMonitorCopy.layoutLineWhy(name) : SystemMonitorCopy.layoutLine(name))
+                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if layout.stepDown > 0 {
                 Text(SystemMonitorCopy.steppedDown).font(.caption).foregroundStyle(Color.adkReviewInk)
                     .fixedSize(horizontal: false, vertical: true)

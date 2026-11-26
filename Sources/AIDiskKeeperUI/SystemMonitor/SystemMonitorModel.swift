@@ -29,6 +29,7 @@ final class SystemMonitorModel {
     @ObservationIgnored private let now: () -> Double
     @ObservationIgnored private let renderLabel: (LabelContent) -> NSImage
     @ObservationIgnored private let measure: (String) -> CGFloat
+    @ObservationIgnored private let measureDisk: (String) -> CGFloat
     @ObservationIgnored private var lastContent: LabelContent?
 
     static let defaultClock: () -> Double = {
@@ -37,12 +38,14 @@ final class SystemMonitorModel {
     }()
 
     init(settings: SettingsModel, menuBar: MenuBarModel, now: @escaping () -> Double = SystemMonitorModel.defaultClock,
-         measure: @escaping (String) -> CGFloat = MenuBarLayout.measureText,
+         measure: ((String) -> CGFloat)? = nil, measureDisk: ((String) -> CGFloat)? = nil,
          renderLabel: @escaping (LabelContent) -> NSImage = MenuBarLabelRenderer.render) {
         self.settings = settings
         self.menuBar = menuBar
         self.now = now
-        self.measure = measure
+        // Injected measures (tests) drive the disk cell too; production measures it in the T47 menu bar font.
+        self.measure = measure ?? MenuBarLayout.measureText
+        self.measureDisk = measureDisk ?? (measure == nil ? MenuBarLayout.measureDiskText : self.measure)
         self.renderLabel = renderLabel
         self.labelImage = StrataGlyph.image()
         refreshLabel()
@@ -141,7 +144,7 @@ final class SystemMonitorModel {
 
     func makeContent() -> LabelContent {
         let s = settings.settings
-        let layout = MenuBarLayout.layout(style: s.menuBarStyle, entries: labelEntries(), measure: measure)
+        let layout = MenuBarLayout.layout(style: s.menuBarStyle, entries: labelEntries(), measure: measure, measureDisk: measureDisk)
         var c = LabelContent(layout: layout)
         let inBar = s.menuBarMetricsInOrder
         let q = LabelContent.quantize

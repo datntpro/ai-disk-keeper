@@ -11,6 +11,9 @@ enum MenuBarLayout {
     static let ridgeWidth: CGFloat = 24
     static let spacing: CGFloat = 3
     static let separatorWidth: CGFloat = 1
+    /// Clear space on each side of a separator, so a full "100%" never touches it. The cell is `separatorCellWidth` wide.
+    static let separatorPadding: CGFloat = 2
+    static var separatorCellWidth: CGFloat { separatorWidth + 2 * separatorPadding }
 
     /// The widest string each cell can show, so digits never move the item.
     /// Widest `Formatting.bytes` outputs (two decimals, every unit, English and Vietnamese). Measured, never guessed.
@@ -57,24 +60,27 @@ enum MenuBarLayout {
         var fits: Bool { width <= MenuBarLayout.budget }
     }
 
-    static func layout(style: MenuBarStyle, entries: [Entry], measure: (String) -> CGFloat) -> Result {
+    static func layout(style: MenuBarStyle, entries: [Entry], measure: @escaping (String) -> CGFloat,
+                       measureDisk: ((String) -> CGFloat)? = nil) -> Result {
+        let measureDisk = measureDisk ?? measure
         let nonDisk = entries.filter { $0.metric != .disk }
         let disk = entries.first { $0.metric == .disk }
         if style == .glyph || nonDisk.isEmpty {
             // Exactly the T47 item: glyph, plus the free-space text when it is on.
             var cells = [Cell(kind: .glyph, width: glyphWidth)]
-            if disk != nil { cells.append(Cell(kind: .metric(.disk), text: disk?.text, width: reservedDiskWidth(measure))) }
+            if disk != nil { cells.append(Cell(kind: .metric(.disk), text: disk?.text, width: reservedDiskWidth(measureDisk))) }
             return Result(mode: .glyph, cells: cells, width: total(cells, gap: 4), stepDown: 0)
         }
         let start = style == .liveStrata ? 3 : 0
         for step in start...3 {
-            let r = build(style: style, step: step, entries: entries, measure: measure)
+            let r = build(style: style, step: step, entries: entries, measure: measure, measureDisk: measureDisk)
             if r.fits || step == 3 { return r }
         }
-        return build(style: style, step: 3, entries: entries, measure: measure)
+        return build(style: style, step: 3, entries: entries, measure: measure, measureDisk: measureDisk)
     }
 
-    private static func build(style: MenuBarStyle, step: Int, entries: [Entry], measure: (String) -> CGFloat) -> Result {
+    private static func build(style: MenuBarStyle, step: Int, entries: [Entry], measure: @escaping (String) -> CGFloat,
+                              measureDisk: @escaping (String) -> CGFloat) -> Result {
         if step >= 3 {
             let cells = [Cell(kind: .glyph, width: glyphWidth)]
             return Result(mode: .strata, cells: cells, width: glyphWidth, stepDown: 3)
@@ -86,11 +92,11 @@ enum MenuBarLayout {
         var cells = [Cell(kind: .glyph, width: glyphWidth)]
         var first = true
         for e in entries {
-            if separators, !first { cells.append(Cell(kind: .separator, width: separatorWidth)) }
+            if separators, !first { cells.append(Cell(kind: .separator, width: separatorCellWidth)) }
             first = false
             switch e.metric {
             case .disk:
-                cells.append(Cell(kind: .metric(.disk), text: e.text, width: reservedDiskWidth(measure)))
+                cells.append(Cell(kind: .metric(.disk), text: e.text, width: reservedDiskWidth(measureDisk)))
             case .cpu, .memory:
                 let w = ridge ? ridgeWidth + (values ? spacing + measure(reservedPercent) : 0)
                     : markWidth + spacing + measure(reservedPercent)
@@ -116,6 +122,12 @@ enum MenuBarLayout {
 
     static var font: NSFont { .monospacedDigitSystemFont(ofSize: 12, weight: .regular) }
 
+    /// The free-space text keeps the T47 look: the system menu bar font, not the monitor's 12 pt mono digits.
+    static var diskFont: NSFont { .menuBarFont(ofSize: 0) }
+    static func measureDiskText(_ s: String) -> CGFloat {
+        ceil((s as NSString).size(withAttributes: [.font: diskFont]).width)
+    }
+
     /// Width of a string in the bar font, rounded up to a whole point.
     static func measureText(_ s: String) -> CGFloat {
         ceil((s as NSString).size(withAttributes: [.font: font]).width)
@@ -133,6 +145,17 @@ enum MenuBarLayout {
     }
 
     static func preview(_ s: AppSettings) -> Result {
-        layout(style: s.menuBarStyle, entries: previewEntries(s), measure: measureText)
+        layout(style: s.menuBarStyle, entries: previewEntries(s), measure: measureText, measureDisk: measureDiskText)
+    }
+
+    /// Which form the item takes, and why, for the Settings width preview.
+    enum LayoutName: Equatable { case full, compact, ridgeNoValues, liveStrata }
+    static func layoutName(_ r: Result) -> LayoutName {
+        switch r.stepDown {
+        case 0: .full
+        case 1: .compact
+        case 2: .ridgeNoValues
+        default: .liveStrata
+        }
     }
 }

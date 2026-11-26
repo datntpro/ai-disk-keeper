@@ -48,7 +48,7 @@ enum MenuBarLabelRenderer {
                 StrataGlyph.drawBars(topWidth: StrataGlyph.topBarWidth)
             }
         case .separator:
-            NSBezierPath(rect: NSRect(x: x, y: 4, width: 1, height: 10)).fill()
+            NSBezierPath(rect: NSRect(x: x + MenuBarLayout.separatorPadding, y: 4, width: MenuBarLayout.separatorWidth, height: 10)).fill()
         case .metric(let m):
             var cursor = x
             if cell.showsMark { drawMark(m, at: cursor); cursor += MenuBarLayout.markWidth + MenuBarLayout.spacing }
@@ -57,7 +57,7 @@ enum MenuBarLabelRenderer {
                 cursor += MenuBarLayout.ridgeWidth + MenuBarLayout.spacing
             }
             if let text = cell.text {
-                let attrs: [NSAttributedString.Key: Any] = [.font: MenuBarLayout.font, .foregroundColor: NSColor.black]
+                let attrs: [NSAttributedString.Key: Any] = [.font: m == .disk ? MenuBarLayout.diskFont : MenuBarLayout.font, .foregroundColor: NSColor.black]
                 let s = NSAttributedString(string: text, attributes: attrs)
                 s.draw(at: NSPoint(x: cursor, y: (height - s.size().height) / 2))
                 if m == .memory, c.pressureDot {
