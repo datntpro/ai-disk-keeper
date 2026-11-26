@@ -146,6 +146,7 @@ public actor CleanupEngine {
         var wasCancelled = false
         var auditFailure: String?
         var trashedKeys: Set<PathKey> = []
+        let claimed = plan.entries.map { PathCanonicalizer.key($0.item.path) }
         let total = plan.entries.count
 
         for (index, entry) in plan.entries.enumerated() {
@@ -158,7 +159,7 @@ public actor CleanupEngine {
                 results.append(result(entry, .notAttempted))
                 continue
             }
-            let (outcome, trashPath) = await run(entry, trashedKeys: trashedKeys)
+            let (outcome, trashPath) = await run(entry, trashedKeys: trashedKeys, claimed: claimed)
             switch outcome {
             case .trashed, .deleted: trashedKeys.insert(PathCanonicalizer.key(entry.item.path))
             default: break
@@ -185,7 +186,7 @@ public actor CleanupEngine {
         if waiters.isEmpty { isExecuting = false } else { waiters.removeFirst().resume() }
     }
 
-    private func run(_ entry: CleanupPlanEntry, trashedKeys: Set<PathKey>) async -> (CleanupOutcome, String?) {
+    private func run(_ entry: CleanupPlanEntry, trashedKeys: Set<PathKey>, claimed: [PathKey]) async -> (CleanupOutcome, String?) {
         if !entry.blockers.isEmpty { return (.skipped(entry.blockers), nil) }
         let item = entry.item
 
@@ -194,7 +195,7 @@ public actor CleanupEngine {
         blockers += await validator.changeCheck(item)
         blockers += validator.fastChecks(item, expected: entry.fingerprint).blockers
         if !blockers.isEmpty { return (.skipped(blockers), nil) }
-        if let gate = await keepOneGate(entry, trashedKeys: trashedKeys) { return (.skipped([gate]), nil) }
+        if let gate = await keepOneGate(entry, trashedKeys: trashedKeys, claimed: claimed) { return (.skipped([gate]), nil) }
 
         switch entry.action {
         case .trash:

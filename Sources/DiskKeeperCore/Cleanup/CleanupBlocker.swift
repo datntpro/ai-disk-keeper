@@ -119,7 +119,7 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
         case .duplicate: "The item was selected more than once."
         case .permanentDeleteDisabled: "Permanent delete is turned off in Settings."
         case .sizingFailed(let e): "Could not re-measure the item: \(e)"
-        case .wouldRemoveAllCopies: "Every copy in this duplicate group is selected. Keep at least one."
+        case .wouldRemoveAllCopies: "No copy of this duplicate group would be left. Keep at least one."
         case .survivorChanged: "The copy you're keeping changed or disappeared. Rescan before deleting this duplicate."
         case .duplicateGroupUnknown: "Duplicate details are missing. Rescan and review the group."
         }

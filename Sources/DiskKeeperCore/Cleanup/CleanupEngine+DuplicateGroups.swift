@@ -11,6 +11,9 @@ extension CleanupEngine {
     /// Plan time: attach the verified survivors, or block every selected member of the group.
     func applyKeepOne(items: [ScanItem], groups: [String: DuplicateGroup],
                       blockers: inout [[CleanupBlocker]], survivors: inout [Int: DuplicateSurvivorSet]) async {
+        // Every plan item claims its path and everything below it, whatever its category: a survivor that
+        // another item (or a folder item) would trash is not a survivor.
+        let claimed = items.map { PathCanonicalizer.key($0.path) }
         var byGroup: [String: [Int]] = [:]
         for i in items.indices where Self.isDuplicateItem(items[i]) { byGroup[items[i].groupID ?? "", default: []].append(i) }
         for (groupID, indices) in byGroup.sorted(by: { $0.key < $1.key }) {
@@ -23,7 +26,13 @@ extension CleanupEngine {
             let unknown = indices.filter { !memberKeys.contains(PathCanonicalizer.key(items[$0].path)) }
             for i in unknown { blockers[i].append(.duplicateGroupUnknown(groupID: groupID)) }
             let selected = Set(indices.map { PathCanonicalizer.key(items[$0].path) })
-            let unselected = group.members.filter { !selected.contains(PathCanonicalizer.key($0.path)) }
+            // A forged group may list one inode under two paths: never accept the inode of a selected copy.
+            let selectedInodes = Set(group.members.filter { selected.contains(PathCanonicalizer.key($0.path)) }
+                .map { InodeKey(device: $0.device, inode: $0.inode) })
+            let unselected = group.members.filter { m in
+                let k = PathCanonicalizer.key(m.path)
+                return !Self.isClaimed(k, by: claimed) && !selectedInodes.contains(InodeKey(device: m.device, inode: m.inode))
+            }
             var verified: [SurvivorFingerprint] = []
             for m in unselected where await Self.survivorIsValid(
                 path: m.path, device: m.device, inode: m.inode, modified: m.modified,
@@ -41,17 +50,28 @@ extension CleanupEngine {
     }
 
     /// Execute time: re-verify the survivors right before the move. `nil` = go ahead.
-    func keepOneGate(_ entry: CleanupPlanEntry, trashedKeys: Set<PathKey>) async -> CleanupBlocker? {
+    /// `claimed`: the keys of every entry of the plan (any category); `trashedKeys` is a subset, kept for clarity.
+    func keepOneGate(_ entry: CleanupPlanEntry, trashedKeys: Set<PathKey>, claimed: [PathKey]) async -> CleanupBlocker? {
         guard Self.isDuplicateItem(entry.item) else { return nil }
         let groupID = entry.item.groupID ?? ""
         guard let set = entry.survivors, set.groupID == groupID else { return .duplicateGroupUnknown(groupID: groupID) }
-        for s in set.survivors where !trashedKeys.contains(PathCanonicalizer.key(s.path)) {
+        for s in set.survivors {
+            let key = PathCanonicalizer.key(s.path)
+            if trashedKeys.contains(key) || Self.isClaimed(key, by: claimed) { continue }
+            if let fp = entry.fingerprint, fp.device == s.device, fp.inode == s.inode { continue }
             if await Self.survivorIsValid(path: s.path, device: s.device, inode: s.inode, modified: s.modified,
                                           logicalBytes: set.logicalBytes, partialDigest: set.partialDigest) {
                 return nil
             }
         }
         return .survivorChanged(groupID: groupID)
+    }
+
+    /// True when `key` equals, or lies below, the key of any claiming plan item.
+    static func isClaimed(_ key: PathKey, by claimed: [PathKey]) -> Bool {
+        claimed.contains { c in
+            c.components.count <= key.components.count && Array(key.components.prefix(c.components.count)) == c.components
+        }
     }
 
     /// lstat identity + regular file + size + mtime (±2 s) + partial digest (128 KiB read). A full re-hash is

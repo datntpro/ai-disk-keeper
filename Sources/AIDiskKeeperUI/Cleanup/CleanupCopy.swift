@@ -143,7 +143,7 @@ public enum CleanupCopy {
         case .permanentDeleteDisabled: loc("cleanup.blocker.permanentOff", "Permanent delete is turned off.")
         case .sizingFailed(let e): loc("cleanup.blocker.sizing", "Could not re-measure the item: \(e)")
         case .wouldRemoveAllCopies:
-            loc("cleanup.blocker.allCopies", "Every copy in this duplicate group is selected. Keep at least one.")
+            loc("cleanup.blocker.allCopies", "No copy of this duplicate group would be left. Keep at least one.")
         case .survivorChanged:
             loc("cleanup.blocker.survivorChanged", "The copy you're keeping changed or disappeared. Rescan before deleting this duplicate.")
         case .duplicateGroupUnknown:
