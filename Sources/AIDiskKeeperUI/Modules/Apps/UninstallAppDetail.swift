@@ -44,7 +44,8 @@ struct UninstallAppDetail: View {
                 Text(app.name).font(ADKTheme.Font.title)
                 PathText(UninstallLibrary.tilde(app.path, home: model.home))
                 Text(verbatim: "\(app.bundleID) · \(sourceText)").font(.caption).foregroundStyle(.adkText3).textSelection(.enabled)
-                Text(UninstallerCopy.total(Formatting.bytes(app.sizeAllocated), Formatting.count(group.related.count + group.shared.count)))
+                Text(UninstallerCopy.total(Formatting.bytes(app.sizeAllocated), Formatting.count(group.related.count + group.shared.count),
+                                              count: group.related.count + group.shared.count))
                     .font(.caption).foregroundStyle(.adkText2)
             }
             Spacer()
@@ -71,7 +72,7 @@ struct UninstallAppDetail: View {
         VStack(alignment: .leading, spacing: ADKTheme.Spacing.sm) {
             Text(UninstallerCopy.sectionRelated).font(.headline)
             if group.related.isEmpty {
-                Text(UninstallerCopy.noRelated).font(.callout).foregroundStyle(.adkText3)
+                Text(model.leftoversFailed ? UninstallerCopy.relatedFailed : UninstallerCopy.noRelated).font(.callout).foregroundStyle(.adkText3)
             } else {
                 SectionCard(padding: ADKTheme.Spacing.md) {
                     VStack(spacing: 0) {
@@ -92,7 +93,7 @@ struct UninstallAppDetail: View {
             SectionCard(padding: ADKTheme.Spacing.md) {
                 VStack(spacing: 0) {
                     ForEach(group.shared, id: \.id) { item in
-                        UninstallRelatedRow(item: item, kind: .shared, owners: model.owners(of: item).map(\.name).sorted().joined(separator: ", "),
+                        UninstallRelatedRow(item: item, kind: .shared, owners: model.ownerNames(of: item),
                                             home: model.home, isOn: model.selection.isTicked(item)) { model.toggle(item) }
                         if item.id != group.shared.last?.id { Divider() }
                     }
@@ -105,7 +106,7 @@ struct UninstallAppDetail: View {
         SectionCard(padding: ADKTheme.Spacing.md) {
             VStack(alignment: .leading, spacing: 4) {
                 Label(UninstallerCopy.noteTitle, systemImage: "info.circle").font(.callout.weight(.medium))
-                Text(UninstallerCopy.noteBody(app.name)).font(.callout).foregroundStyle(.adkText2)
+                Text(UninstallerCopy.noteBody).font(.callout).foregroundStyle(.adkText2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -122,13 +123,14 @@ struct UninstallAppDetail: View {
     private var actionBar: some View {
         HStack(spacing: ADKTheme.Spacing.md) {
             SizeText(model.tickedBytes, qualifier: .upTo).font(.headline)
-            Text(UninstallerCopy.barSummary(Formatting.count(model.tickedRelated.count))).foregroundStyle(.adkText2)
+            Text(UninstallerCopy.barSummary(Formatting.count(model.tickedRelated.count), count: model.tickedRelated.count))
+                .foregroundStyle(.adkText2).lineLimit(1)
             Spacer()
             Button(UninstallerCopy.reset) { model.resetApp(using: coordinator) }
-                .disabled(!model.canReset).help(UninstallerCopy.resetHelp)
+                .disabled(!model.canReset).help(UninstallerCopy.resetHelp).fixedSize()
             Button(UninstallerCopy.uninstall) { model.uninstall(using: coordinator) }
                 .buttonStyle(.borderedProminent).tint(.adkAccent)
-                .disabled(availability != .available).help(uninstallHelp)
+                .disabled(availability != .available).help(uninstallHelp).fixedSize()
         }
         .font(.callout)
         .padding(.horizontal, ADKTheme.Spacing.lg).padding(.vertical, ADKTheme.Spacing.md)

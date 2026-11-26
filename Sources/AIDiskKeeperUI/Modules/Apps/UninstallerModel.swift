@@ -23,6 +23,8 @@ final class UninstallerModel {
     /// Name-level entries several apps could own.
     private(set) var shared: [ScanItem] = []
     private(set) var orphans: [ScanItem] = []
+    /// The leftover scan failed: "nothing found" would be a guess, so the screen says it couldn't read them.
+    private(set) var leftoversFailed = false
     private(set) var running: Set<String> = []
     private(set) var selection = UninstallSelection()
     private(set) var orphanSelection: Set<ScanItem.ID> = []
@@ -81,6 +83,7 @@ final class UninstallerModel {
                 if l.sizeAllocated != r.sizeAllocated { return l.sizeAllocated > r.sizeAllocated }
                 return l.name.localizedStandardCompare(r.name) == .orderedAscending
             }
+            leftoversFailed = found == nil
             partition(found?.items ?? [])
             if let id = selectedAppID, apps.contains(where: { $0.id == id }) {
                 selection = UninstallSelection(app: apps.first { $0.id == id }!, group: group(forAppID: id))
@@ -123,10 +126,10 @@ final class UninstallerModel {
         return apps.filter { $0.name.localizedCaseInsensitiveContains(q) || $0.bundleID.localizedCaseInsensitiveContains(q) }
     }
 
-    /// Apps you could remove that haven't been opened for 90+ days (never-opened counts).
+    /// Apps you could remove that haven't been opened for 90+ days (no usage record doesn't count: Spotlight may be off).
     var unusedCount: Int {
         let cutoff = now().addingTimeInterval(-Self.unusedDays * 86_400)
-        return apps.filter { $0.viewOnlyReason == nil && ($0.lastUsed.map { $0 < cutoff } ?? true) }.count
+        return apps.filter { $0.viewOnlyReason == nil && ($0.lastUsed.map { $0 < cutoff } ?? false) }.count
     }
 
     var orphanBytes: Int64 { orphans.reduce(0) { $0 + $1.sizeAllocated } }
@@ -135,15 +138,26 @@ final class UninstallerModel {
 
     private func group(forAppID id: InstalledApp.ID) -> UninstallGroup {
         guard let app = apps.first(where: { $0.id == id }) else { return UninstallGroup() }
-        let names = Self.foldedNames(app)
-        return UninstallGroup(related: related["app:\(app.bundleID)"] ?? [],
-                              shared: shared.filter { names.contains(UninstallLibrary.fold(($0.path as NSString).lastPathComponent)) })
+        return UninstallGroup(related: related["app:\(app.bundleID)"] ?? [], shared: shared.filter { Self.owns(app, $0) })
     }
 
     /// Who else could own a shared entry (the installed apps whose name it carries).
     func owners(of item: ScanItem) -> [InstalledApp] {
-        let name = UninstallLibrary.fold((item.path as NSString).lastPathComponent)
-        return apps.filter { Self.foldedNames($0).contains(name) && $0.source != .apple }
+        apps.filter { $0.source != .apple && Self.owns($0, item) }
+    }
+
+    /// A shared entry may belong to an app by folder name, or (Group Containers) by the team prefix `<TEAMID>.*`.
+    private static func owns(_ app: InstalledApp, _ item: ScanItem) -> Bool {
+        let last = (item.path as NSString).lastPathComponent
+        if foldedNames(app).contains(UninstallLibrary.fold(last)) { return true }
+        guard UninstallLibrary.location(of: item.path) == "Group Containers", let team = app.source.teamID,
+              let prefix = last.split(separator: ".", maxSplits: 1).first else { return false }
+        return UninstallLibrary.fold(String(prefix)) == UninstallLibrary.fold(team)
+    }
+
+    /// Owner names for a shared row, each once ("ADKQA Twin, ADKQA Twin" → "ADKQA Twin").
+    func ownerNames(of item: ScanItem) -> String {
+        Array(Set(owners(of: item).map(\.name))).sorted { $0.localizedStandardCompare($1) == .orderedAscending }.joined(separator: ", ")
     }
 
     private static func foldedNames(_ app: InstalledApp) -> Set<String> {

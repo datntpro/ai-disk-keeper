@@ -1,4 +1,5 @@
 import DiskKeeperCore
+import AppKit
 import SwiftUI
 import XCTest
 @testable import AIDiskKeeperUI
@@ -54,5 +55,22 @@ final class UninstallerRenderTests: XCTestCase {
         for g in guidance { render(UninstallGuidanceCard(guidance: g, app: UninstallFix.slide, model: m).padding(), "\(g)") }
         m.search = "zzz"
         render(UninstallAppList(model: m), "no match")
+    }
+
+    /// Regression: HSplitView crashed on load with apps listed. The ready state at a real window width must render.
+    func testReadyStateWithAppsRendersAtWindowWidth() async {
+        let c = CleanupCoordinator(holder: CleanupEngineHolder())
+        let m = await model()
+        XCTAssertEqual(m.phase, .ready)
+        XCTAssertFalse(m.apps.isEmpty)
+        let host = NSHostingView(rootView: UninstallerView(model: m, coordinator: c).frame(width: 1000, height: 680))
+        host.frame = NSRect(x: 0, y: 0, width: 1000, height: 680)
+        host.layoutSubtreeIfNeeded()
+        XCTAssertGreaterThan(host.fittingSize.width, 0)
+        for selected in [false, true] {
+            if selected { m.select(UninstallFix.slide) }
+            let r = ImageRenderer(content: UninstallerView(model: m, coordinator: c).frame(width: 1000, height: 680).background(.adkBg))
+            XCTAssertNotNil(r.cgImage, "ready selected=\(selected)")
+        }
     }
 }

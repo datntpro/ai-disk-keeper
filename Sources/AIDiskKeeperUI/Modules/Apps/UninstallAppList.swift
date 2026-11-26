@@ -55,7 +55,8 @@ struct UninstallAppList: View {
                 .opacity(locked ? 0.55 : 1)
             VStack(alignment: .leading, spacing: 0) {
                 Text(app.name).lineLimit(1)
-                Text(caption).font(.caption).foregroundStyle(running ? .adkReviewInk : .adkText3).lineLimit(1)
+                Text(caption).font(.caption).foregroundStyle(running ? .adkReviewInk : .adkText3)
+                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: ADKTheme.Spacing.sm)
             if locked { Image(systemName: "lock.fill").font(.caption).foregroundStyle(.adkText3).accessibilityHidden(true) }

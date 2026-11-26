@@ -199,7 +199,7 @@ final class UninstallerModelTests: XCTestCase {
         XCTAssertEqual(items.map(\.id), [pick.id])
     }
 
-    func testUnusedCountIgnoresViewOnlyAndCountsNeverOpened() async {
+    func testUnusedCountIgnoresViewOnlyAndUnknownUsage() async {
         let now = Date()
         let old = UninstallFix.app("Old", lastUsed: now.addingTimeInterval(-200 * 86_400))
         let fresh = UninstallFix.app("Fresh", lastUsed: now.addingTimeInterval(-5 * 86_400))
@@ -208,6 +208,42 @@ final class UninstallerModelTests: XCTestCase {
         let m = UninstallerModel(inventory: { AppInventory(apps: [old, fresh, never, apple], warnings: [], scannedRoots: []) },
                                  leftovers: { _ in UninstallFix.result([]) }, runningApps: { [] }, now: { now })
         m.load(); await m.settle()
-        XCTAssertEqual(m.unusedCount, 2)
+        XCTAssertEqual(m.unusedCount, 1) // no record = unknown (Spotlight off), not unused
+    }
+
+    func testSharedGroupContainerShownUnderAppsWithMatchingTeamUnticked() async {
+        let a = UninstallFix.app("Alpha", source: .developerID(teamID: "ABCDE12345"))
+        let b = UninstallFix.app("Alpha", id: "com.test.alpha2", source: .appStore(teamID: "abcde12345"))
+        let other = UninstallFix.app("Other", source: .developerID(teamID: "ZZZZZ99999"))
+        let team = UninstallFix.leftover(nil, "Group Containers", "ABCDE12345.shared", rule: "apps.leftover.name", size: 10)
+        let m = UninstallerModel(inventory: { AppInventory(apps: [a, b, other], warnings: [], scannedRoots: []) },
+                                 leftovers: { _ in UninstallFix.result([team]) }, runningApps: { [] }, home: "/h")
+        m.load(); await m.settle()
+        for app in [a, b] { XCTAssertEqual(m.group(for: app).shared.map(\.id), [team.id]) }
+        XCTAssertTrue(m.group(for: other).shared.isEmpty)
+        XCTAssertEqual(Set(m.owners(of: team).map(\.bundleID)), [a.bundleID, b.bundleID])
+        XCTAssertEqual(m.ownerNames(of: team), "Alpha") // equal names listed once
+        m.select(a)
+        XCTAssertFalse(m.selection.isTicked(team))
+        XCTAssertEqual(UninstallRelatedKind(team), .shared)
+    }
+
+    func testLeftoverScanFailureIsFlagged() async {
+        struct Boom: Error {}
+        let m = UninstallerModel(inventory: { AppInventory(apps: [self.slide], warnings: [], scannedRoots: []) },
+                                 leftovers: { _ in throw Boom() }, runningApps: { [] })
+        XCTAssertFalse(m.leftoversFailed)
+        m.load(); await m.settle()
+        XCTAssertTrue(m.leftoversFailed)
+        XCTAssertEqual(m.phase, .ready)
+        let ok = await ready(model())
+        XCTAssertFalse(ok.leftoversFailed)
+    }
+
+    func testPluralCopyAndEmptyOrphanTab() {
+        XCTAssertTrue(UninstallerCopy.total("1 kB", "1", count: 1).hasSuffix("1 related item"))
+        XCTAssertTrue(UninstallerCopy.total("1 kB", "2", count: 2).hasSuffix("2 related items"))
+        XCTAssertTrue(UninstallerCopy.barSummary("1", count: 1).hasSuffix("item"))
+        XCTAssertEqual(UninstallerCopy.tabOrphans(""), "Orphaned leftovers")
     }
 }

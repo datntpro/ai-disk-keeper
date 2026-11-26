@@ -8,7 +8,8 @@ struct UninstallOrphansView: View {
 
     var body: some View {
         if model.orphans.isEmpty {
-            StateView(kind: .empty, symbol: "checkmark.circle", title: UninstallerCopy.tabApps, message: UninstallerCopy.orphansNone)
+            StateView(kind: .empty, symbol: "checkmark.circle", title: UninstallerCopy.orphansEmptyTitle,
+                      message: model.leftoversFailed ? UninstallerCopy.relatedFailed : UninstallerCopy.orphansNone)
         } else {
             VStack(spacing: 0) {
                 ScrollView {

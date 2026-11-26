@@ -31,7 +31,7 @@ struct UninstallerView: View {
             Spacer()
             Picker(UninstallerCopy.title, selection: $model.tab) {
                 Text(UninstallerCopy.tabApps).tag(UninstallerModel.Tab.apps)
-                Text(UninstallerCopy.tabOrphans(Formatting.bytes(model.orphanBytes))).tag(UninstallerModel.Tab.orphans)
+                Text(UninstallerCopy.tabOrphans(model.orphanBytes > 0 ? Formatting.bytes(model.orphanBytes) : "")).tag(UninstallerModel.Tab.orphans)
             }
             .pickerStyle(.segmented).labelsHidden().fixedSize()
         }
@@ -51,8 +51,9 @@ struct UninstallerView: View {
             } else if model.apps.isEmpty {
                 StateView(kind: .empty, symbol: "xmark.app", title: UninstallerCopy.emptyTitle, message: UninstallerCopy.emptyMessage)
             } else {
-                HSplitView {
+                HStack(spacing: 0) {
                     UninstallAppList(model: model).frame(minWidth: 260, idealWidth: 300, maxWidth: 360)
+                    Divider()
                     detail.frame(minWidth: 380, maxWidth: .infinity)
                 }
             }

@@ -8,7 +8,9 @@ enum UninstallerCopy {
         loc("apps.subtitle", "\(apps) apps · \(unused) unused for 90+ days")
     }
     static var tabApps: String { loc("apps.tab.apps", "Apps") }
-    static func tabOrphans(_ count: String) -> String { loc("apps.tab.orphans", "Orphaned leftovers \(count)") }
+    static func tabOrphans(_ count: String) -> String {
+        count.isEmpty ? loc("apps.tab.orphansPlain", "Orphaned leftovers") : loc("apps.tab.orphans", "Orphaned leftovers \(count)")
+    }
     static var search: String { loc("apps.search", "Search apps") }
     static var loading: String { loc("apps.loading", "Reading your apps…") }
     static var failed: String { loc("apps.failed", "Couldn't list your apps. Nothing was changed.") }
@@ -22,7 +24,7 @@ enum UninstallerCopy {
 
     // Rows
     static func lastOpened(_ when: String) -> String { loc("apps.lastOpened", "last opened \(when)") }
-    static var neverOpened: String { loc("apps.neverOpened", "never opened") }
+    static var neverOpened: String { loc("apps.neverOpened", "no usage record") }
     static var runningNow: String { loc("apps.runningNow", "running now") }
     static var apple: String { loc("apps.apple", "Apple system app · can't be removed") }
     static func appStore(_ when: String) -> String { loc("apps.appStore", "App Store · \(when)") }
@@ -41,19 +43,21 @@ enum UninstallerCopy {
     static func sourceDeveloperID(_ team: String) -> String { loc("apps.source.developerID", "Developer ID: \(team)") }
     static var sourceUnsigned: String { loc("apps.source.unsigned", "Unsigned") }
     static var sourceApple: String { loc("apps.source.apple", "Apple") }
-    static func total(_ app: String, _ related: String) -> String { loc("apps.total", "app \(app) + \(related) related items") }
+    static func total(_ app: String, _ related: String, count: Int) -> String {
+        count == 1 ? loc("apps.totalOne", "app \(app) + \(related) related item") : loc("apps.total", "app \(app) + \(related) related items")
+    }
     static var sectionBundle: String { loc("apps.section.bundle", "App bundle") }
     static var sectionRelated: String { loc("apps.section.related", "Related files in your Library") }
     static var sectionShared: String { loc("apps.section.shared", "May be shared") }
     static var noRelated: String { loc("apps.related.none", "No related files found in your Library.") }
     static var matchExact: String { loc("apps.match.exact", "bundle id") }
     static var matchLaunchAgent: String { loc("apps.match.launchAgent", "launch agent") }
-    static var matchName: String { loc("apps.match.name", "vendor name · may be shared") }
+    static var matchName: String { loc("apps.match.name", "name match · may be shared") }
     static func matchShared(_ owners: String) -> String { loc("apps.match.shared", "used by \(owners)") }
     static var sizeIncomplete: String { loc("apps.sizeIncomplete", "size may be incomplete") }
     static var noteTitle: String { loc("apps.note.title", "Before you uninstall") }
-    static func noteBody(_ name: String) -> String {
-        loc("apps.note.body", "Documents you made with \(name) are not touched. Its settings in ~/Library/Preferences stay. Everything else goes to the Trash, so you can put it back.")
+    static var noteBody: String {
+        loc("apps.note.body", "Documents outside its container are not touched. Its settings in ~/Library/Preferences stay. Everything else goes to the Trash, so you can put it back.")
     }
 
     // Guidance
@@ -78,7 +82,9 @@ enum UninstallerCopy {
     }
 
     // Action bar
-    static func barSummary(_ related: String) -> String { loc("apps.bar.summary", "app + \(related) related items") }
+    static func barSummary(_ related: String, count: Int) -> String {
+        count == 1 ? loc("apps.bar.summaryOne", "app + \(related) related item") : loc("apps.bar.summary", "app + \(related) related items")
+    }
     static var reset: String { loc("apps.action.reset", "Reset app only") }
     static var resetHelp: String { loc("apps.action.reset.help", "Moves its caches and saved state to the Trash and keeps the app.") }
     static var uninstall: String { loc("apps.action.uninstall", "Uninstall…") }
@@ -90,6 +96,10 @@ enum UninstallerCopy {
     }
     static var orphansNone: String {
         loc("apps.orphans.none", "No orphaned leftovers — every Library folder belongs to an installed app.")
+    }
+    static var orphansEmptyTitle: String { loc("apps.orphans.title", "Orphaned leftovers") }
+    static var relatedFailed: String {
+        loc("apps.leftovers.failed", "Couldn't read related files — Uninstall moves only the app.")
     }
     static var orphansReview: String { loc("apps.orphans.review", "Review cleanup…") }
     static func orphansSelected(_ n: String) -> String { loc("apps.orphans.selected", "\(n) selected") }
