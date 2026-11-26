@@ -34,7 +34,7 @@ The rule format has one `docs` URL per tool (`tool.docs`), not per rule, so the 
 
 Matches `~/Library/Caches/<bundle-id>` (glob `*.*`, directories) with `requiresAppQuit: "{name}"`, so the app that
 owns the folder must be quit. `exclude` lists every glob another bundled rule claims under `$CACHES`, plus
-`com.apple.*`, `CloudKit`, `com.crashlytics*`, `*.savedState`, `GeoServices` and `familycircled`.
+`com.apple.*`, `CloudKit`, `com.crashlytics*`, `*.savedState`, `GeoServices`, `familycircled`, updater staging folders (`*.ShipIt`, whose app-quit id would not match a running app) and security/VPN agents (`com.microsoft.wdav*`, `com.fortinet.*`), which are daemons that the quit check cannot see.
 `testGenericCachesRuleExcludesEveryOtherCachesRule` fails when a new rule rooted at `$CACHES` is not excluded.
 
 ## Permissions

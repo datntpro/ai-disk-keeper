@@ -94,6 +94,21 @@ final class DevCachesRulesTests: XCTestCase {
         }
     }
 
+    func testGoModFollowsGOPATH() async throws {
+        let f = try FixtureHome()
+        let gopath = f.abs("elsewhere/gopath")
+        f.env = PathEnvironment(home: f.home, temporaryDirectory: f.tempDir, variables: ["GOPATH": gopath])
+        try make(f, "elsewhere/gopath/pkg/mod", days: 40)
+        let r = try await run(f)
+        XCTAssertEqual(r.items.filter { $0.ruleID == "dev-caches.go-mod" }.map(\.path), [gopath + "/pkg/mod"])
+        // GOPATH pointing at the default location must not produce the same path twice
+        let g = try FixtureHome()
+        g.env = PathEnvironment(home: g.home, temporaryDirectory: g.tempDir, variables: ["GOPATH": g.abs("go")])
+        try make(g, "go/pkg/mod", days: 40)
+        let r2 = try await run(g)
+        XCTAssertEqual(r2.items.filter { $0.ruleID == "dev-caches.go-mod" }.count, 1)
+    }
+
     func testArchivesNeverSafe() async throws {
         let f = try FixtureHome()
         let a = "Library/Developer/Xcode/Archives/2023-01-01/App 1-1-23.xcarchive"

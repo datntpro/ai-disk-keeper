@@ -171,7 +171,8 @@
       "title": "Go module cache",
       "category": "systemJunk",
       "paths": [
-        "${GOMODCACHE:-~/go/pkg/mod}"
+        "${GOMODCACHE:-~/go/pkg/mod}",
+        "${GOPATH}/pkg/mod"
       ],
       "match": {
         "kind": "self"
@@ -215,11 +216,11 @@
           "tier": "keep"
         }
       ],
-      "explanation": "Regenerable: Gradle's dependency and build caches. Gradle downloads and rebuilds them, so the next builds are slower and offline builds fail until then. Folders changed in the last day are kept.",
+      "explanation": "Regenerable: Gradle's dependency and build caches. Gradle downloads and rebuilds them, so the next builds are slower and offline builds fail until then. Stop Gradle daemons first (`gradle --stop`), because a running daemon keeps files here open. Folders changed in the last day are kept.",
       "localized": {
         "vi": {
           "title": "Cache Gradle",
-          "explanation": "Tạo lại được: cache phụ thuộc và cache bản dựng của Gradle. Gradle tải và dựng lại, nên các bản dựng tiếp theo sẽ chậm hơn và bản dựng ngoại tuyến sẽ không thành công cho đến lúc đó. Thư mục thay đổi trong ngày gần nhất được giữ lại."
+          "explanation": "Tạo lại được: cache phụ thuộc và cache bản dựng của Gradle. Gradle tải và dựng lại, nên các bản dựng tiếp theo sẽ chậm hơn và bản dựng ngoại tuyến sẽ không thành công cho đến lúc đó. Hãy dừng các daemon Gradle trước (`gradle --stop`), vì daemon đang chạy giữ các tệp ở đây ở trạng thái mở. Thư mục thay đổi trong ngày gần nhất được giữ lại."
         }
       },
       "cleanup": {
@@ -401,11 +402,11 @@
           "tier": "keep"
         }
       ],
-      "explanation": "Debug symbols Xcode copied from a device running this OS version. Xcode copies them again (takes a few minutes) the next time you connect a device with this version. Safe after 180 days unused; changed in the last day is kept. Quit Xcode first.",
+      "explanation": "Debug symbols Xcode copied from a device running this OS version. Xcode copies them again (takes a few minutes) the next time you connect a device with this version. Safe when not changed for 180 days; changed in the last day is kept. Quit Xcode first.",
       "localized": {
         "vi": {
           "title": "Ký hiệu thiết bị của Xcode",
-          "explanation": "Ký hiệu gỡ lỗi mà Xcode đã sao chép từ một thiết bị chạy phiên bản hệ điều hành này. Xcode sẽ sao chép lại (mất vài phút) ở lần tiếp theo bạn kết nối thiết bị có phiên bản này. An toàn sau 180 ngày không dùng; thay đổi trong ngày gần nhất thì được giữ lại. Hãy thoát Xcode trước."
+          "explanation": "Ký hiệu gỡ lỗi mà Xcode đã sao chép từ một thiết bị chạy phiên bản hệ điều hành này. Xcode sẽ sao chép lại (mất vài phút) ở lần tiếp theo bạn kết nối thiết bị có phiên bản này. An toàn khi 180 ngày không thay đổi; thay đổi trong ngày gần nhất thì được giữ lại. Hãy thoát Xcode trước."
         }
       },
       "cleanup": {
