@@ -18,6 +18,7 @@ struct InspectorInfo: Equatable {
         let id: DiskNodeID
         let name: String
         let bytes: Int64
+        let layer: StrataLayer
     }
 
     let id: DiskNodeID
@@ -93,7 +94,8 @@ enum DiskMapInspector {
         let largest = tree.children(of: id).prefix(5).compactMap { child -> InspectorInfo.Largest? in
             let c = tree.node(child)
             guard c.allocatedBytes > 0 else { return nil }
-            return .init(id: child, name: DiskMapLabels.title(of: child, tree: tree, rootName: rootName), bytes: c.allocatedBytes)
+            return .init(id: child, name: DiskMapLabels.title(of: child, tree: tree, rootName: rootName), bytes: c.allocatedBytes,
+                         layer: DiskMapColoring.layer(attribution: overlay?.attribution(child), bytes: c.allocatedBytes))
         }
 
         let logical: Int64? = {
@@ -114,7 +116,7 @@ enum DiskMapInspector {
             fileCount: node.fileCount, newest: node.newestModification, kind: kind,
             isProtected: flags.contains(.protected) || flags.contains(.outsideCleanableRoots),
             needsFullDiskAccess: flags.contains(.needsFullDiskAccess), notes: notes, largest: Array(largest),
-            classification: classification, tier: tier, layer: StrataLayer(category: attribution?.dominantCategory))
+            classification: classification, tier: tier, layer: DiskMapColoring.layer(attribution: attribution, bytes: node.allocatedBytes))
     }
 }
 
@@ -229,6 +231,8 @@ struct DiskMapInspectorView: View {
             ForEach(info.largest) { row in
                 Button { model.select(row.id) } label: {
                     HStack {
+                        RoundedRectangle(cornerRadius: 2).fill(row.layer.color).frame(width: 9, height: 9)
+                            .accessibilityHidden(true)
                         Text(row.name).lineLimit(1).truncationMode(.middle)
                         Spacer(minLength: 8)
                         Text(Formatting.bytes(row.bytes)).monospacedDigit().foregroundStyle(.adkText2)

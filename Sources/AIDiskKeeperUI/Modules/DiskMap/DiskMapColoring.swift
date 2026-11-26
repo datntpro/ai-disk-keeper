@@ -18,6 +18,16 @@ struct ElementPaint: Hashable, Sendable {
 
 enum DiskMapColoring {
     static let aggregateOpacity = 0.6
+    /// A folder takes a category colour only when scanner items explain at least this share of its own bytes.
+    /// Otherwise a folder with a little Claude data inside would paint Home and Library as "AI tool data".
+    static let dominanceThreshold = 0.5
+
+    /// The one rule for map fills and the inspector swatch.
+    static func layer(attribution: NodeAttribution?, bytes: Int64) -> StrataLayer {
+        guard let a = attribution, bytes > 0,
+              Double(a.attributedBytes) / Double(bytes) >= dominanceThreshold else { return .other }
+        return StrataLayer(category: a.dominantCategory)
+    }
 
     static func paint(for element: MapElement, overlay: DiskMapOverlay?, colorBy: DiskMapModel.ColorBy,
                       newest: Date?, now: Date) -> ElementPaint {
@@ -30,7 +40,7 @@ enum DiskMapColoring {
             if element.isProtected { return ElementPaint(fill: .protected, opacity: 1, hatched: true) }
             switch colorBy {
             case .category:
-                let layer = StrataLayer(category: overlay?.attribution(id)?.dominantCategory)
+                let layer = layer(attribution: overlay?.attribution(id), bytes: element.bytes)
                 return ElementPaint(fill: .layer(layer), opacity: 1, hatched: false)
             case .age:
                 return ElementPaint(fill: .age(DiskMapOverlay.ageBucket(newest, now: now)), opacity: 1, hatched: false)

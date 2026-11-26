@@ -25,8 +25,8 @@ private struct DiskMapContent: View {
             if index.phase == .indexing { ProgressView().progressViewStyle(.linear).accessibilityLabel(DiskMapCopy.reindexing) }
             toolbar
             legend
-            DiskMapStage(model: model, ctx: ctx)
             DiskMapBreadcrumbs(crumbs: model.breadcrumbs) { model.zoom(toCrumb: $0.id) }
+            DiskMapStage(model: model, ctx: ctx)
         }
         .padding(ADKTheme.Spacing.lg)
         .task(id: index.generation) { model.treeChanged() }
@@ -156,10 +156,11 @@ private struct DiskMapStage: View {
                         .accessibilityLabel(row.label)
                         .accessibilityAddTraits(.isButton)
                         .accessibilityRotorEntry(id: row.id, in: rotorSpace)
-                        .accessibilityAction { model.zoom(into: row.id) }
+                        .accessibilityAction { model.select(row.id) }
+                        .accessibilityActions { if row.canZoom { Button(DiskMapCopy.zoomIn) { model.zoom(into: row.id) } } }
                         .accessibilityAction(named: Text(DiskMapCopy.reveal)) { FinderReveal.reveal(URL(fileURLWithPath: row.revealPath)) }
-                        .accessibilityAction(named: Text(DiskMapCopy.reviewInList)) {
-                            if let id = row.reviewItemID { DiskMapModule.review(id, ctx) }
+                        .accessibilityActions {
+                            if let item = row.reviewItemID { Button(DiskMapCopy.reviewInList) { DiskMapModule.review(item, ctx) } }
                         }
                 }
             }

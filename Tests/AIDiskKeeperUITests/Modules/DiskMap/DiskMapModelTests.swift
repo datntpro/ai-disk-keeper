@@ -157,11 +157,13 @@ final class DiskMapModelTests: XCTestCase {
         let before = m.layout!.elements.map(\.rect)
         let requests = m.layoutRequestCount
         m.setFilterText("movie")
+        await m.waitForFilter()
         let hits = try! XCTUnwrap(m.matchingElements)
         XCTAssertEqual(hits, [m.layout!.element(for: DiskMapFixtures.id("Movies", in: tree))!.id])
         XCTAssertEqual(m.layout!.elements.map(\.rect), before)
         XCTAssertEqual(m.layoutRequestCount, requests)
         m.setFilterText("")
+        await m.waitForFilter()
         XCTAssertNil(m.matchingElements)
     }
 

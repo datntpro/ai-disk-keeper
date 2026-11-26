@@ -24,6 +24,23 @@ final class DiskMapColoringTests: XCTestCase {
         XCTAssertEqual(DiskMapColoring.paint(for: movies, overlay: nil, colorBy: .category, newest: nil, now: now).fill, .layer(.other))
     }
 
+    func testAncestorsOnlyTakeACategoryWhenItDominatesTheirBytes() {
+        let overlay = DiskMapOverlay.build(tree: tree, items: [ItemFixtures.item("cache", category: .aiToolData, size: 500)])
+        let l = layout()
+        func fill(_ path: String?) -> ElementPaint.Fill {
+            let id = path.map { DiskMapFixtures.id($0, in: tree) } ?? tree.rootNodeID
+            return DiskMapColoring.paint(for: l.element(for: id)!, overlay: overlay, colorBy: .category, newest: nil, now: now).fill
+        }
+        XCTAssertEqual(fill("\(DiskMapFixtures.tool)/cache"), .layer(.ai), "the item's own folder")
+        XCTAssertEqual(fill(DiskMapFixtures.tool), .layer(.ai), "500 of 750 bytes is explained")
+        XCTAssertEqual(fill(nil), .layer(.other), "500 of 1410 bytes must not paint the whole root as AI data")
+        XCTAssertEqual(fill("Movies"), .layer(.other))
+        // The inspector swatch follows the same rule.
+        let info = DiskMapInspector.info(tree: tree, node: tree.rootNodeID, focus: tree.rootNodeID, overlay: overlay, rootName: "x")
+        XCTAssertEqual(info.layer, .other)
+        XCTAssertEqual(info.largest.first?.layer, .ai)
+    }
+
     func testProtectedIsHatchedAndAggregatesNeverAre() {
         let l = layout()
         let ssh = l.element(for: DiskMapFixtures.id(".ssh", in: tree))!

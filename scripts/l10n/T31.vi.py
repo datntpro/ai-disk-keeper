@@ -8,7 +8,7 @@ VI = {
     "map.action.reviewInList": "Xem trong danh sách",
     "map.action.zoomIn": "Phóng to",
     "map.action.zoomOut": "Thu nhỏ",
-    "map.aggregate": "thêm %@ · %@",
+    "map.aggregate": "%@ mục khác · %@",
     "map.breadcrumbs": "Vị trí trong bản đồ ổ đĩa",
     "map.color.age": "Theo thời gian",
     "map.color.category": "Theo loại",

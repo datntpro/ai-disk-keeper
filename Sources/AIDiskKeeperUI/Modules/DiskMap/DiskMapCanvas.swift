@@ -100,7 +100,7 @@ struct DiskMapCanvas: View {
             ctx.stroke(Path(r.insetBy(dx: 0.5, dy: 0.5)), with: .color(separator.opacity(alpha)), lineWidth: 1)
 
             if DiskMapLabels.showsLock(el, flags: nodeID.map { tree.node($0).flags }), let lock = ctx.resolveSymbol(id: 0) {
-                ctx.draw(lock, at: CGPoint(x: r.maxX - 11, y: r.minY + 11))
+                ctx.draw(lock, at: CGPoint(x: r.maxX - 11, y: r.maxY - 11))
             }
             if let ink, let label = DiskMapLabels.label(for: el, mode: mode,
                                                          title: DiskMapLabels.title(of: el, tree: tree, rootName: rootName)) {

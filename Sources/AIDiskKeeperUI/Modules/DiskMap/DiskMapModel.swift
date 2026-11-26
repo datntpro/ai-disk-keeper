@@ -54,6 +54,8 @@ final class DiskMapModel {
     @ObservationIgnored private var viewportSize: CGSize?
     @ObservationIgnored private(set) var layoutToken = 0
     @ObservationIgnored private var overlayToken = 0
+    @ObservationIgnored private var filterToken = 0
+    @ObservationIgnored private var filterTask: Task<Void, Never>?
     @ObservationIgnored private var transitionCounter = 0
     @ObservationIgnored private var lastHoverPoint: CGPoint = .zero
     @ObservationIgnored private var debounceTask: Task<Void, Never>?
@@ -352,22 +354,32 @@ final class DiskMapModel {
         recomputeMatches()
     }
 
+    /// Runs off the main thread; a newer request supersedes an older one.
     private func recomputeMatches() {
+        filterToken += 1
+        let token = filterToken
         let text = filterText.trimmingCharacters(in: .whitespaces)
-        guard !text.isEmpty, let layout, let tree else { matchingElements = nil; return }
+        guard !text.isEmpty, let layout, let tree else { filterTask = nil; matchingElements = nil; return }
         let root = rootName
-        var hits = Set<Int>()
-        for el in layout.elements {
-            guard case .node(let id) = el.kind else { continue }
-            if DiskMapLabels.title(of: id, tree: tree, rootName: root).localizedStandardContains(text) { hits.insert(el.id) }
+        filterTask = Task { [weak self] in
+            let hits = await Task.detached(priority: .userInitiated) { () -> Set<Int> in
+                var hits = Set<Int>()
+                for el in layout.elements {
+                    guard case .node(let id) = el.kind else { continue }
+                    if DiskMapLabels.title(of: id, tree: tree, rootName: root).localizedStandardContains(text) { hits.insert(el.id) }
+                }
+                return hits
+            }.value
+            guard let self, self.filterToken == token else { return }
+            self.matchingElements = hits
         }
-        matchingElements = hits
     }
 
     // MARK: Test support
 
     func waitForLayout() async { await layoutTask?.value }
     func waitForOverlay() async { await overlayTask?.value }
+    func waitForFilter() async { await filterTask?.value }
 
     // MARK: Announcements
 
