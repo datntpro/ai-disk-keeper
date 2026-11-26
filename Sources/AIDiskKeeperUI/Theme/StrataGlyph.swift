@@ -5,9 +5,9 @@ import SwiftUI
 /// Constants mirror the `glyph` block of `Packaging/Icon/StrataMark.json`; `StrataGlyphTests` checks the parity.
 enum StrataGlyph {
     static let barCount = 3
-    static let barHeight: CGFloat = 2.5
+    static let barHeight: CGFloat = 3
     static let gap: CGFloat = 2
-    static let radius: CGFloat = 1.25
+    static let radius: CGFloat = 1.5
     static let left: CGFloat = 2
     static let bottom: CGFloat = 3
     static let topBarWidth: CGFloat = 9
@@ -32,7 +32,7 @@ enum StrataGlyph {
         let image = NSImage(size: NSSize(width: pointSize, height: pointSize), flipped: false) { _ in
             NSColor.black.setFill()
             for i in 0..<barCount {
-                // i = 0 is the top bar. Pitch 4.5 pt keeps every edge on a whole pixel at 2×.
+                // i = 0 is the top bar. Pitch 5 pt keeps every edge on a whole pixel at 1× and 2×.
                 let y = bottom + CGFloat(barCount - 1 - i) * (barHeight + gap)
                 let w = i == 0 ? topWidth : barWidth
                 guard w > 0 else { continue }

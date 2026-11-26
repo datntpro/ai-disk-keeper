@@ -2,7 +2,8 @@
 import AppKit
 
 struct Layer: Decodable { let y, height, x, width, radius: Double; let color: String; let highlight: String? }
-struct Tile: Decodable { let radius: Double; let background: String; let hairline: String; let hairlineWidth: Double }
+struct Shadow: Decodable { let offsetY, blur, alpha: Double }
+struct Tile: Decodable { let radius: Double; let background: String; let hairline: String; let hairlineWidth: Double; let canvasFraction: Double; let shadow: Shadow }
 struct Mark: Decodable { let tile: Tile; let layers: [Layer]; let small: [Layer] }
 
 func fail(_ msg: String) -> Never {
@@ -28,29 +29,63 @@ func render(_ mark: Mark, pixels: Int) -> Data? {
     NSGraphicsContext.current = ctx
     defer { NSGraphicsContext.restoreGraphicsState() }
 
-    let size = CGFloat(pixels)
+    let canvas = CGFloat(pixels)
     let isSmall = pixels <= 32
-    let tileRect = NSRect(x: 0, y: 0, width: size, height: size)
-    let tile = NSBezierPath(roundedRect: tileRect, xRadius: size * mark.tile.radius, yRadius: size * mark.tile.radius)
+    // macOS icon grid: the tile artwork is ~824/1024 of the canvas, centred, leaving room for the system shadow.
+    var tileSize = canvas * mark.tile.canvasFraction
+    if isSmall { tileSize = tileSize.rounded() }
+    let origin = isSmall ? ((canvas - tileSize) / 2).rounded() : (canvas - tileSize) / 2
+    let tileRect = NSRect(x: origin, y: origin, width: tileSize, height: tileSize)
+    let tileRadius = tileSize * mark.tile.radius
+    let tile = NSBezierPath(roundedRect: tileRect, xRadius: tileRadius, yRadius: tileRadius)
+
+    if !isSmall {
+        NSGraphicsContext.saveGraphicsState()
+        let shadow = NSShadow()
+        shadow.shadowColor = NSColor(white: 0, alpha: mark.tile.shadow.alpha)
+        shadow.shadowOffset = NSSize(width: 0, height: -canvas * mark.tile.shadow.offsetY)
+        shadow.shadowBlurRadius = canvas * mark.tile.shadow.blur
+        shadow.set()
+        color(mark.tile.background).setFill(); tile.fill()
+        NSGraphicsContext.restoreGraphicsState()
+    }
     color(mark.tile.background).setFill(); tile.fill()
     if !isSmall {
-        let inner = tileRect.insetBy(dx: 0.5, dy: 0.5)
-        let hair = NSBezierPath(roundedRect: inner, xRadius: size * mark.tile.radius, yRadius: size * mark.tile.radius)
-        hair.lineWidth = CGFloat(mark.tile.hairlineWidth) * max(1, size / 512)
+        let hair = NSBezierPath(roundedRect: tileRect.insetBy(dx: 0.5, dy: 0.5), xRadius: tileRadius, yRadius: tileRadius)
+        hair.lineWidth = CGFloat(mark.tile.hairlineWidth) * max(1, canvas / 512)
         color(mark.tile.hairline).setStroke(); hair.stroke()
     }
 
-    for layer in isSmall ? mark.small : mark.layers {
-        var x = size * layer.x, w = size * layer.width, h = size * layer.height
-        var top = size * layer.y
-        if isSmall { top = top.rounded(); h = h.rounded(); x = x.rounded(); w = w.rounded() }
-        let rect = NSRect(x: x, y: size - top - h, width: w, height: h) // flip: JSON y grows down
-        let r = size * layer.radius
+    // Layer rects in canvas pixels, y measured from the top of the tile.
+    var rects: [(NSRect, Layer)] = []
+    if isSmall {
+        // Snap to the pixel grid with a guaranteed >= 1 px gap between layers.
+        let n = mark.small.count
+        let gapFrac = n > 1 ? mark.small[1].y - (mark.small[0].y + mark.small[0].height) : 0.04
+        let spanFrac = mark.small[n - 1].y + mark.small[n - 1].height - mark.small[0].y
+        let gap = max(1, (gapFrac * tileSize).rounded())
+        let total = max((spanFrac * tileSize).rounded(), CGFloat(n) + gap * CGFloat(n - 1))
+        let h = max(1, ((total - gap * CGFloat(n - 1)) / CGFloat(n)).rounded(.down))
+        let used = h * CGFloat(n) + gap * CGFloat(n - 1)
+        let startTop = (origin + (tileSize - used) / 2).rounded()
+        for (i, l) in mark.small.enumerated() {
+            let top = startTop + CGFloat(i) * (h + gap)
+            let x = (origin + tileSize * l.x).rounded(), right = (origin + tileSize * (l.x + l.width)).rounded()
+            rects.append((NSRect(x: x, y: canvas - top - h, width: right - x, height: h), l))
+        }
+    } else {
+        for l in mark.layers {
+            rects.append((NSRect(x: origin + tileSize * l.x, y: canvas - (origin + tileSize * (l.y + l.height)),
+                                 width: tileSize * l.width, height: tileSize * l.height), l))
+        }
+    }
+    for (rect, layer) in rects {
+        let r = min(tileSize * layer.radius, rect.height / 2)
         let path = NSBezierPath(roundedRect: rect, xRadius: r, yRadius: r)
         color(layer.color).setFill(); path.fill()
         if let hl = layer.highlight, !isSmall {
             let line = NSBezierPath(roundedRect: rect.insetBy(dx: 0.5, dy: 0.5), xRadius: r, yRadius: r)
-            line.lineWidth = max(1, size / 512)
+            line.lineWidth = max(1, canvas / 512)
             color(hl).setStroke(); line.stroke()
         }
     }

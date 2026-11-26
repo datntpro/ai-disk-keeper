@@ -1,17 +1,88 @@
 {
   "version": 1,
-  "note": "Source of truth for the Strata mark. Unit square = the whole tile, y grows downward. Read by scripts/make-icon.swift and StrataGlyphTests.",
-  "tile": { "radius": 0.2237, "background": "#EFECE6", "hairline": "#18161217", "hairlineWidth": 1 },
+  "note": "Source of truth for the Strata mark. Unit square = the tile artwork (824/1024 of the icon canvas, centred: macOS icon grid, ~100/1024 margin); y grows downward. Read by scripts/make-icon.swift and StrataGlyphTests.",
+  "tile": {
+    "radius": 0.2237,
+    "background": "#EFECE6",
+    "hairline": "#18161217",
+    "hairlineWidth": 1,
+    "canvasFraction": 0.8047,
+    "shadow": {
+      "offsetY": 0.0098,
+      "blur": 0.0195,
+      "alpha": 0.3
+    }
+  },
   "layers": [
-    { "y": 0.135, "height": 0.16, "x": 0.10, "width": 0.76, "radius": 0.05, "color": "#0B847B", "highlight": "#FFFFFF59" },
-    { "y": 0.325, "height": 0.16, "x": 0.14, "width": 0.76, "radius": 0.05, "color": "#DCCFB8" },
-    { "y": 0.515, "height": 0.16, "x": 0.14, "width": 0.76, "radius": 0.05, "color": "#B4615A" },
-    { "y": 0.705, "height": 0.16, "x": 0.14, "width": 0.76, "radius": 0.05, "color": "#5C616C" }
+    {
+      "y": 0.135,
+      "height": 0.16,
+      "x": 0.1,
+      "width": 0.76,
+      "radius": 0.05,
+      "color": "#0B847B",
+      "highlight": "#FFFFFF59"
+    },
+    {
+      "y": 0.325,
+      "height": 0.16,
+      "x": 0.14,
+      "width": 0.76,
+      "radius": 0.05,
+      "color": "#DCCFB8"
+    },
+    {
+      "y": 0.515,
+      "height": 0.16,
+      "x": 0.14,
+      "width": 0.76,
+      "radius": 0.05,
+      "color": "#B4615A"
+    },
+    {
+      "y": 0.705,
+      "height": 0.16,
+      "x": 0.14,
+      "width": 0.76,
+      "radius": 0.05,
+      "color": "#5C616C"
+    }
   ],
   "small": [
-    { "y": 0.16, "height": 0.20, "x": 0.10, "width": 0.76, "radius": 0.06, "color": "#0B847B" },
-    { "y": 0.40, "height": 0.20, "x": 0.14, "width": 0.76, "radius": 0.06, "color": "#B4615A" },
-    { "y": 0.64, "height": 0.20, "x": 0.14, "width": 0.76, "radius": 0.06, "color": "#5C616C" }
+    {
+      "y": 0.15,
+      "height": 0.18,
+      "x": 0.1,
+      "width": 0.76,
+      "radius": 0.06,
+      "color": "#0B847B"
+    },
+    {
+      "y": 0.41,
+      "height": 0.18,
+      "x": 0.14,
+      "width": 0.76,
+      "radius": 0.06,
+      "color": "#B4615A"
+    },
+    {
+      "y": 0.67,
+      "height": 0.18,
+      "x": 0.14,
+      "width": 0.76,
+      "radius": 0.06,
+      "color": "#5C616C"
+    }
   ],
-  "glyph": { "pointSize": 18, "count": 3, "barHeight": 2.5, "gap": 2, "radius": 1.25, "left": 2, "bottom": 3, "topBarWidth": 9, "barWidth": 14 }
+  "glyph": {
+    "pointSize": 18,
+    "count": 3,
+    "barHeight": 3,
+    "gap": 2,
+    "radius": 1.5,
+    "left": 2,
+    "bottom": 3,
+    "topBarWidth": 9,
+    "barWidth": 14
+  }
 }

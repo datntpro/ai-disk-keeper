@@ -9,3 +9,5 @@ Original work, © the project, same licence as the repo. No SF Symbols, third-pa
 
 Regenerate: `swift scripts/make-icon.swift Packaging/Icon/StrataMark.json /tmp/AppIcon.iconset && iconutil -c icns /tmp/AppIcon.iconset`
 (`scripts/make-app.sh` does this on every build). The menu bar glyph is drawn in code: `Sources/AIDiskKeeperUI/Theme/StrataGlyph.swift`.
+
+Layout: the tile artwork is 824/1024 of the canvas, centred (~100 px margin, macOS icon grid) with a soft shadow; ≤ 32 px variants snap layers to whole pixels with ≥ 1 px gaps.

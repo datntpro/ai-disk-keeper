@@ -1,9 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
   <title>AI Disk Keeper — Strata mark</title>
-  <rect x="0.5" y="0.5" width="1023" height="1023" rx="229" fill="#EFECE6" stroke="#181612" stroke-opacity="0.09"/>
-  <rect x="102.4" y="138.2" width="778.2" height="163.8" rx="51.2" fill="#0B847B"/>
-  <rect x="102.4" y="138.2" width="778.2" height="163.8" rx="51.2" fill="none" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="2"/>
-  <rect x="143.4" y="332.8" width="778.2" height="163.8" rx="51.2" fill="#DCCFB8"/>
-  <rect x="143.4" y="527.4" width="778.2" height="163.8" rx="51.2" fill="#B4615A"/>
-  <rect x="143.4" y="722" width="778.2" height="163.8" rx="51.2" fill="#5C616C"/>
+  <defs><filter id="s" x="-10%" y="-10%" width="120%" height="125%"><feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000" flood-opacity="0.3"/></filter></defs>
+  <rect x="100" y="100" width="824" height="824" rx="184.3" fill="#EFECE6" filter="url(#s)"/>
+  <rect x="100.5" y="100.5" width="823" height="823" rx="184.3" fill="none" stroke="#181612" stroke-opacity="0.09"/>
+  <rect x="182.4" y="211.2" width="626.2" height="131.8" rx="41.2" fill="#0B847B"/>
+  <rect x="182.4" y="211.2" width="626.2" height="131.8" rx="41.2" fill="none" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="2"/>
+  <rect x="215.4" y="367.8" width="626.2" height="131.8" rx="41.2" fill="#DCCFB8"/>
+  <rect x="215.4" y="524.4" width="626.2" height="131.8" rx="41.2" fill="#B4615A"/>
+  <rect x="215.4" y="680.9" width="626.2" height="131.8" rx="41.2" fill="#5C616C"/>
 </svg>
