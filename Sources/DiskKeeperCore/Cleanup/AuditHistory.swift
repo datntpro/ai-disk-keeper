@@ -149,16 +149,20 @@ public enum AuditCSV {
 
     static func stamp(_ d: Date) -> String { d.formatted(Date.ISO8601FormatStyle(includingFractionalSeconds: true)) }
 
-    /// First characters that make a spreadsheet read a cell as a formula (also after leading spaces).
-    private static let formulaLeaders: Set<Character> = ["=", "+", "-", "@", "\t", "\r", "\n"]
+    /// First scalars that make a spreadsheet read a cell as a formula (also after leading spaces):
+    /// ASCII leaders, line breaks and tab, the full-width forms of = + - @, and a BOM.
+    private static let formulaLeaders: Set<Unicode.Scalar> = [
+        "=", "+", "-", "@", "\t", "\r", "\n", "\u{FF1D}", "\u{FF0B}", "\u{FF0D}", "\u{FF20}", "\u{FEFF}",
+    ]
 
     /// One CSV cell: neutralises formula-leading text with a single quote, then RFC 4180 quoting.
+    /// Works on unicode scalars: Swift treats CRLF as one Character, which would slip past both checks.
     /// Plain integers (bytes, exit status) are left alone so negative numbers stay numbers.
     static func field(_ raw: String) -> String {
         var s = raw
         let isInteger = Int(raw).map(String.init) == raw
-        if !isInteger, let first = raw.drop(while: { $0 == " " }).first, formulaLeaders.contains(first) { s = "'" + raw }
-        guard s.contains(where: { $0 == "," || $0 == "\"" || $0 == "\n" || $0 == "\r" }) else { return s }
+        if !isInteger, let first = raw.unicodeScalars.drop(while: { $0 == " " }).first, formulaLeaders.contains(first) { s = "'" + raw }
+        guard s.unicodeScalars.contains(where: { $0 == "," || $0 == "\"" || $0 == "\n" || $0 == "\r" }) else { return s }
         return "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\""
     }
 }

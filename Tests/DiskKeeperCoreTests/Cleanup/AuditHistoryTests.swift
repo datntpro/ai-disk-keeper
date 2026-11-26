@@ -130,7 +130,7 @@ private func tempFile(_ s: String) throws -> URL {
     }
 
     @Test func fieldNeutralisesFormulaLeadersInEveryColumn() {
-        for lead in ["=", "+", "-", "@", "\t", "\r", "\n"] {
+        for lead in ["=", "+", "-", "@", "\t", "\r", "\n", "\r\n", "\u{FF1D}", "\u{FF0B}", "\u{FF0D}", "\u{FF20}", "\u{FEFF}"] {
             let hostile = lead + "HYPERLINK(\"http://x\")"
             let out = AuditCSV.field(hostile)
             let inner = out.hasPrefix("\"") ? String(out.dropFirst().dropLast()).replacingOccurrences(of: "\"\"", with: "\"") : out
@@ -140,6 +140,16 @@ private func tempFile(_ s: String) throws -> URL {
         #expect(AuditCSV.field("-1") == "-1")          // numbers stay numbers
         #expect(AuditCSV.field("/-etc/=x") == "/-etc/=x") // paths start with "/"
         #expect(AuditCSV.field("say \"hi\"\nnow") == "\"say \"\"hi\"\"\nnow\"")
+    }
+
+    @Test func crlfCellsAreQuotedAndRoundTrip() {
+        for text in ["\r\nX(1)", "a\r\nb", "  \u{FF1D}X(1)", "\"q\",\r\n,x"] {
+            let rows = Self.parse(AuditCSV.field("h") + "," + AuditCSV.field(text) + "\r\n")
+            #expect(rows.count == 1 && rows[0].count == 2)
+            let expected = text.unicodeScalars.drop(while: { $0 == " " }).first.map { ["\r", "\n", "\u{FF1D}"].contains(String($0)) } == true
+                ? "'" + text : text
+            #expect(rows[0][1] == expected, "\(text.debugDescription)")
+        }
     }
 
     @Test func hostileBundleIDErrorAndPathsAreNeutralisedInExport() throws {
