@@ -23,7 +23,7 @@ enum DuplicateCopyReasons {
     /// Unambiguous copy markers. A bare `-N` is not here: it only counts when a sibling without it exists.
     private static let copyName = try! NSRegularExpression(
         pattern: #"( copy( \d+)?| \(\d+\)| - copy|_copy| [2-9]| bản sao( \d+)?)$"#, options: [.caseInsensitive])
-    private static let dashNumber = try! NSRegularExpression(pattern: #"-\d+$"#)
+    private static let dashNumber = try! NSRegularExpression(pattern: #"-\d{1,2}$"#)
 
     /// Chips for one row, most important first, at most ``maxChips``.
     static func reasons(for member: DuplicateMember, in group: DuplicateGroup, rule: KeeperRule, isManualKeeper: Bool,
