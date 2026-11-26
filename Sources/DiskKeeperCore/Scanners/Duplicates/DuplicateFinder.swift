@@ -94,7 +94,7 @@ public struct DuplicateFinder: Sendable {
                 let info = options._cloneProbe?(c.path) ?? CloneInfo.probe(c.path)
                 members.append(makeMember(c, info: info, git: inGitRepo(c.path, scopeKey: scopeKey, cache: &gitCache)))
             }
-            members.sort { precedes($0, $1) }
+            members = Self.keeperOrder(members, rule: options.keeperRule, scopeRoot: options.scopeRoot)
             if members.dropFirst().allSatisfy(\.sharesAllStorage) { stats.groupsDroppedAllShared += 1; continue }
             groups.append(DuplicateGroup(digest: digest, partialDigest: entry.partial,
                                          logicalBytes: members[0].logicalBytes, members: members))
@@ -225,12 +225,19 @@ public struct DuplicateFinder: Sendable {
                                created: c.created, modified: c.modified, isInGitRepo: git)
     }
 
-    private func effectiveCreated(_ m: DuplicateMember) -> Date {
+    private static func effectiveCreated(_ m: DuplicateMember) -> Date {
         m.created.timeIntervalSince1970 > 0 ? m.created : m.modified
     }
 
-    private func precedes(_ a: DuplicateMember, _ b: DuplicateMember) -> Bool {
-        switch options.keeperRule {
+    /// The one keeper order: `members[0]` is the copy to keep. Used by the finder and by
+    /// ``DuplicateGroup/reordered(by:)``, so a rule change in the UI never disagrees with a fresh scan.
+    /// The comparator is total (it ends in the canonical path key), so the result does not depend on input order.
+    static func keeperOrder(_ members: [DuplicateMember], rule: KeeperRule, scopeRoot: String) -> [DuplicateMember] {
+        members.sorted { precedes($0, $1, rule: rule) }
+    }
+
+    private static func precedes(_ a: DuplicateMember, _ b: DuplicateMember, rule: KeeperRule) -> Bool {
+        switch rule {
         case .oldest: break
         case .insideGitRepo:
             if a.isInGitRepo != b.isInGitRepo { return a.isInGitRepo }

@@ -47,6 +47,16 @@ Complexity: bucketing is O(R log R) for R records. Bytes read are at most the su
 
 The engine side (`plan(_:duplicateGroups:)`, `DuplicateSurvivorSet`, three new blockers) is described in [cleanup.md](cleanup.md#duplicate-groups-keep-one). Core never pre-selects non-keepers and never replaces duplicates with clones (M5).
 
+## Duplicates screen (T34)
+
+`Modules/Duplicates/` shows the finder's groups. Nothing is deleted there: the selection goes to `CleanupCoordinator.review(_:duplicateGroups:)`, so the engine's keep-one check still runs (`wouldRemoveAllCopies`, `survivorChanged`, `duplicateGroupUnknown` show in the cleanup sheet).
+
+- **Keep-one in the UI** (`DuplicateSelection`): every group always shows its kept copy ("Keeps" pill, disabled checkbox). The keeper and report-only copies (full APFS clones) can't be selected, and after any change at least one member of a group stays unselected. There is no select-all. A new keeper (rule change or "Keep this one instead") drops itself from the selection.
+- **Keep rule** (Oldest / In a git repo / Shortest path) re-orders the cached groups with `DuplicateGroup.reordered(by:)`, which uses the finder's own comparator (`DuplicateFinder.keeperOrder`). It never hashes again. `reordered(keeper:)` is the manual "Keep this one instead".
+- **Honest savings:** a group header shows `group.reclaimableBytes`. The action bar sums only copies that own their storage ("up to"); shared copies count 0, and unknown sizes count 0 with the caption "Some copies may free less".
+- **Threshold** 1 / 10 / 100 MB (D7 default 1 MB); a change re-runs the finder. The scan guard and owner filter run through `DuplicateScanner.items(for:rule:pathGuard:userID:)`, the same code the scanner uses, so a member the guard denies is not shown.
+- Core's English explanations are not shown; the screen builds localized ones. No "Similar photos" tab until M5.
+
 ## Edge cases
 
 | Case | Behaviour |
