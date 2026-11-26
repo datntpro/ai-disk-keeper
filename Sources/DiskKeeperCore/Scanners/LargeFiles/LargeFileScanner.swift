@@ -29,12 +29,8 @@ public struct LargeFileScanner: Scanner {
 
     public func report(tree: DiskTree, now: Date = Date()) async throws -> LargeFileReport {
         var stats = LargeFileSkipStats()
-        var warnings: [ScanWarning] = []
         try Task.checkCancellation()
         let candidates = candidates(in: tree, stats: &stats)
-        if tree.stats.fileRecordsTruncated {
-            warnings.append(ScanWarning(kind: .other, message: "The index kept only part of the large files, so the list may be incomplete."))
-        }
         let apps = appNames.names()
         let downloads = PathCanonicalizer.key(options.scopeRoot + "/Downloads").components
         var files: [LargeFile] = []
@@ -70,7 +66,7 @@ public struct LargeFileScanner: Scanner {
                                    sharesAllStorage: sharesAll, linkCount: r.linkCount))
         }
         files.sort { $0.allocatedBytes != $1.allocatedBytes ? $0.allocatedBytes > $1.allocatedBytes : $0.path < $1.path }
-        return LargeFileReport(files: files, skipped: stats, warnings: warnings)
+        return LargeFileReport(files: files, skipped: stats, warnings: [])
     }
 
     private func candidates(in tree: DiskTree, stats: inout LargeFileSkipStats) -> [Candidate] {
