@@ -12,6 +12,7 @@ public actor ScanEngine {
     private let scanners: [any Scanner]
     private let initialWarnings: [ScanWarning]
     private let progressInterval: Duration
+    private let scope: ScanScope
 
     private var runTask: Task<Void, Never>?
     private var continuation: AsyncStream<ScanEvent>.Continuation?
@@ -32,7 +33,8 @@ public actor ScanEngine {
     private let physicalPaths = PhysicalPathResolver()
 
     public init(context: ScanContext, scanners: [any Scanner], initialWarnings: [ScanWarning] = [],
-                progressInterval: Duration = .milliseconds(100)) {
+                progressInterval: Duration = .milliseconds(100), scope: ScanScope = .unrestricted) {
+        self.scope = scope
         self.context = context
         self.scanners = scanners
         self.initialWarnings = initialWarnings
@@ -47,7 +49,8 @@ public actor ScanEngine {
                                    userRulesDirectory: URL? = nil,
                                    extraScanners: [any Scanner] = [],
                                    maxConcurrentSizing: Int = ProcessInfo.processInfo.activeProcessorCount,
-                                   now: Date = Date()) throws -> ScanEngine {
+                                   now: Date = Date(),
+                                   scope: ScanScope = .unrestricted) throws -> ScanEngine {
         let loaded = RuleLoader(
             environment: environment, bundledRulesDirectory: bundledRulesDirectory,
             userRulesDirectory: userRulesDirectory,
@@ -58,8 +61,10 @@ public actor ScanEngine {
         let warnings = (loaded.errors + loaded.warnings).map {
             ScanWarning(kind: .ruleError, path: $0.file?.path, message: $0.description)
         }
-        return ScanEngine(context: context, scanners: [RuleScanner(loadResult: loaded)] + extraScanners,
-                          initialWarnings: warnings)
+        // Disabled tools are never scanned at all.
+        let rules = loaded.allRules.filter { !scope.disabledTools.contains($0.tool) }
+        return ScanEngine(context: context, scanners: [RuleScanner(rules: rules)] + extraScanners,
+                          initialWarnings: warnings, scope: scope)
     }
 
     public var isRunning: Bool { runTask != nil }
@@ -128,6 +133,7 @@ public actor ScanEngine {
                     item: { [self] item in
                         // The guard check and path resolution run on the caller's task, not on the actor.
                         guard context.pathGuard.check(item.path).isAllowed else { return }
+                        guard self.scope.allows(item) else { return }   // the user asked for this: no warning
                         let physical = await self.physicalPaths.physical(item.path)
                         await self.accept(item, physical: physical, generation: gen)
                     },
