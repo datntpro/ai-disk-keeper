@@ -8389,22 +8389,6 @@
         }
       }
     },
-    "module.generic" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "this"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "này"
-          }
-        }
-      }
-    },
     "module.history" : {
       "localizations" : {
         "en" : {

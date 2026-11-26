@@ -1,6 +1,6 @@
 # T46 — states and accessibility checklist
 
-Status: **code + unit tests done; the GUI/VoiceOver/Accessibility Inspector pass is NOT yet run** (it runs in the Tart VM, never the owner's Mac). "Wired" means the view uses `StateView` + `StateCopy`; "—" means the state does not exist for that module.
+Status: **code + unit tests done; first-pass VM QA done (Tart `adk-pr117`, AX dumps + offscreen renders): Overview first run, Not scanned, Empty, sidebar gear, keyboard order and AX labels pass. Not covered: the FDA banner live (base image has FDA granted), index/startup/cleanup blocking errors (need fault injection), live dark mode and Larger Text.** Everything runs in the Tart VM, never the owner's Mac. "Wired" means the view uses `StateView` + `StateCopy`; "—" means the state does not exist for that module.
 
 ## Building blocks
 `StateView` (glyph tile, one prominent action) · `StateCopy` (all copy) · `ModuleStateResolver` (+ tests) · `FDABanner` ("Not now" lasts until relaunch, `@SceneStorage`) · `.adkBarBackground()` (Reduce Transparency; a source test bans raw `.bar`/Material) · sidebar Settings gear (`SettingsGearButton`).

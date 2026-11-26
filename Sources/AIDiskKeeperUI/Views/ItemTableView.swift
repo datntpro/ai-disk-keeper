@@ -9,6 +9,8 @@ struct ItemTableView: View {
     /// T10: nil hides the checkbox column and the "Select all Safe" button.
     var selection: SelectionModel? = nil
     var scopeName: String? = nil
+    /// Shown over the table body (below the chips and search field) when a search matches nothing.
+    var filteredEmpty: FilteredEmpty? = nil
 
     private var sortOrder: Binding<[ItemSortComparator]> {
         Binding(
@@ -63,9 +65,19 @@ struct ItemTableView: View {
                     Text(item.path).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                 }.width(min: 120, ideal: 220)
             }
+            .overlay {
+                if let filteredEmpty {
+                    StateView(kind: .filteredEmpty, symbol: "magnifyingglass", title: filteredEmpty.title,
+                              message: StateCopy.filteredBody,
+                              actions: [StateAction(title: StateCopy.filteredClear) { query.searchText = "" }])
+                        .background(.background)
+                }
+            }
         }
     }
 }
+
+struct FilteredEmpty: Equatable { let title: String }
 
 /// Column comparator that carries an `ItemSortKey`, so `Table` sorting maps straight to `ItemSort`.
 struct ItemSortComparator: SortComparator, Hashable, Sendable {

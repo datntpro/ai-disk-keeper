@@ -1,6 +1,6 @@
-PREFIXES = ("state.", "a11y.", "sidebar.settings", "module.generic")
+PREFIXES = ("state.", "a11y.", "sidebar.settings")
 
-REMOVE = ("empty.readOnlyNote", "module.noItems.title", "module.scanFirst.title")
+REMOVE = ("empty.readOnlyNote", "module.generic", "module.noItems.title", "module.scanFirst.title")
 
 VI = {
     "state.firstRun.title": "Xem các công cụ AI đã để lại những gì",
@@ -33,5 +33,4 @@ VI = {
     "state.noWarnings": "Không có cảnh báo",
     "a11y.ring": "Đã dùng %@ phần trăm, còn trống %@",
     "sidebar.settings": "Cài đặt",
-    "module.generic": "này",
 }
