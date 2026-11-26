@@ -1,0 +1,61 @@
+PREFIXES = ("care.", "overview.")
+
+# Keys of the old Overview that this PR's rewrite no longer uses.
+REMOVE = ("care.tile.aiTools", "care.tile.aiToolsAll", "empty.title", "overview.itemCount", "overview.largest", "overview.lastScan", "overview.partial", "overview.totalFound")
+
+VI = {
+    "overview.title": "Tổng quan",
+    "overview.lastScanRO": "Lần quét gần nhất %@ · chỉ đọc",
+    "care.eyebrow.before": "Quét tổng thể",
+    "care.eyebrow.scanning": "Đang quét — không có gì bị thay đổi",
+    "care.eyebrow.results": "Sẵn sàng giải phóng an toàn",
+    "care.free": "Còn trống %@",
+    "care.found": "Tìm thấy %@",
+    "care.sub.before": "Một lần quét chỉ đọc trên công cụ AI, worktree, mô hình, rác hệ thống, tệp lớn, tệp trùng lặp và ứng dụng. Bạn xem lại mọi thứ trước khi bất cứ thứ gì được chuyển vào Thùng rác.",
+    "care.sub.scanning": "Đang xem %@… Bạn có thể dừng bất cứ lúc nào.",
+    "care.sub.results": "%@ An toàn để chuyển vào Thùng rác ngay. %@ khác Cần xem, và %@ được Giữ lại vì có thay đổi chưa commit hoặc mới được dùng gần đây.",
+    "care.button.scan": "Quét",
+    "care.button.stop": "Dừng",
+    "care.button.review": "Xem lại",
+    "care.button.a11y.scan": "Quét",
+    "care.button.a11y.stop": "Dừng quét",
+    "care.button.a11y.review": "Xem lại %@",
+    "care.cleanSafe": "Chỉ dọn mục An toàn…",
+    "care.growth.up": "Công cụ AI +%@ so với lần quét trước",
+    "care.growth.down": "Công cụ AI giảm %@ so với lần quét trước",
+    "care.chip.aiTools": "Công cụ AI",
+    "care.chip.worktrees": "Worktree",
+    "care.chip.modelsDocker": "Mô hình & Docker",
+    "care.chip.systemJunk": "Rác hệ thống",
+    "care.chip.largeOld": "Tệp lớn & cũ",
+    "care.chip.duplicates": "Tệp trùng lặp",
+    "care.chip.apps": "Ứng dụng",
+    "care.chip.index": "Chỉ mục tệp",
+    "care.chip.startup": "Khởi động",
+    "care.chips.a11y": "Đang quét: %@",
+    "care.chip.a11y": "%@ %@",
+    "care.stage.done": "xong",
+    "care.stage.running": "đang chạy",
+    "care.stage.pending": "đang chờ",
+    "care.stage.failed": "không xong được",
+    "care.stage.skipped": "bỏ qua",
+    "care.stage.index": "tệp của bạn",
+    "care.stopped": "Đã dừng — kết quả chưa đầy đủ",
+    "care.strata.everythingElse": "Mọi thứ khác",
+    "care.strata.used": "Đã dùng",
+    "care.modules.title": "Mô-đun",
+    "care.modules.caption": "Con số là dung lượng mỗi mô-đun có thể giải phóng",
+    "care.tile.systemJunk": "Cache, log, báo cáo sự cố, cache phát triển",
+    "care.wins.title": "Giải phóng nhiều nhất",
+    "care.wins.seeAll": "Xem tất cả",
+    "care.announce.finished": "Đã quét tổng thể xong. %@ An toàn để chuyển vào Thùng rác; %@ Cần xem.",
+}
+
+# Plural keys (String Catalog `variations.plural`). Vietnamese has no plural forms, so only `other`.
+PLURALS = {
+    "care.tile.items": {"en": {"one": "%lld item", "other": "%lld items"}, "vi": {"other": "%lld mục"}},
+    "care.tile.moreTools": {"en": {"one": "+%lld tool", "other": "+%lld tools"}, "vi": {"other": "+%lld công cụ"}},
+    "care.tile.largeOld": {"en": {"one": "%lld large file in your home folder", "other": "%lld large files in your home folder"}, "vi": {"other": "%lld tệp lớn trong thư mục home của bạn"}},
+    "care.tile.duplicates": {"en": {"one": "%lld group · clones excluded", "other": "%lld groups · clones excluded"}, "vi": {"other": "%lld nhóm · không tính bản clone"}},
+    "care.tile.apps": {"en": {"one": "%lld leftover item", "other": "%lld leftover items"}, "vi": {"other": "%lld tệp sót lại"}},
+}

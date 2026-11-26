@@ -87,6 +87,6 @@ final class PseudoLocalizationTests: XCTestCase {
     func testWarningsAndEmptyState() {
         let w = [ScanWarning(kind: .permissionDenied, path: "/x", message: "m", code: .pathError(errno: EACCES))]
         assertFits("WarningsView", minWidth: 560) { WarningsView(warnings: w).frame(height: 300) }
-        assertFits("EmptyStateView", minWidth: 560) { EmptyStateView {} }
+        assertFits("EmptyStateView", minWidth: 560) { EmptyStateView() }
     }
 }

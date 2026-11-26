@@ -29,6 +29,9 @@ public struct RootView: View {
 
     private var selection: SidebarSelection { suite.navigation.selection }
 
+    /// The Care Scan: ⌘R, Stop and the toolbar drive this; it feeds `scan` with the rule stage's events.
+    private var care: CareScanModel { OverviewModule.careModel(env: env, scan: scan, suite: suite) }
+
     private var context: ModuleContext {
         ModuleContext(env: env, scan: scan, suite: suite, scanSelection: cleanupSelection, list: list,
                       query: $query, inspectedID: $inspectedID)
@@ -43,7 +46,7 @@ public struct RootView: View {
             VStack(spacing: 0) {
                 content(ctx)
                 Divider()
-                ScanStatusBar(scan: scan)
+                ScanStatusBar(scan: scan, care: care)
             }
             .frame(minWidth: 560)
         }
@@ -52,7 +55,7 @@ public struct RootView: View {
                 .inspectorColumnWidth(min: 260, ideal: 300, max: 400)
         }
         .toolbar {
-            ScanToolbar(scan: scan)
+            ScanToolbar(scan: scan, care: care)
             CleanupToolbar(scan: scan, selection: cleanupSelection, holder: env.cleanup, onReview: startReview)
             ToolbarItem {
                 Button { showInspector.toggle() } label: { Label(loc("toolbar.details", "Details"), systemImage: "sidebar.trailing") }
@@ -62,8 +65,8 @@ public struct RootView: View {
         }
         .frame(minWidth: 1040, minHeight: 540)
         .focusedSceneValue(\.scanActions, ScanActions(
-            canStart: !scan.isScanning, canStop: scan.phase == .scanning || scan.phase == .starting,
-            start: { scan.startScan() }, stop: { scan.cancelScan() }))
+            canStart: !scan.isScanning && !care.isBusy, canStop: care.isBusy,
+            start: { care.start() }, stop: { care.stop() }))
         .focusedSceneValue(\.suiteNavigation, SuiteNavigation(go: { suite.navigation.selection = SidebarSelection(module: $0) }))
         .onChange(of: suite.navigation.selection) { _, new in query.scope = new }
         .onChange(of: query) { _, _ in refreshList() }
@@ -80,9 +83,9 @@ public struct RootView: View {
                     .interactiveDismissDisabled(flow.isExecuting)
             }
         }
-        .onChange(of: suite.cleanup.rescanRequests) { _, _ in scan.startScan() }
+        .onChange(of: suite.cleanup.rescanRequests) { _, _ in care.start() }
         .onChange(of: scan.phase) { _, phase in announce(phase) }
-        .onExitCommand { if scan.isScanning { scan.cancelScan() } }
+        .onExitCommand { if care.isBusy { care.stop() } else if scan.isScanning { scan.cancelScan() } }
         .sheet(isPresented: Binding(get: { !env.settings.settings.hasCompletedOnboarding }, set: { _ in })) {
             OnboardingView(settings: env.settings,
                            onboarding: OnboardingModel(settings: env.settings) { scan.startScan() },
@@ -128,6 +131,8 @@ public struct RootView: View {
     private func refreshList() { list.update(items: scan.items, query: query) }
 
     private func announce(_ phase: ScanViewModel.Phase) {
+        // A Care Scan announces itself (with the Safe total) when it finishes; the rule stage ending is not the end.
+        guard care.phase == .before else { return }
         let t = scan.totals.all
         switch phase {
         case .finished:

@@ -122,6 +122,33 @@ final class DuplicatesModel {
         }
     }
 
+    /// Takes the report the Care Scan already computed for index `generation`: nothing is hashed again. The members
+    /// are filtered with the same guard and keeper rule as `analyse()`.
+    func adopt(_ report: DuplicateReport, generation: Int) {
+        abandon()
+        runID += 1
+        let id = runID
+        analysedGeneration = generation
+        phase = .hashing(nil)
+        let guardProvider = guardProvider, userID = userID, rule = rule, makeItems = makeItems
+        let work = Task.detached(priority: .utility) { () throws -> [String: [ScanItem]] in
+            makeItems(report, rule, try await guardProvider(), userID)
+        }
+        task = Task { [weak self] in
+            let outcome = await withTaskCancellationHandler { await work.result } onCancel: { work.cancel() }
+            guard let self, self.runID == id else { return }
+            switch outcome {
+            case .success(let items):
+                self.apply(report: report, allowed: items)
+                self.phase = .ready
+            case .failure(let error):
+                self.analysedGeneration = nil
+                self.phase = error is CancellationError ? .cancelled : .failed(String(describing: error))
+            }
+            self.task = nil
+        }
+    }
+
     /// Stops the run. The previous results stay on screen.
     func cancel() {
         guard case .hashing = phase else { return }
