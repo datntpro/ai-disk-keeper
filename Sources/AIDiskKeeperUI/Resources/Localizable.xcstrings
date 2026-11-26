@@ -9385,6 +9385,22 @@
         }
       }
     },
+    "storage.availableNow" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Available now, without macOS freeing anything: %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Khả dụng ngay, khi macOS chưa giải phóng gì: %@"
+          }
+        }
+      }
+    },
     "storage.explain.purgeable" : {
       "localizations" : {
         "en" : {
@@ -9465,6 +9481,230 @@
         }
       }
     },
+    "storage.failed.body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing was changed. %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không có gì bị thay đổi. %@"
+          }
+        }
+      }
+    },
+    "storage.failed.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't read storage"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không đọc được dung lượng"
+          }
+        }
+      }
+    },
+    "storage.free" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ free"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Còn trống %@"
+          }
+        }
+      }
+    },
+    "storage.gauge.a11y" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@ free, %@ percent used"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@, còn trống %@, đã dùng %@ phần trăm"
+          }
+        }
+      }
+    },
+    "storage.layer.data" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your data"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dữ liệu của bạn"
+          }
+        }
+      }
+    },
+    "storage.layer.free" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Trống"
+          }
+        }
+      }
+    },
+    "storage.layer.other" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other volumes & snapshots"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ổ đĩa khác & snapshot"
+          }
+        }
+      }
+    },
+    "storage.layer.purgeable" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purgeable (estimate)"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Có thể xóa bỏ (ước tính)"
+          }
+        }
+      }
+    },
+    "storage.layer.system" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS (sealed system)"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "macOS (hệ thống được niêm phong)"
+          }
+        }
+      }
+    },
+    "storage.loading" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Measuring storage…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đang đo dung lượng…"
+          }
+        }
+      }
+    },
+    "storage.measured" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Measured %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đo lúc %@"
+          }
+        }
+      }
+    },
+    "storage.purgeableLine" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purgeable (estimate): %@ · macOS frees this on its own when it needs room"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Có thể xóa bỏ (ước tính): %@ · macOS tự giải phóng khi cần chỗ"
+          }
+        }
+      }
+    },
+    "storage.refresh" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refresh"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Làm mới"
+          }
+        }
+      }
+    },
+    "storage.retry" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try again"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Thử lại"
+          }
+        }
+      }
+    },
     "storage.snapshot.osUpdate" : {
       "localizations" : {
         "en" : {
@@ -9529,6 +9769,22 @@
         }
       }
     },
+    "storage.snapshots.count" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ snapshots"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ snapshot"
+          }
+        }
+      }
+    },
     "storage.snapshots.failed" : {
       "localizations" : {
         "en" : {
@@ -9541,6 +9797,38 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Liệt kê ảnh chụp thất bại (mã thoát %lld)."
+          }
+        }
+      }
+    },
+    "storage.snapshots.none" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No local snapshots right now."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hiện không có snapshot cục bộ nào."
+          }
+        }
+      }
+    },
+    "storage.snapshots.openTM" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Time Machine settings"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mở cài đặt Time Machine"
           }
         }
       }
@@ -9561,6 +9849,22 @@
         }
       }
     },
+    "storage.snapshots.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Local snapshots"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Snapshot cục bộ"
+          }
+        }
+      }
+    },
     "storage.snapshots.toolMissing" : {
       "localizations" : {
         "en" : {
@@ -9573,6 +9877,102 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Không chạy được danh sách ảnh chụp của Time Machine."
+          }
+        }
+      }
+    },
+    "storage.stale" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't refresh — showing values from %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không làm mới được — đang hiển thị số liệu lúc %@"
+          }
+        }
+      }
+    },
+    "storage.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Storage"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dung lượng"
+          }
+        }
+      }
+    },
+    "storage.trash.grantFDA" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grant Full Disk Access…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cấp Toàn quyền truy cập ổ đĩa…"
+          }
+        }
+      }
+    },
+    "storage.trash.open" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Trash"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mở Thùng rác"
+          }
+        }
+      }
+    },
+    "storage.trash.size" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · %@ items"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ · %@ mục"
+          }
+        }
+      }
+    },
+    "storage.trash.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trash"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Thùng rác"
           }
         }
       }
@@ -9605,6 +10005,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Không đo được Thùng rác (%@)."
+          }
+        }
+      }
+    },
+    "storage.usedOf" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ of %@ used"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã dùng %@ trên %@"
+          }
+        }
+      }
+    },
+    "storage.volumeDefault" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Macintosh HD"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Macintosh HD"
+          }
+        }
+      }
+    },
+    "storage.why.intro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finder and System Settings count purgeable space and snapshots differently. Here is what each number means."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Finder và Cài đặt hệ thống tính dung lượng có thể xóa bỏ và snapshot theo cách khác nhau. Đây là ý nghĩa của từng con số."
+          }
+        }
+      }
+    },
+    "storage.why.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Why don't these numbers match Finder?"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vì sao các con số này khác Finder?"
           }
         }
       }

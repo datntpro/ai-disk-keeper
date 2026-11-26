@@ -24,7 +24,7 @@ struct SidebarView: View {
             }
         }
         .listStyle(.sidebar)
-        .safeAreaInset(edge: .bottom) { SidebarFooter() }
+        .safeAreaInset(edge: .bottom) { SidebarFooter(ctx: ctx) }
     }
 
     @ViewBuilder private func rows(_ section: ModuleSection, _ modules: [ModuleDescriptor]) -> some View {
