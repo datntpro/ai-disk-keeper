@@ -31,6 +31,9 @@ struct DuplicatesInspector: View {
                         }
                     }
                     field(loc("dup.inspector.storage", "Storage")) { Text(storageText(member)) }
+                    if !model.isKeeper(member, in: group) {
+                        Button(loc("dup.action.keepThis", "Keep this one")) { model.keepInstead(member.path, in: group.id) }
+                    }
                     Button { FinderReveal.reveal(URL(fileURLWithPath: member.path)) } label: {
                         Label(loc("action.reveal", "Reveal in Finder"), systemImage: "folder")
                     }
