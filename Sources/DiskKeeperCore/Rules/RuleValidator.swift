@@ -44,6 +44,11 @@ public enum RuleValidator {
                     return err(.invalidValue, "\(base).tierWhen[\(j)].tier", "model weights are always Review")
                 }
             }
+            if rule.cleanup.requiresAppQuit == RuleCleanup.namePlaceholder,
+               !(rule.match.kind == .children && rule.match.depth == 1) {
+                return err(.invalidValue, "\(base).cleanup.requiresAppQuit",
+                           "{name} needs match kind children with depth 1")
+            }
             for (j, when) in rule.tierWhen.enumerated() {
                 let c = when.condition
                 if let older = c.olderThanDays, let newer = c.newerThanDays, older >= newer {
