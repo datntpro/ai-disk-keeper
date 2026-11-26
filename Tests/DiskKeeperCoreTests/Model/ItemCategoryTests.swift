@@ -4,7 +4,8 @@ import XCTest
 final class ItemCategoryTests: XCTestCase {
     func testRawValuesExact() {
         XCTAssertEqual(ItemCategory.allCases.map(\.rawValue),
-                       ["aiToolData", "worktree", "buildArtifact", "modelWeights", "systemJunk", "docker"])
+                       ["aiToolData", "worktree", "buildArtifact", "modelWeights", "systemJunk", "docker",
+                        "largeFile", "duplicate", "application", "appLeftover", "startupItem"])
     }
 
     func testDecodingUnknownCategoryThrows() {

@@ -72,7 +72,7 @@ final class RuleSchemaDocTests: XCTestCase {
         let rule = try XCTUnwrap(defs["rule"] as? [String: Any])
         let props = try XCTUnwrap(rule["properties"] as? [String: Any])
         let category = try XCTUnwrap((props["category"] as? [String: Any])?["enum"] as? [String])
-        XCTAssertEqual(Set(category), Set(ItemCategory.allCases.map(\.rawValue)))
+        XCTAssertEqual(Set(category), Set(ItemCategory.ruleCategories.map(\.rawValue)))
         let tier = try XCTUnwrap((defs["tier"] as? [String: Any])?["enum"] as? [String])
         XCTAssertEqual(Set(tier), Set(RiskTier.allCases.map(\.rawValue)))
         let from = try XCTUnwrap(((props["project"] as? [String: Any])?["properties"] as? [String: Any])?["from"] as? [String: Any])

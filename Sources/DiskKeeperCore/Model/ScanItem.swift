@@ -28,6 +28,9 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
     /// Bundle id that must not be running.
     public var requiresAppQuit: String?
     public var flags: Set<ItemFlag>
+    /// Duplicate group (`"dup:<sha256-prefix>:<size>"`) or an app and its leftovers (`"app:<bundleID>"`).
+    /// Free-form, at most 200 characters; nil for items that belong to no group.
+    public var groupID: String?
 
     public init(id: ID? = nil,
                 url: URL,
@@ -44,7 +47,8 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
                 ruleID: String,
                 cleanupMethod: CleanupMethod = .trash,
                 requiresAppQuit: String? = nil,
-                flags: Set<ItemFlag> = []) {
+                flags: Set<ItemFlag> = [],
+                groupID: String? = nil) {
         precondition(url.isFileURL, "ScanItem requires a file URL")
         let normalized = URL(fileURLWithPath: PathNormalization.lexical(url.absoluteURL.path))
         self.url = normalized
@@ -63,6 +67,7 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
         self.cleanupMethod = cleanupMethod
         self.requiresAppQuit = requiresAppQuit
         self.flags = flags
+        self.groupID = groupID
     }
 
     /// "<ruleID>|<lexically normalized absolute path>"
@@ -75,16 +80,16 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
     /// `tier.isSelectable && cleanupMethod.isActionable`
     public var isSelectable: Bool { tier.isSelectable && cleanupMethod.isActionable }
 
-    /// Selectable, Safe, and not model weights (models are always per-model review).
+    /// Selectable, Safe, and not in a never-bulk category (model weights, personal files, apps…).
     public var isBulkSelectable: Bool {
-        isSelectable && tier.isBulkSelectable && category != .modelWeights
+        isSelectable && tier.isBulkSelectable && !category.isNeverBulkSelectable
     }
 
     // MARK: Codable
 
     private enum CodingKeys: String, CodingKey {
         case id, path, displayName, tool, category, project, sizeAllocated, sizeLogical
-        case fileCount, lastModified, tier, explanation, ruleID, cleanup, requiresAppQuit, flags
+        case fileCount, lastModified, tier, explanation, ruleID, cleanup, requiresAppQuit, flags, groupID
     }
 
     public init(from decoder: Decoder) throws {
@@ -126,7 +131,8 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
             ruleID: try c.decode(String.self, forKey: .ruleID),
             cleanupMethod: try c.decode(CleanupMethod.self, forKey: .cleanup),
             requiresAppQuit: try c.decodeIfPresent(String.self, forKey: .requiresAppQuit),
-            flags: Set(flagStrings.compactMap(ItemFlag.init(rawValue:)))
+            flags: Set(flagStrings.compactMap(ItemFlag.init(rawValue:))),
+            groupID: try c.decodeIfPresent(String.self, forKey: .groupID)
         )
     }
 
@@ -148,5 +154,6 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
         try c.encode(cleanupMethod, forKey: .cleanup)
         try c.encodeIfPresent(requiresAppQuit, forKey: .requiresAppQuit)
         try c.encode(flags.map(\.rawValue).sorted(), forKey: .flags)
+        try c.encodeIfPresent(groupID, forKey: .groupID)
     }
 }

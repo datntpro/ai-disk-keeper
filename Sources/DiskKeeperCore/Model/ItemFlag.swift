@@ -14,4 +14,8 @@ public enum ItemFlag: String, Codable, Sendable, Hashable, CaseIterable {
     case needsFullDiskAccess
     /// Bytes may be shared with other items (hardlinks, APFS clones, shared model blobs).
     case sharedStorage
+    /// Content is in iCloud only (not downloaded); never read, sizes are metadata.
+    case dataless
+    /// Duplicate-group member the keep rule suggests keeping (UI hint only; never a safety decision).
+    case suggestedKeeper
 }

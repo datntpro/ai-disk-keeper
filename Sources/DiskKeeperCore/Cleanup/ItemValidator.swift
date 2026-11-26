@@ -26,6 +26,7 @@ struct ItemValidator: Sendable {
         case .none: out.append(.notActionable)
         case .trashWorktree: out.append(.methodNotSupported("trashWorktree"))
         case .toolCommand: out.append(.methodNotSupported("toolCommand"))
+        case .trashApplication: out.append(.methodNotSupported("trashApplication"))
         case .trash: break
         }
         if action == .deletePermanently && !options.permanentDeleteEnabled {
