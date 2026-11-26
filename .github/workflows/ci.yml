@@ -40,6 +40,9 @@ jobs:
       - name: Localization lint (catalog vs code, vi/en complete)
         run: python3 -I scripts/l10n-extract.py --check
 
+      - name: Localization vi files match the catalog
+        run: scripts/l10n-regen.sh --verify
+
       - name: Test
         run: swift test --build-system swiftbuild --parallel
 
