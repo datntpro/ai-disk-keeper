@@ -7,10 +7,13 @@ enum DuplicatesModule: ModuleProvider {
                                              isEnabled: true)
 
     /// The one model for this module (kept by the suite, so it survives switching modules).
-    @MainActor static func model(_ ctx: ModuleContext) -> DuplicatesModel {
-        let env = ctx.env.pathEnvironment
-        return ctx.suite.state(.duplicates) {
-            DuplicatesModel(index: ctx.suite.diskIndex, finder: DuplicatesModel.liveFinder, environment: env,
+    @MainActor static func model(_ ctx: ModuleContext) -> DuplicatesModel { model(env: ctx.env, suite: ctx.suite) }
+
+    /// Same instance without a `ModuleContext` (the Care Scan adopts its report into it).
+    @MainActor static func model(env appEnv: AppEnvironment, suite: SuiteModel) -> DuplicatesModel {
+        let env = appEnv.pathEnvironment
+        return suite.state(.duplicates) {
+            DuplicatesModel(index: suite.diskIndex, finder: DuplicatesModel.liveFinder, environment: env,
                             guardProvider: { try Self.liveGuard(env) })
         }
     }

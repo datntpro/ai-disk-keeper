@@ -23,7 +23,8 @@ public final class ScanViewModel {
     public private(set) var totals = ScanTotals()
 
     @ObservationIgnored private let makeEngine: @Sendable () throws -> any ScanEngineProtocol
-    @ObservationIgnored private var engine: (any ScanEngineProtocol)?
+    /// What stops the current stream: the engine's `cancel`, or whatever `consume(_:cancel:)` was given.
+    @ObservationIgnored private var cancelAction: (@Sendable () async -> Void)?
     @ObservationIgnored private var consumer: Task<Void, Never>?
     @ObservationIgnored private var pending: [ScanItem] = []
     @ObservationIgnored private var sawTerminal = false
@@ -46,6 +47,31 @@ public final class ScanViewModel {
     /// No-op while a scan is running.
     public func startScan() {
         guard !isScanning else { return }
+        prepare()
+        let make = makeEngine
+        let generation = scanGeneration
+        consumer = Task { [weak self] in
+            do {
+                // Rule loading reads JSON from disk: keep it off the main actor.
+                let engine = try await Task.detached { try make() }.value
+                guard let self, self.scanGeneration == generation else { return }
+                let stream = try await engine.scan()
+                await self.run(stream, cancel: { await engine.cancel() })
+            } catch {
+                self?.fail(error)
+            }
+        }
+    }
+
+    /// Shows the events of a scan that somebody else drives (the Care Scan feeds the rule stage's events here), exactly
+    /// like `startScan()` does for its own engine. `cancel` is what a `cancelScan()` calls. No-op while a scan is running.
+    public func consume(_ events: AsyncStream<ScanEvent>, cancel: @escaping @Sendable () async -> Void) {
+        guard !isScanning else { return }
+        prepare()
+        consumer = Task { [weak self] in await self?.run(events, cancel: cancel) }
+    }
+
+    private func prepare() {
         phase = .starting
         scanGeneration += 1
         items = []
@@ -59,24 +85,15 @@ public final class ScanViewModel {
         sawTerminal = false
         cancelRequestedEarly = false
         startedAt = Date()
-        let make = makeEngine
-        let generation = scanGeneration
-        consumer = Task { [weak self] in
-            do {
-                // Rule loading reads JSON from disk: keep it off the main actor.
-                let engine = try await Task.detached { try make() }.value
-                guard let self, self.scanGeneration == generation else { return }
-                self.engine = engine
-                let stream = try await engine.scan()
-                self.phase = self.cancelRequestedEarly ? .cancelling : .scanning
-                if self.cancelRequestedEarly { Task { await engine.cancel() } }
-                // Keep consuming until the terminal event, even after cancel: dropping the stream would lose the partial result.
-                for await event in stream { self.apply(event) }
-                self.streamEnded()
-            } catch {
-                self?.fail(error)
-            }
-        }
+    }
+
+    private func run(_ stream: AsyncStream<ScanEvent>, cancel: @escaping @Sendable () async -> Void) async {
+        cancelAction = cancel
+        phase = cancelRequestedEarly ? .cancelling : .scanning
+        if cancelRequestedEarly { Task { await cancel() } }
+        // Keep consuming until the terminal event, even after cancel: dropping the stream would lose the partial result.
+        for await event in stream { apply(event) }
+        streamEnded()
     }
 
     /// No-op unless a scan is starting or running.
@@ -87,7 +104,7 @@ public final class ScanViewModel {
             phase = .cancelling
         case .scanning:
             phase = .cancelling
-            if let engine { Task { await engine.cancel() } }
+            if let cancelAction { Task { await cancelAction() } }
         default:
             return
         }
@@ -149,7 +166,7 @@ public final class ScanViewModel {
         warnings = r.warnings
         result = r
         lastScanFinishedAt = r.finishedAt ?? Date()
-        engine = nil
+        cancelAction = nil
         phase = cancelled ? .cancelled : .finished
     }
 
@@ -170,7 +187,7 @@ public final class ScanViewModel {
 
     private func fail(_ error: Error) {
         pending = []
-        engine = nil
+        cancelAction = nil
         consumer = nil
         phase = .failed(String(describing: error))
     }

@@ -16,7 +16,10 @@ Plural keys: a vi file may also declare
     PLURALS = {"key": {"en": {"one": "%lld item", "other": "%lld items"}, "vi": {"other": "%lld mục"}}}
 for a key whose code default is an Int interpolation (`loc("key", "\\(n) items")`). They become `variations.plural`
 entries of the String Catalog (Vietnamese has only `other`). The English `other` must equal the code default
-(`l10n-extract.py --check` enforces it); `VI` and `PLURALS` keys must not overlap."""
+(`l10n-extract.py --check` enforces it); `VI` and `PLURALS` keys must not overlap.
+
+A file may also declare `REMOVE = ("old.key",)`: keys the PR's code no longer uses. `--sync` only marks them stale and
+`--check` rejects stale keys, so apply deletes them (only entries already marked stale); --verify fails if one is back."""
 import glob, json, os, runpy, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CAT = os.path.join(ROOT, "Sources", "AIDiskKeeperUI", "Resources", "Localizable.xcstrings")
@@ -69,6 +72,16 @@ def main(args):
     strings, errors, owner, changed = cat["strings"], [], {}, 0
     for path in paths:
         name = os.path.basename(path)
+        for key in runpy.run_path(path).get("REMOVE", ()):
+            if key not in strings:
+                continue
+            if verify:
+                errors.append(f"{name}: {key} should have been removed (run scripts/l10n-regen.sh)")
+            elif strings[key].get("extractionState") == "stale":
+                del strings[key]
+                changed += 1
+            else:
+                errors.append(f"{name}: cannot remove {key}: it is still used by code")
         ents, prefixes = entries(path)
         for key, vi in ents.items():
             if verify:

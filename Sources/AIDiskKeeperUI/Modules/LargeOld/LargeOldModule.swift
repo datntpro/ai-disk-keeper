@@ -5,9 +5,12 @@ enum LargeOldModule: ModuleProvider {
     static let descriptor = ModuleDescriptor(id: .largeOld, section: .storage, order: 2, symbol: "doc.badge.clock",
                                              isEnabled: true)
 
-    @MainActor static func model(_ ctx: ModuleContext) -> LargeOldModel {
-        ctx.suite.state(.largeOld) {
-            LargeOldModel(index: ctx.suite.diskIndex, scanner: LargeOldModel.live(environment: ctx.env.pathEnvironment))
+    @MainActor static func model(_ ctx: ModuleContext) -> LargeOldModel { model(env: ctx.env, suite: ctx.suite) }
+
+    /// Same instance without a `ModuleContext` (the Care Scan adopts its report into it).
+    @MainActor static func model(env: AppEnvironment, suite: SuiteModel) -> LargeOldModel {
+        suite.state(.largeOld) {
+            LargeOldModel(index: suite.diskIndex, scanner: LargeOldModel.live(environment: env.pathEnvironment))
         }
     }
 

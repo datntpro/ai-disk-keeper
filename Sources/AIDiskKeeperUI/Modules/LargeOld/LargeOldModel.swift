@@ -71,7 +71,8 @@ final class LargeOldModel {
         }
     }
 
-    private func adopt(_ result: LargeFileReport, generation: Int) {
+    /// Takes a report somebody else computed for index `generation` (the Care Scan), so the screen is ready at once.
+    func adopt(_ result: LargeFileReport, generation: Int) {
         report = result
         analysedGeneration = generation
         items = Dictionary(result.files.map { ($0.path, LargeFileScanner.makeItem($0)) }, uniquingKeysWith: { a, _ in a })
