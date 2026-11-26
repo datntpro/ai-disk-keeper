@@ -48,19 +48,34 @@ final class ApplicationBundleFollowUpTests: AppBundleTestCase {
 
     // MARK: F2 (a live helper process launched from a fixture bundle)
 
+    /// Runs a real process whose image lives inside the fixture bundle. A copied system binary can be killed
+    /// on some hosts (CI), so a tiny compiled program is the fallback.
     private func launchHelper(in bundleRel: String) throws -> Process {
         let dest = fx.path(bundleRel + "/Contents/MacOS/helper")
+        func run(_ exe: String, _ args: [String]) throws {
+            let t = Process()
+            t.executableURL = URL(fileURLWithPath: exe)
+            t.arguments = args
+            t.standardError = FileHandle.nullDevice
+            try t.run(); t.waitUntilExit()
+        }
+        func start() throws -> Process? {
+            let p = Process()
+            p.executableURL = URL(fileURLWithPath: dest)
+            p.arguments = ["60"]
+            guard (try? p.run()) != nil else { return nil }
+            usleep(400_000)
+            return p.isRunning ? p : nil
+        }
         try FileManager.default.copyItem(atPath: "/bin/sleep", toPath: dest)
-        let sign = Process()
-        sign.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
-        sign.arguments = ["--force", "-s", "-", dest]
-        sign.standardError = FileHandle.nullDevice
-        try sign.run(); sign.waitUntilExit()
-        let p = Process()
-        p.executableURL = URL(fileURLWithPath: dest)
-        p.arguments = ["60"]
-        try p.run()
-        return p
+        try run("/usr/bin/codesign", ["--force", "-s", "-", dest])
+        if let p = try start() { return p }
+        try? FileManager.default.removeItem(atPath: dest)
+        let src = fx.path("helper.swift")
+        try "import Darwin\nsleep(60)\n".write(toFile: src, atomically: true, encoding: .utf8)
+        try run("/usr/bin/xcrun", ["swiftc", src, "-o", dest])
+        if let p = try start() { return p }
+        throw XCTSkip("could not launch a helper process from the fixture bundle on this host")
     }
 
     func testF2_scannerSeesHelperInsideBundleOnly() throws {
