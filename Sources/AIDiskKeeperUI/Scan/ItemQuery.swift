@@ -7,6 +7,8 @@ public struct ScanTotals: Sendable, Equatable {
     public var byTier: [RiskTier: UsageTotals] = [:]
     public var byTool: [ToolID: UsageTotals] = [:]
     public var byCategory: [ItemCategory: UsageTotals] = [:]
+    /// Like `byCategory` but without Keep items: what a module badge calls "reclaimable".
+    public var reclaimableByCategory: [ItemCategory: UsageTotals] = [:]
     /// Items T10 may let the user tick (`isSelectable`).
     public var selectable: UsageTotals = .zero
     /// Items "Select all Safe" may tick (`isBulkSelectable`).
@@ -26,6 +28,7 @@ public struct ScanTotals: Sendable, Equatable {
         byTier[item.tier, default: .zero].add(item)
         byTool[item.tool, default: .zero].add(item)
         byCategory[item.category, default: .zero].add(item)
+        if item.tier != .keep { reclaimableByCategory[item.category, default: .zero].add(item) }
         if item.isSelectable { selectable.add(item) }
         if item.isBulkSelectable { bulkSelectable.add(item) }
     }
@@ -62,8 +65,15 @@ public struct ItemQuery: Sendable, Equatable {
     /// Items in scope (sidebar + search), ignoring the tier filter. Used for the tier chip counts.
     public func scoped(_ items: [ScanItem]) -> [ScanItem] {
         let needle = searchText.trimmingCharacters(in: .whitespaces)
+        // Screen modules draw their own content, so they list no scan items.
+        var moduleCategories: Set<ItemCategory> = []
+        if case .module(let id) = scope {
+            guard let categories = ModuleRegistry.descriptor(for: id).listCategories else { return [] }
+            moduleCategories = categories
+        }
         return items.filter { item in
             switch scope {
+            case .module: if !moduleCategories.contains(item.category) { return false }
             case .overview: break
             case .tool(let t): if item.tool != t { return false }
             case .category(let c): if item.category != c { return false }

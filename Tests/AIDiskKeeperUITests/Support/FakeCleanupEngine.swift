@@ -8,6 +8,8 @@ actor FakeCleanupEngine: CleanupEngineProtocol {
     var blockers: [String: [CleanupBlocker]] = [:]
     private(set) var issuedPlans: [CleanupPlan] = []
     private(set) var executedPlans: [CleanupPlan] = []
+    /// The groups passed to the most recent `plan(_:duplicateGroups:)`.
+    private(set) var lastDuplicateGroups: [String: DuplicateGroup] = [:]
     private var errors: [CleanupError] = []
     var holdUntilCancelled = false
     var progressSteps: [CleanupProgress] = []
@@ -20,6 +22,11 @@ actor FakeCleanupEngine: CleanupEngineProtocol {
     func setProgress(_ p: [CleanupProgress]) { progressSteps = p }
 
     func plan(_ items: [ScanItem]) async -> CleanupPlan {
+        await plan(items, duplicateGroups: [:])
+    }
+
+    func plan(_ items: [ScanItem], duplicateGroups: [String: DuplicateGroup]) async -> CleanupPlan {
+        lastDuplicateGroups = duplicateGroups
         while planHeld { try? await Task.sleep(nanoseconds: 5_000_000) }
         let entries = items.map {
             CleanupPlanEntry(item: $0, action: .trash, blockers: blockers[$0.id] ?? [], fingerprint: nil)

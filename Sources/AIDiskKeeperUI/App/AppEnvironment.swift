@@ -14,15 +14,20 @@ public final class AppEnvironment {
     /// T10: the one `CleanupEngine` per app (or why it is unavailable). Never falls back to an unguarded engine.
     public let cleanup: CleanupEngineHolder
 
+    /// T42: builds the one disk indexer for a map run. Called OFF the main actor (it loads rule JSON).
+    public var makeDiskIndexer: @Sendable () throws -> any DiskIndexing
+
     public init(pathEnvironment: PathEnvironment,
                 settings: SettingsModel? = nil,
                 makeScanEngine: @escaping @Sendable () throws -> any ScanEngineProtocol,
-                cleanup: CleanupEngineHolder = CleanupEngineHolder()) {
+                cleanup: CleanupEngineHolder = CleanupEngineHolder(),
+                makeDiskIndexer: @escaping @Sendable () throws -> any DiskIndexing = { throw DiskIndexUnavailable() }) {
         self.pathEnvironment = pathEnvironment
         self.makeScanEngine = makeScanEngine
         self.settings = settings ?? SettingsModel(
             store: SettingsStore(environment: pathEnvironment), environment: pathEnvironment, probe: { .unknown })
         self.cleanup = cleanup
+        self.makeDiskIndexer = makeDiskIndexer
     }
 
     public static func live() -> AppEnvironment {
@@ -59,6 +64,12 @@ public final class AppEnvironment {
         let provider = settings.scopeProvider   // current scope is read when each scan starts
         return AppEnvironment(pathEnvironment: env, settings: settings, makeScanEngine: {
             try ScanEngine.makeDefault(environment: env, userRulesDirectory: nil, scope: provider.current)
-        }, cleanup: cleanup)
+        }, cleanup: cleanup, makeDiskIndexer: {
+            let loaded = RuleLoader(
+                environment: env, bundledRulesDirectory: CoreResources.rulesDirectoryURL, userRulesDirectory: nil,
+                guardFactory: ScanGuard.loaderFactory(environment: env)).load()
+            let pathGuard = try ScanGuard(environment: env, protectPatterns: loaded.protectPatterns).protectedPaths
+            return DiskIndexer(environment: env, pathGuard: pathGuard)
+        })
     }
 }
