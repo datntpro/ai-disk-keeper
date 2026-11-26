@@ -10,7 +10,12 @@ public struct ToolCommandRegistry: Sendable {
     public let specs: [ToolCommandSpec]
     public init(specs: [ToolCommandSpec]) { self.specs = specs }
 
-    public static var builtIn: ToolCommandRegistry { ToolCommandRegistry(specs: SimctlToolCommands.specs) }
+    public static var builtIn: ToolCommandRegistry {
+        ToolCommandRegistry(specs: [
+            DockerToolCommands.specs(),
+            SimctlToolCommands.specs,
+        ].flatMap { $0 })
+    }
 
     public struct Match: Sendable {
         public let spec: ToolCommandSpec

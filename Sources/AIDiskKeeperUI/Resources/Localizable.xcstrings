@@ -5157,6 +5157,278 @@
         }
       }
     },
+    "docker.card.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Docker"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Docker"
+          }
+        }
+      }
+    },
+    "docker.checking" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking Docker…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đang kiểm tra Docker…"
+          }
+        }
+      }
+    },
+    "docker.diskImage" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Docker keeps everything in one disk image (%@ on disk). Cleaning frees space inside it right away, but the file itself shrinks only when %@ gives the space back. That can take a while or a restart. AI Disk Keeper never changes or deletes the disk image."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Docker lưu mọi thứ trong một tệp ổ đĩa ảo (%@ trên đĩa). Dọn dẹp giải phóng dung lượng bên trong ngay, nhưng bản thân tệp chỉ nhỏ lại khi %@ trả lại dung lượng. Việc này có thể mất một lúc hoặc cần khởi động lại. AI Disk Keeper không bao giờ thay đổi hay xóa tệp ổ đĩa ảo."
+          }
+        }
+      }
+    },
+    "docker.diskImage.sizes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ on disk · %@ max"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ trên đĩa · tối đa %@"
+          }
+        }
+      }
+    },
+    "docker.diskImage.why" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Why doesn't the file shrink right away?"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vì sao tệp không nhỏ lại ngay?"
+          }
+        }
+      }
+    },
+    "docker.explain.anonymousVolume" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An unnamed volume no container uses. Volumes can hold databases; check before removing. This can't be undone."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Volume không tên, không container nào dùng. Volume có thể chứa cơ sở dữ liệu; hãy kiểm tra trước khi xóa. Không thể khôi phục."
+          }
+        }
+      }
+    },
+    "docker.explain.buildCache" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Build cache that no running build uses. Docker recreates it as needed; your next builds may be slower."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bộ nhớ đệm build mà không bản build nào đang dùng. Docker sẽ tạo lại khi cần; vài lần build tới có thể chậm hơn."
+          }
+        }
+      }
+    },
+    "docker.explain.container" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A stopped container. Removing it deletes files changed inside it and its logs. Volumes it used are kept."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Container đã dừng. Xóa sẽ mất các tệp đã thay đổi bên trong và log của nó. Các volume nó dùng vẫn được giữ."
+          }
+        }
+      }
+    },
+    "docker.explain.dangling" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An untagged image left behind when a newer build replaced it. No container uses it. Docker removes it; nothing you need is lost."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Image không có tag, còn sót lại khi bản build mới thay thế. Không container nào dùng nó. Docker sẽ xóa nó; bạn không mất gì cần thiết."
+          }
+        }
+      }
+    },
+    "docker.explain.namedVolume" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A named volume no container uses right now. It may hold a database or project data, so AI Disk Keeper won't remove it. If you're sure, run `docker volume rm <name>` in Terminal."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Volume có tên, hiện không container nào dùng. Nó có thể chứa cơ sở dữ liệu hoặc dữ liệu dự án nên AI Disk Keeper sẽ không xóa. Nếu chắc chắn, hãy chạy `docker volume rm <tên>` trong Terminal."
+          }
+        }
+      }
+    },
+    "docker.explain.unused" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An image no container uses. Docker downloads or builds it again the next time you need it."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Image mà không container nào dùng. Lần sau cần, Docker sẽ tải hoặc build lại."
+          }
+        }
+      }
+    },
+    "docker.notRunning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ isn't running. Start it, then scan again to see images, containers and volumes."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ chưa chạy. Hãy mở nó rồi quét lại để xem image, container và volume."
+          }
+        }
+      }
+    },
+    "docker.running" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ %@ · %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ %@ · %@"
+          }
+        }
+      }
+    },
+    "docker.state.notRunning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not running"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chưa chạy"
+          }
+        }
+      }
+    },
+    "docker.state.running" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Running"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đang chạy"
+          }
+        }
+      }
+    },
+    "docker.state.timedOut" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not responding"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không phản hồi"
+          }
+        }
+      }
+    },
+    "docker.timedOut" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ didn't respond within %@ seconds. Try again later."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ không phản hồi trong %@ giây. Hãy thử lại sau."
+          }
+        }
+      }
+    },
     "dup.a11y.checkbox" : {
       "localizations" : {
         "en" : {

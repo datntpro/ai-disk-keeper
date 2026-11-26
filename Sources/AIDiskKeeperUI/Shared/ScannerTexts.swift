@@ -6,6 +6,7 @@ import Foundation
 enum ScannerTexts {
     struct Text { var name: String?; var explanation: String? }
     static let providers: [@Sendable (ScanItem) -> Text?] = [
+        { DockerTexts.text(for: $0) },
         { DevToolsTexts.text(for: $0) },
     ]
 
