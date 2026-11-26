@@ -11,13 +11,18 @@ public final class AppEnvironment {
     /// T11: user settings (scan scope, onboarding, Full Disk Access status).
     public let settings: SettingsModel
 
+    /// T10: the one `CleanupEngine` per app (or why it is unavailable). Never falls back to an unguarded engine.
+    public let cleanup: CleanupEngineHolder
+
     public init(pathEnvironment: PathEnvironment,
                 settings: SettingsModel? = nil,
-                makeScanEngine: @escaping @Sendable () throws -> any ScanEngineProtocol) {
+                makeScanEngine: @escaping @Sendable () throws -> any ScanEngineProtocol,
+                cleanup: CleanupEngineHolder = CleanupEngineHolder()) {
         self.pathEnvironment = pathEnvironment
         self.makeScanEngine = makeScanEngine
         self.settings = settings ?? SettingsModel(
             store: SettingsStore(environment: pathEnvironment), environment: pathEnvironment, probe: { .unknown })
+        self.cleanup = cleanup
     }
 
     public static func live() -> AppEnvironment {
@@ -35,9 +40,20 @@ public final class AppEnvironment {
                 .map { ToolChoice(id: $0.id, name: $0.name) }
             await MainActor.run { settings.availableTools = tools }
         }
-        let provider = settings.scopeProvider   // current scope is read when each scan starts
-        return AppEnvironment(pathEnvironment: env, settings: settings) {
-            try ScanEngine.makeDefault(environment: env, userRulesDirectory: nil, scope: provider.current)
+        let cleanup = CleanupEngineHolder()
+        // Rule loading reads disk: build the one cleanup engine off the main actor.
+        Task.detached {
+            let result = Result { try CleanupEngine.makeDefault(environment: env, runningApps: WorkspaceRunningApps()) }
+            await MainActor.run {
+                switch result {
+                case .success(let engine): cleanup.install(engine)
+                case .failure(let error): cleanup.fail(String(describing: error))
+                }
+            }
         }
+        let provider = settings.scopeProvider   // current scope is read when each scan starts
+        return AppEnvironment(pathEnvironment: env, settings: settings, makeScanEngine: {
+            try ScanEngine.makeDefault(environment: env, userRulesDirectory: nil, scope: provider.current)
+        }, cleanup: cleanup)
     }
 }

@@ -6,6 +6,9 @@ struct ItemTableView: View {
     let tierCounts: [RiskTier: Int]
     @Binding var query: ItemQuery
     @Binding var inspectedID: ScanItem.ID?
+    /// T10: nil hides the checkbox column and the "Select all Safe" button.
+    var selection: SelectionModel? = nil
+    var scopeName: String? = nil
 
     private var sortOrder: Binding<[ItemSortComparator]> {
         Binding(
@@ -26,6 +29,9 @@ struct ItemTableView: View {
                     .toggleStyle(.button)
                     .accessibilityLabel(loc("filter.tierA11y", "\(s.label) items, \(count)"))
                 }
+                if let selection {
+                    SelectAllSafeButton(items: rows, scopeName: scopeName, selection: selection)
+                }
                 Spacer()
                 TextField(loc("search.placeholder", "Search name or path"), text: $query.searchText)
                     .textFieldStyle(.roundedBorder).frame(minWidth: 140, idealWidth: 200, maxWidth: 240)
@@ -33,6 +39,9 @@ struct ItemTableView: View {
             }
             .padding(8)
             Table(rows, selection: $inspectedID, sortOrder: sortOrder) {
+                TableColumn(CleanupCopy.selectColumn) { item in
+                    if let selection { SelectionCheckbox(item: item, selection: selection) }
+                }.width(28)
                 TableColumn(loc("column.name", "Name"), sortUsing: ItemSortComparator(key: .name, order: .forward)) { item in
                     HStack(spacing: 6) {
                         Text(item.nameWithProject).lineLimit(1)
