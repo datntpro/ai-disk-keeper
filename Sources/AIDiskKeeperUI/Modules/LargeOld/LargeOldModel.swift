@@ -88,7 +88,7 @@ final class LargeOldModel {
         let at = now()
         let base = filters.kindFree(files, now: at)
         var totals: [LargeFileKind: (bytes: Int64, count: Int)] = [:]
-        for f in base { totals[f.kind, default: (0, 0)].bytes += f.allocatedBytes; totals[f.kind, default: (0, 0)].count += 1 }
+        for f in base where !f.isMountedImage { totals[f.kind, default: (0, 0)].bytes += f.allocatedBytes; totals[f.kind, default: (0, 0)].count += 1 }
         kindTotals = totals
         rows = base.filter { filters.kinds.isEmpty || filters.kinds.contains($0.kind) }.sorted(using: sortOrder)
     }

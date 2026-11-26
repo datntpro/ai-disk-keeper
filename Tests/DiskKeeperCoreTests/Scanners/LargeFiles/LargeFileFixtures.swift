@@ -9,6 +9,15 @@ struct FakeLastOpened: LastOpenedProviding {
     func dates(for path: String) -> FileDates? { table[path] ?? fallback }
 }
 
+struct FakeMountedImages: MountedImageProbing {
+    var paths: Set<String> = []
+    var error: (any Error)?
+    func mountedImagePaths() async throws -> Set<String> {
+        if let error { throw error }
+        return paths
+    }
+}
+
 struct FakeApps: InstalledAppNamesProviding {
     var apps: [String]
     func names() -> [String: String] {
@@ -40,11 +49,12 @@ enum LargeFix {
 
     static func scanner(_ fx: FixtureHome, minimum: Int64 = 100 * mb, apps: [String] = [],
                         dates: FakeLastOpened = FakeLastOpened(fallback: old()),
+                        mounted: FakeMountedImages = FakeMountedImages(),
                         configure: (inout LargeFileOptions) -> Void = { _ in }) -> LargeFileScanner {
         var o = LargeFileOptions(environment: fx.env)
         o.minimumBytes = minimum
         configure(&o)
-        var s = LargeFileScanner(options: o, lastOpened: dates, appNames: FakeApps(apps: apps), tree: { throw CancellationError() })
+        var s = LargeFileScanner(options: o, lastOpened: dates, appNames: FakeApps(apps: apps), mountedImages: mounted, tree: { throw CancellationError() })
         s._cloneProbe = { _ in .known(cloneID: 1, refCount: 1, privateBytes: 0, sharesAllBlocks: false, maySharesBlocks: false) }
         return s
     }

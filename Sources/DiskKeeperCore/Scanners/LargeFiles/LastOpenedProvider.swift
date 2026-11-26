@@ -21,7 +21,7 @@ public enum LastOpenedSource: String, Codable, Sendable, Hashable { case spotlig
 
 extension FileDates {
     /// The most recent of the three signals, and which one it was. Deliberately conservative: a file counts
-    /// as old only when every signal says so. Ties prefer Spotlight, then access, then modification.
+    /// as old only when every signal says so. On a tie Spotlight wins, then modification (access must be strictly newer than modification to win).
     public var lastOpened: (date: Date, source: LastOpenedSource) {
         var best: (Date, LastOpenedSource) = (modified, .modified)
         if let accessed, accessed > best.0 { best = (accessed, .accessed) }

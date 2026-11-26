@@ -2,21 +2,25 @@ import Darwin
 import Foundation
 
 /// Large, long-unopened files from the disk index. Read-only: no content is read, nothing is hashed, iCloud-only
-/// files are never touched. Every item is tier Review (these are the user's own files). See docs/large-files.md.
+/// files are never touched. Every item is tier Review (these are the user's own files), except a mounted disk image:
+/// that is Keep (eject it first). See docs/large-files.md.
 public struct LargeFileScanner: Scanner {
     public let id = "large-files"
     private let options: LargeFileOptions
     private let lastOpened: any LastOpenedProviding
     private let appNames: any InstalledAppNamesProviding
     private let tree: @Sendable () async throws -> DiskTree
+    private let mountedImages: any MountedImageProbing
     /// TEST-ONLY.
     var _cloneProbe: (@Sendable (String) -> CloneInfo)?
 
     public init(options: LargeFileOptions, lastOpened: any LastOpenedProviding, appNames: any InstalledAppNamesProviding,
+                mountedImages: any MountedImageProbing = SystemMountedImageProbe(),
                 tree: @escaping @Sendable () async throws -> DiskTree) {
         self.options = options
         self.lastOpened = lastOpened
         self.appNames = appNames
+        self.mountedImages = mountedImages
         self.tree = tree
     }
 
@@ -32,6 +36,19 @@ public struct LargeFileScanner: Scanner {
         try Task.checkCancellation()
         let candidates = candidates(in: tree, stats: &stats)
         let apps = appNames.names()
+        // A probe that can't answer never hides an item: no change, one warning.
+        var warnings: [ScanWarning] = []
+        var mounted = Set<String>()
+        do {
+            mounted = try await mountedImages.mountedImagePaths()
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            warnings.append(ScanWarning(kind: .scannerFailed,
+                                        message: "Couldn't tell which disk images are mounted: \(error)",
+                                        code: .scannerFailed(scannerID: id)))
+        }
+        // T20 (#21): open-by-process files are the shared open-files detector's job. Do not build a second one here.
         let downloads = PathCanonicalizer.key(options.scopeRoot + "/Downloads").components
         var files: [LargeFile] = []
         for c in candidates {
@@ -63,10 +80,11 @@ public struct LargeFileScanner: Scanner {
             files.append(LargeFile(path: c.path, logicalBytes: r.logicalBytes, allocatedBytes: r.allocatedBytes,
                                    reclaimableBytes: reclaimable, kind: kind, dates: dates, lastOpened: opened,
                                    lastOpenedSource: source, installedAppMatch: match, sharesStorage: shares,
-                                   sharesAllStorage: sharesAll, linkCount: r.linkCount))
+                                   sharesAllStorage: sharesAll, linkCount: r.linkCount,
+                                   isMountedImage: !mounted.isEmpty && mounted.contains(MountedImagePaths.key(c.path))))
         }
         files.sort { $0.allocatedBytes != $1.allocatedBytes ? $0.allocatedBytes > $1.allocatedBytes : $0.path < $1.path }
-        return LargeFileReport(files: files, skipped: stats, warnings: [])
+        return LargeFileReport(files: files, skipped: stats, warnings: warnings)
     }
 
     private func candidates(in tree: DiskTree, stats: inout LargeFileSkipStats) -> [Candidate] {
@@ -135,8 +153,15 @@ public struct LargeFileScanner: Scanner {
         await sink.progress(progress)
     }
 
-    /// Always Review; report-only (`.none`) when deleting would free nothing.
+    /// Review (Keep and report-only for a mounted disk image); report-only (`.none`) when deleting would free nothing.
     public static func makeItem(_ f: LargeFile) -> ScanItem {
+        if f.isMountedImage {
+            return ScanItem(url: URL(fileURLWithPath: f.path), displayName: f.name, tool: .files, category: .largeFile,
+                            sizeAllocated: f.allocatedBytes, sizeLogical: f.logicalBytes, fileCount: 1,
+                            lastModified: f.dates.modified, tier: .keep,
+                            explanation: "Mounted disk image: eject it first. This file backs a disk image that is attached right now.",
+                            ruleID: "large.\(f.kind.rawValue)", cleanupMethod: CleanupMethod.none, flags: [])
+        }
         let reportOnly = f.linkCount > 1 || f.sharesAllStorage
         var flags: Set<ItemFlag> = []
         if f.sharesStorage { flags.insert(.sharedStorage) }
