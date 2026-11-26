@@ -15,8 +15,7 @@ final class ToolCommandRegistryTests: XCTestCase {
         XCTAssertEqual(m.argv, ["thing", "rm", ToolFixtures.imageID])
     }
 
-    func testBuiltInRegistryHoldsOnlyBuiltInToolsAndRefusesUnknownItems() {
-        XCTAssertTrue(ToolCommandRegistry.builtIn.specs.allSatisfy { $0.command == "docker" })
+    func testBuiltInRegistryRefusesAnItemNoBuiltInSpecOwns() {
         XCTAssertNotNil(refusal(ToolFixtures.virtualItem(), .builtIn))
     }
 

@@ -6,6 +6,7 @@ public enum BuiltInScanners {
     public static func live(environment: PathEnvironment) -> [any Scanner] {
         [
             DockerScanner(layout: { DockerRuntimeLayout.live(environment: $0) }),
+            UnavailableSimulatorScanner.live(environment: environment),
         ]
     }
 }

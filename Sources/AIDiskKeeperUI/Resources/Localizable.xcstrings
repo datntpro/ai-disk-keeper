@@ -5141,6 +5141,22 @@
         }
       }
     },
+    "devtools.simulator.explain" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A simulator for %@, which is no longer installed, so it can't start. Deleting it with simctl removes the device and the apps and data inside it."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Simulator cho %@, phiên bản này không còn được cài nên không thể khởi động. Xóa bằng simctl sẽ gỡ thiết bị cùng các ứng dụng và dữ liệu bên trong."
+          }
+        }
+      }
+    },
     "docker.card.title" : {
       "localizations" : {
         "en" : {

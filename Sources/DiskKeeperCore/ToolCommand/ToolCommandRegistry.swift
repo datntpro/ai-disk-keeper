@@ -13,6 +13,7 @@ public struct ToolCommandRegistry: Sendable {
     public static var builtIn: ToolCommandRegistry {
         ToolCommandRegistry(specs: [
             DockerToolCommands.specs(),
+            SimctlToolCommands.specs,
         ].flatMap { $0 })
     }
 
