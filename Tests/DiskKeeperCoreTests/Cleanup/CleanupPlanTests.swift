@@ -39,7 +39,7 @@ final class CleanupPlanTests: CleanupTestCase {
     func testProtectedPathBlockedEvenIfPassedIn() async throws {
         try fx.file("home/.ssh/id_x", bytes: 10)
         let plan = await (try makeEngine()).plan([try item("home/.ssh/id_x", tier: .safe)])
-        XCTAssertTrue(plan.entries[0].blockers.contains { if case .protectedPath(.protectedPath, _) = $0 { true } else { false } })
+        XCTAssertTrue(plan.entries[0].blockers.contains { if case .protectedPath(.protectedPath, _, _, _) = $0 { true } else { false } })
         XCTAssertFalse(plan.entries[0].isExecutable)
     }
 

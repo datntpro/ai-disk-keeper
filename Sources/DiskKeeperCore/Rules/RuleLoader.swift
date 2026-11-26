@@ -13,6 +13,13 @@ public struct ResolvedRule: Sendable, Hashable {
     public let expandedPaths: [String]
     /// Templates that couldn't be expanded here (e.g. an unset env var). Not an error.
     public let unavailablePaths: [UnavailablePath]
+
+    public init(rule: ScannerRule, tool: ToolID, expandedPaths: [String], unavailablePaths: [UnavailablePath]) {
+        self.rule = rule
+        self.tool = tool
+        self.expandedPaths = expandedPaths
+        self.unavailablePaths = unavailablePaths
+    }
 }
 
 public struct RuleSet: Sendable, Hashable {

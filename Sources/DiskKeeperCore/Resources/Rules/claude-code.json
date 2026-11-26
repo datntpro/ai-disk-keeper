@@ -55,7 +55,13 @@
       "project": {
         "from": "claudeProjectDirName"
       },
-      "explanation": "One Claude Code conversation for this project. Deleting it removes it from `claude --resume` and `/resume`. Your code and the project's memory are not affected. Not regenerable."
+      "explanation": "One Claude Code conversation for this project. Deleting it removes it from `claude --resume` and `/resume`. Your code and the project's memory are not affected. Not regenerable.",
+      "localized": {
+        "vi": {
+          "title": "Bản ghi hội thoại",
+          "explanation": "Một cuộc hội thoại Claude Code của dự án này. Xóa đi thì nó biến mất khỏi `claude --resume` và `/resume`. Mã nguồn và bộ nhớ của dự án không bị ảnh hưởng. Không thể tạo lại."
+        }
+      }
     },
     {
       "id": "claude-code.session-data",
@@ -90,7 +96,13 @@
       "project": {
         "from": "claudeProjectDirName"
       },
-      "explanation": "Tool outputs and subagent logs saved alongside one conversation. Deleting it can make a resumed conversation miss earlier tool results. Not regenerable."
+      "explanation": "Tool outputs and subagent logs saved alongside one conversation. Deleting it can make a resumed conversation miss earlier tool results. Not regenerable.",
+      "localized": {
+        "vi": {
+          "title": "Kết quả công cụ của hội thoại",
+          "explanation": "Kết quả công cụ và nhật ký subagent được lưu cùng một cuộc hội thoại. Xóa đi có thể khiến cuộc hội thoại được mở lại thiếu các kết quả công cụ trước đó. Không thể tạo lại."
+        }
+      }
     },
     {
       "id": "claude-code.legacy-transcripts",
@@ -118,7 +130,13 @@
           "tier": "safe"
         }
       ],
-      "explanation": "Conversation transcripts in an older format that current Claude Code versions no longer write. Deleting them removes those conversations for good. Not regenerable."
+      "explanation": "Conversation transcripts in an older format that current Claude Code versions no longer write. Deleting them removes those conversations for good. Not regenerable.",
+      "localized": {
+        "vi": {
+          "title": "Bản ghi hội thoại cũ",
+          "explanation": "Các bản ghi hội thoại ở định dạng cũ mà các phiên bản Claude Code hiện tại không còn ghi nữa. Xóa đi là mất hẳn những cuộc hội thoại đó. Không thể tạo lại."
+        }
+      }
     },
     {
       "id": "claude-code.todos",
@@ -140,7 +158,13 @@
           "tier": "keep"
         }
       ],
-      "explanation": "Todo lists of past sessions. Old sessions never read them again."
+      "explanation": "Todo lists of past sessions. Old sessions never read them again.",
+      "localized": {
+        "vi": {
+          "title": "Danh sách việc cần làm",
+          "explanation": "Danh sách việc cần làm của các phiên trước. Các phiên cũ sẽ không đọc lại chúng."
+        }
+      }
     },
     {
       "id": "claude-code.shell-snapshots",
@@ -168,7 +192,13 @@
           "tier": "safe"
         }
       ],
-      "explanation": "Shell environment snapshots taken at session start; recreated for each new session. A Claude Code session that is still open and started earlier loses its shell setup (aliases, PATH) until you restart it."
+      "explanation": "Shell environment snapshots taken at session start; recreated for each new session. A Claude Code session that is still open and started earlier loses its shell setup (aliases, PATH) until you restart it.",
+      "localized": {
+        "vi": {
+          "title": "Ảnh chụp shell",
+          "explanation": "Ảnh chụp môi trường shell lúc bắt đầu phiên; được tạo lại cho mỗi phiên mới. Một phiên Claude Code đang mở và bắt đầu từ trước sẽ mất thiết lập shell (alias, PATH) cho đến khi bạn khởi động lại phiên đó."
+        }
+      }
     },
     {
       "id": "claude-code.session-env",
@@ -196,7 +226,13 @@
           "tier": "safe"
         }
       ],
-      "explanation": "Per-session environment files; recreated for each new session. A Claude Code session that is still open and started earlier loses its environment setup until you restart it."
+      "explanation": "Per-session environment files; recreated for each new session. A Claude Code session that is still open and started earlier loses its environment setup until you restart it.",
+      "localized": {
+        "vi": {
+          "title": "Môi trường của phiên",
+          "explanation": "Các tệp môi trường theo từng phiên; được tạo lại cho mỗi phiên mới. Một phiên Claude Code đang mở và bắt đầu từ trước sẽ mất thiết lập môi trường cho đến khi bạn khởi động lại phiên đó."
+        }
+      }
     },
     {
       "id": "claude-code.file-history",
@@ -224,7 +260,13 @@
           "tier": "safe"
         }
       ],
-      "explanation": "Copies of files from before Claude edited them, used by checkpoint/rewind for that session. Deleting it removes rewind for old sessions."
+      "explanation": "Copies of files from before Claude edited them, used by checkpoint/rewind for that session. Deleting it removes rewind for old sessions.",
+      "localized": {
+        "vi": {
+          "title": "Lịch sử chỉnh sửa tệp",
+          "explanation": "Bản sao của các tệp trước khi Claude chỉnh sửa, dùng cho checkpoint/rewind của phiên đó. Xóa đi là không thể rewind các phiên cũ nữa."
+        }
+      }
     },
     {
       "id": "claude-code.paste-cache",
@@ -246,7 +288,13 @@
           "tier": "keep"
         }
       ],
-      "explanation": "Large pasted text kept for a session; old sessions don't use it."
+      "explanation": "Large pasted text kept for a session; old sessions don't use it.",
+      "localized": {
+        "vi": {
+          "title": "Cache văn bản đã dán",
+          "explanation": "Văn bản dài đã dán được giữ lại cho một phiên; các phiên cũ không dùng đến."
+        }
+      }
     },
     {
       "id": "claude-code.debug-logs",
@@ -268,7 +316,13 @@
           "tier": "keep"
         }
       ],
-      "explanation": "Debug logs. Regenerated when debugging is on."
+      "explanation": "Debug logs. Regenerated when debugging is on.",
+      "localized": {
+        "vi": {
+          "title": "Nhật ký gỡ lỗi",
+          "explanation": "Nhật ký gỡ lỗi. Được tạo lại khi bật chế độ gỡ lỗi."
+        }
+      }
     },
     {
       "id": "claude-code.backups",
@@ -291,7 +345,13 @@
           "tier": "keep"
         }
       ],
-      "explanation": "Automatic backups of Claude Code's config file. The current config is not affected; you lose the ability to restore an older copy."
+      "explanation": "Automatic backups of Claude Code's config file. The current config is not affected; you lose the ability to restore an older copy.",
+      "localized": {
+        "vi": {
+          "title": "Bản sao lưu cấu hình",
+          "explanation": "Các bản sao lưu tự động của tệp cấu hình Claude Code. Cấu hình hiện tại không bị ảnh hưởng; bạn chỉ mất khả năng khôi phục về bản cũ hơn."
+        }
+      }
     },
     {
       "id": "claude-code.cache",
@@ -304,7 +364,13 @@
         "kind": "self"
       },
       "tier": "safe",
-      "explanation": "Downloaded changelog and model catalog; re-downloaded automatically."
+      "explanation": "Downloaded changelog and model catalog; re-downloaded automatically.",
+      "localized": {
+        "vi": {
+          "title": "Danh mục đã tải về",
+          "explanation": "Nhật ký thay đổi và danh mục mô hình đã tải về; sẽ được tải lại tự động."
+        }
+      }
     },
     {
       "id": "claude-code.plugin-cache",
@@ -317,7 +383,13 @@
         "kind": "self"
       },
       "tier": "review",
-      "explanation": "Installed plugin files cached by Claude Code. Plugins are unavailable until they are reinstalled with /plugin, which may be needed after deleting this."
+      "explanation": "Installed plugin files cached by Claude Code. Plugins are unavailable until they are reinstalled with /plugin, which may be needed after deleting this.",
+      "localized": {
+        "vi": {
+          "title": "Cache plugin",
+          "explanation": "Các tệp plugin đã cài được Claude Code lưu cache. Plugin sẽ không dùng được cho đến khi cài lại bằng /plugin, việc này có thể cần thiết sau khi xóa mục này."
+        }
+      }
     },
     {
       "id": "claude-code.xdg-cache",
@@ -338,7 +410,13 @@
           "tier": "keep"
         }
       ],
-      "explanation": "Update staging files; re-created when Claude Code updates."
+      "explanation": "Update staging files; re-created when Claude Code updates.",
+      "localized": {
+        "vi": {
+          "title": "Tệp chuẩn bị cập nhật",
+          "explanation": "Các tệp chuẩn bị cho bản cập nhật; được tạo lại khi Claude Code cập nhật."
+        }
+      }
     },
     {
       "id": "claude-code.mcp-logs",
@@ -351,7 +429,13 @@
         "kind": "self"
       },
       "tier": "safe",
-      "explanation": "Logs from MCP servers started by Claude Code. Regenerated."
+      "explanation": "Logs from MCP servers started by Claude Code. Regenerated.",
+      "localized": {
+        "vi": {
+          "title": "Nhật ký máy chủ MCP",
+          "explanation": "Nhật ký của các máy chủ MCP do Claude Code khởi chạy. Được tạo lại."
+        }
+      }
     }
   ]
 }

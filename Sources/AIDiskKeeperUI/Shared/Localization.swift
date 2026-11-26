@@ -19,7 +19,10 @@ public enum L10n {
         var pseudo = false
     }
 
-    private static let state = OSAllocatedUnfairLock(initialState: resolve(.system))
+    /// Unit tests start in English so string assertions don't depend on the machine's language; tests that need
+    /// another language set it explicitly (`withLanguage`).
+    private static let runningUnderTests = NSClassFromString("XCTestCase") != nil
+    private static let state = OSAllocatedUnfairLock(initialState: resolve(runningUnderTests ? .en : .system))
 
     static var current: State { state.withLock { $0 } }
     public static var locale: Locale { current.locale }

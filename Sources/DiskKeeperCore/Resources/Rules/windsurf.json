@@ -42,6 +42,12 @@
       },
       "tier": "safe",
       "explanation": "Windsurf is an Electron app; these are Chromium HTTP, code, GPU and shader caches. They are rebuilt automatically when the app starts.",
+      "localized": {
+        "vi": {
+          "title": "Cache web của Windsurf",
+          "explanation": "Windsurf là ứng dụng Electron; đây là các cache HTTP, mã, GPU và shader của Chromium. Chúng được tạo lại tự động khi ứng dụng khởi động."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.exafunction.windsurf"
@@ -68,6 +74,12 @@
         }
       ],
       "explanation": "Diagnostic logs written by Windsurf. Safe to delete; new logs are created as it runs. Logs from the last day are kept in case the app is running.",
+      "localized": {
+        "vi": {
+          "title": "Nhật ký ứng dụng Windsurf",
+          "explanation": "Nhật ký chẩn đoán do Windsurf ghi. Xóa được; nhật ký mới sẽ được tạo khi ứng dụng chạy. Nhật ký trong ngày gần nhất được giữ lại phòng khi ứng dụng đang chạy."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.exafunction.windsurf"
@@ -94,6 +106,12 @@
         }
       ],
       "explanation": "Per-workspace state for one folder opened in Windsurf (chat history, editor state, indexes). Deleting it loses that workspace's chat history and open-editor state; folders touched in the last 14 days are kept.",
+      "localized": {
+        "vi": {
+          "title": "Trạng thái workspace của Windsurf",
+          "explanation": "Trạng thái theo workspace cho một thư mục đã mở trong Windsurf (lịch sử chat, trạng thái trình soạn thảo, chỉ mục). Xóa đi là mất lịch sử chat và trạng thái các trình soạn thảo đang mở của workspace đó; các thư mục được dùng trong 14 ngày gần nhất được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.exafunction.windsurf"
@@ -120,6 +138,12 @@
         }
       ],
       "explanation": "Cascade conversation history. Deleting a conversation removes it from Windsurf's chat list; your code is not affected. Conversations from the last 7 days are kept.",
+      "localized": {
+        "vi": {
+          "title": "Hội thoại Cascade của Windsurf",
+          "explanation": "Lịch sử hội thoại Cascade. Xóa một cuộc hội thoại là nó biến mất khỏi danh sách chat của Windsurf; mã nguồn của bạn không bị ảnh hưởng. Các hội thoại trong 7 ngày gần nhất được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash"
       }
@@ -136,6 +160,12 @@
       },
       "tier": "review",
       "explanation": "Codebase index; rebuilt by re-indexing, which can take a while.",
+      "localized": {
+        "vi": {
+          "title": "Chỉ mục mã nguồn của Windsurf",
+          "explanation": "Chỉ mục mã nguồn; được tạo lại bằng cách lập chỉ mục lại, việc này có thể mất một lúc."
+        }
+      },
       "cleanup": {
         "method": "trash"
       }

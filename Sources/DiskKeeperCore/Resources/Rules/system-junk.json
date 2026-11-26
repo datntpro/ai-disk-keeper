@@ -26,6 +26,12 @@
         }
       ],
       "explanation": "Regenerable: diagnostic logs from Claude; new logs are written as the app runs. Quit the app first, because a running app keeps log files open and trashing them frees no space. Logs touched in the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Nhật ký Claude",
+          "explanation": "Tạo lại được: nhật ký chẩn đoán của Claude; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký được dùng trong ngày gần nhất được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.anthropic.claudefordesktop"
@@ -52,6 +58,12 @@
         }
       ],
       "explanation": "Regenerable: diagnostic logs from Cursor; new logs are written as the app runs. Quit the app first, because a running app keeps log files open and trashing them frees no space. Logs touched in the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Nhật ký Cursor",
+          "explanation": "Tạo lại được: nhật ký chẩn đoán của Cursor; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký được dùng trong ngày gần nhất được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.todesktop.230313mzl4w4u92"
@@ -78,6 +90,12 @@
         }
       ],
       "explanation": "Regenerable: diagnostic logs from Windsurf; new logs are written as the app runs. Quit the app first, because a running app keeps log files open and trashing them frees no space. Logs touched in the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Nhật ký Windsurf",
+          "explanation": "Tạo lại được: nhật ký chẩn đoán của Windsurf; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký được dùng trong ngày gần nhất được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.exafunction.windsurf"
@@ -104,6 +122,12 @@
         }
       ],
       "explanation": "Regenerable: diagnostic logs from Kiro; new logs are written as the app runs. Quit the app first, because a running app keeps log files open and trashing them frees no space. Logs touched in the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Nhật ký Kiro",
+          "explanation": "Tạo lại được: nhật ký chẩn đoán của Kiro; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký được dùng trong ngày gần nhất được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "dev.kiro.desktop"
@@ -130,6 +154,12 @@
         }
       ],
       "explanation": "Regenerable: diagnostic logs from KiroCrew; new logs are written as the app runs. Quit the app first, because a running app keeps log files open and trashing them frees no space. Logs touched in the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Nhật ký KiroCrew",
+          "explanation": "Tạo lại được: nhật ký chẩn đoán của KiroCrew; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký được dùng trong ngày gần nhất được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.amazon.kiro.crew"
@@ -156,6 +186,12 @@
         }
       ],
       "explanation": "Regenerable: diagnostic logs from Antigravity; new logs are written as the app runs. Quit the app first, because a running app keeps log files open and trashing them frees no space. Logs touched in the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Nhật ký Antigravity",
+          "explanation": "Tạo lại được: nhật ký chẩn đoán của Antigravity; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký được dùng trong ngày gần nhất được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.google.antigravity"
@@ -182,6 +218,12 @@
         }
       ],
       "explanation": "Regenerable: diagnostic logs from Orca; new logs are written as the app runs. Quit the app first, because a running app keeps log files open and trashing them frees no space. Logs touched in the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Nhật ký Orca",
+          "explanation": "Tạo lại được: nhật ký chẩn đoán của Orca; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký được dùng trong ngày gần nhất được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.stablyai.orca"
@@ -207,7 +249,13 @@
           "tier": "keep"
         }
       ],
-      "explanation": "Regenerable: diagnostic logs from Codex; new logs are written as the app runs. Quit the app first, because a running app keeps log files open and trashing them frees no space. Logs touched in the last day are kept. Codex may have these logs open while it runs, so check that it is not running first."
+      "explanation": "Regenerable: diagnostic logs from Codex; new logs are written as the app runs. Quit the app first, because a running app keeps log files open and trashing them frees no space. Logs touched in the last day are kept. Codex may have these logs open while it runs, so check that it is not running first.",
+      "localized": {
+        "vi": {
+          "title": "Nhật ký Codex",
+          "explanation": "Tạo lại được: nhật ký chẩn đoán của Codex; nhật ký mới sẽ được ghi khi ứng dụng chạy. Hãy thoát ứng dụng trước, vì ứng dụng đang chạy giữ các tệp nhật ký ở trạng thái mở nên chuyển chúng vào Thùng rác cũng không giải phóng được dung lượng. Nhật ký được dùng trong ngày gần nhất được giữ lại. Codex có thể đang mở các nhật ký này khi chạy, nên hãy kiểm tra xem nó có đang chạy hay không."
+        }
+      }
     },
     {
       "id": "system.crash-reports.claude",
@@ -223,7 +271,13 @@
         "type": "file"
       },
       "tier": "review",
-      "explanation": "Regenerable: not needed. Crash and hang reports from Claude. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+      "explanation": "Regenerable: not needed. Crash and hang reports from Claude. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
+      "localized": {
+        "vi": {
+          "title": "Báo cáo sự cố của Claude",
+          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Claude. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+        }
+      }
     },
     {
       "id": "system.crash-reports.claude-faults",
@@ -239,7 +293,13 @@
         "type": "file"
       },
       "tier": "review",
-      "explanation": "Regenerable: not needed. Crash and hang reports from Claude. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+      "explanation": "Regenerable: not needed. Crash and hang reports from Claude. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
+      "localized": {
+        "vi": {
+          "title": "Báo cáo lỗi của Claude",
+          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Claude. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+        }
+      }
     },
     {
       "id": "system.crash-reports.cursor",
@@ -255,7 +315,13 @@
         "type": "file"
       },
       "tier": "review",
-      "explanation": "Regenerable: not needed. Crash and hang reports from Cursor. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+      "explanation": "Regenerable: not needed. Crash and hang reports from Cursor. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
+      "localized": {
+        "vi": {
+          "title": "Báo cáo sự cố của Cursor",
+          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Cursor. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+        }
+      }
     },
     {
       "id": "system.crash-reports.cursor-faults",
@@ -271,7 +337,13 @@
         "type": "file"
       },
       "tier": "review",
-      "explanation": "Regenerable: not needed. Crash and hang reports from Cursor. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+      "explanation": "Regenerable: not needed. Crash and hang reports from Cursor. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
+      "localized": {
+        "vi": {
+          "title": "Báo cáo lỗi của Cursor",
+          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Cursor. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+        }
+      }
     },
     {
       "id": "system.crash-reports.cursor-helper",
@@ -287,7 +359,13 @@
         "type": "file"
       },
       "tier": "review",
-      "explanation": "Regenerable: not needed. Crash and hang reports from Cursor Helper. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+      "explanation": "Regenerable: not needed. Crash and hang reports from Cursor Helper. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
+      "localized": {
+        "vi": {
+          "title": "Báo cáo sự cố của Cursor Helper",
+          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Cursor Helper. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+        }
+      }
     },
     {
       "id": "system.crash-reports.cursor-helper-faults",
@@ -303,7 +381,13 @@
         "type": "file"
       },
       "tier": "review",
-      "explanation": "Regenerable: not needed. Crash and hang reports from Cursor Helper. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+      "explanation": "Regenerable: not needed. Crash and hang reports from Cursor Helper. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
+      "localized": {
+        "vi": {
+          "title": "Báo cáo lỗi của Cursor Helper",
+          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Cursor Helper. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+        }
+      }
     },
     {
       "id": "system.crash-reports.windsurf",
@@ -319,7 +403,13 @@
         "type": "file"
       },
       "tier": "review",
-      "explanation": "Regenerable: not needed. Crash and hang reports from Windsurf. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+      "explanation": "Regenerable: not needed. Crash and hang reports from Windsurf. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
+      "localized": {
+        "vi": {
+          "title": "Báo cáo sự cố của Windsurf",
+          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Windsurf. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+        }
+      }
     },
     {
       "id": "system.crash-reports.windsurf-faults",
@@ -335,7 +425,13 @@
         "type": "file"
       },
       "tier": "review",
-      "explanation": "Regenerable: not needed. Crash and hang reports from Windsurf. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+      "explanation": "Regenerable: not needed. Crash and hang reports from Windsurf. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
+      "localized": {
+        "vi": {
+          "title": "Báo cáo lỗi của Windsurf",
+          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Windsurf. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+        }
+      }
     },
     {
       "id": "system.crash-reports.kiro",
@@ -351,7 +447,13 @@
         "type": "file"
       },
       "tier": "review",
-      "explanation": "Regenerable: not needed. Crash and hang reports from Kiro and KiroCrew. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+      "explanation": "Regenerable: not needed. Crash and hang reports from Kiro and KiroCrew. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
+      "localized": {
+        "vi": {
+          "title": "Báo cáo sự cố của Kiro và KiroCrew",
+          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Kiro và KiroCrew. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+        }
+      }
     },
     {
       "id": "system.crash-reports.kiro-faults",
@@ -367,7 +469,13 @@
         "type": "file"
       },
       "tier": "review",
-      "explanation": "Regenerable: not needed. Crash and hang reports from Kiro and KiroCrew. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+      "explanation": "Regenerable: not needed. Crash and hang reports from Kiro and KiroCrew. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
+      "localized": {
+        "vi": {
+          "title": "Báo cáo lỗi của Kiro và KiroCrew",
+          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Kiro và KiroCrew. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+        }
+      }
     },
     {
       "id": "system.crash-reports.antigravity",
@@ -383,7 +491,13 @@
         "type": "file"
       },
       "tier": "review",
-      "explanation": "Regenerable: not needed. Crash and hang reports from Antigravity. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+      "explanation": "Regenerable: not needed. Crash and hang reports from Antigravity. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
+      "localized": {
+        "vi": {
+          "title": "Báo cáo sự cố của Antigravity",
+          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Antigravity. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+        }
+      }
     },
     {
       "id": "system.crash-reports.antigravity-faults",
@@ -399,7 +513,13 @@
         "type": "file"
       },
       "tier": "review",
-      "explanation": "Regenerable: not needed. Crash and hang reports from Antigravity. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+      "explanation": "Regenerable: not needed. Crash and hang reports from Antigravity. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
+      "localized": {
+        "vi": {
+          "title": "Báo cáo lỗi của Antigravity",
+          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Antigravity. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+        }
+      }
     },
     {
       "id": "system.crash-reports.orca",
@@ -415,7 +535,13 @@
         "type": "file"
       },
       "tier": "review",
-      "explanation": "Regenerable: not needed. Crash and hang reports from Orca. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+      "explanation": "Regenerable: not needed. Crash and hang reports from Orca. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
+      "localized": {
+        "vi": {
+          "title": "Báo cáo sự cố của Orca",
+          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Orca. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+        }
+      }
     },
     {
       "id": "system.crash-reports.orca-faults",
@@ -431,7 +557,13 @@
         "type": "file"
       },
       "tier": "review",
-      "explanation": "Regenerable: not needed. Crash and hang reports from Orca. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+      "explanation": "Regenerable: not needed. Crash and hang reports from Orca. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
+      "localized": {
+        "vi": {
+          "title": "Báo cáo lỗi của Orca",
+          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Orca. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+        }
+      }
     },
     {
       "id": "system.crash-reports.ollama",
@@ -447,7 +579,13 @@
         "type": "file"
       },
       "tier": "review",
-      "explanation": "Regenerable: not needed. Crash and hang reports from Ollama. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+      "explanation": "Regenerable: not needed. Crash and hang reports from Ollama. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
+      "localized": {
+        "vi": {
+          "title": "Báo cáo sự cố của Ollama",
+          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Ollama. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+        }
+      }
     },
     {
       "id": "system.crash-reports.ollama-faults",
@@ -463,7 +601,13 @@
         "type": "file"
       },
       "tier": "review",
-      "explanation": "Regenerable: not needed. Crash and hang reports from Ollama. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+      "explanation": "Regenerable: not needed. Crash and hang reports from Ollama. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
+      "localized": {
+        "vi": {
+          "title": "Báo cáo lỗi của Ollama",
+          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Ollama. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+        }
+      }
     },
     {
       "id": "system.crash-reports.codex",
@@ -479,7 +623,13 @@
         "type": "file"
       },
       "tier": "review",
-      "explanation": "Regenerable: not needed. Crash and hang reports from Codex. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+      "explanation": "Regenerable: not needed. Crash and hang reports from Codex. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
+      "localized": {
+        "vi": {
+          "title": "Báo cáo sự cố của Codex",
+          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Codex. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+        }
+      }
     },
     {
       "id": "system.crash-reports.codex-faults",
@@ -495,7 +645,13 @@
         "type": "file"
       },
       "tier": "review",
-      "explanation": "Regenerable: not needed. Crash and hang reports from Codex. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing."
+      "explanation": "Regenerable: not needed. Crash and hang reports from Codex. Review them first: they are only useful if you plan to send a bug report, and they are tiny, so deleting frees almost nothing.",
+      "localized": {
+        "vi": {
+          "title": "Báo cáo lỗi của Codex",
+          "explanation": "Tạo lại được: không cần thiết. Báo cáo sự cố và treo máy của Codex. Hãy xem trước: chúng chỉ hữu ích nếu bạn định gửi báo cáo lỗi, và chúng rất nhỏ nên xóa đi gần như không giải phóng được gì."
+        }
+      }
     },
     {
       "id": "system.app-cache.claude",
@@ -519,6 +675,12 @@
         }
       ],
       "explanation": "Regenerable: Claude Desktop's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit Claude Desktop first.",
+      "localized": {
+        "vi": {
+          "title": "Cache ứng dụng Claude Desktop",
+          "explanation": "Tạo lại được: cache và các bản cập nhật đã tải của Claude Desktop; chúng được tạo lại hoặc tải lại khi ứng dụng cần. Hãy thoát Claude Desktop trước."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.anthropic.claudefordesktop"
@@ -546,6 +708,12 @@
         }
       ],
       "explanation": "Regenerable: Cursor's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit Cursor first.",
+      "localized": {
+        "vi": {
+          "title": "Cache ứng dụng Cursor",
+          "explanation": "Tạo lại được: cache và các bản cập nhật đã tải của Cursor; chúng được tạo lại hoặc tải lại khi ứng dụng cần. Hãy thoát Cursor trước."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.todesktop.230313mzl4w4u92"
@@ -573,6 +741,12 @@
         }
       ],
       "explanation": "Regenerable: Windsurf's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit Windsurf first.",
+      "localized": {
+        "vi": {
+          "title": "Cache ứng dụng Windsurf",
+          "explanation": "Tạo lại được: cache và các bản cập nhật đã tải của Windsurf; chúng được tạo lại hoặc tải lại khi ứng dụng cần. Hãy thoát Windsurf trước."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.exafunction.windsurf"
@@ -600,6 +774,12 @@
         }
       ],
       "explanation": "Regenerable: Kiro's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit Kiro first.",
+      "localized": {
+        "vi": {
+          "title": "Cache ứng dụng Kiro",
+          "explanation": "Tạo lại được: cache và các bản cập nhật đã tải của Kiro; chúng được tạo lại hoặc tải lại khi ứng dụng cần. Hãy thoát Kiro trước."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "dev.kiro.desktop"
@@ -627,6 +807,12 @@
         }
       ],
       "explanation": "Regenerable: KiroCrew's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit KiroCrew first.",
+      "localized": {
+        "vi": {
+          "title": "Cache ứng dụng KiroCrew",
+          "explanation": "Tạo lại được: cache và các bản cập nhật đã tải của KiroCrew; chúng được tạo lại hoặc tải lại khi ứng dụng cần. Hãy thoát KiroCrew trước."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.amazon.kiro.crew"
@@ -654,6 +840,12 @@
         }
       ],
       "explanation": "Regenerable: Antigravity's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit Antigravity first.",
+      "localized": {
+        "vi": {
+          "title": "Cache ứng dụng Antigravity",
+          "explanation": "Tạo lại được: cache và các bản cập nhật đã tải của Antigravity; chúng được tạo lại hoặc tải lại khi ứng dụng cần. Hãy thoát Antigravity trước."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.google.antigravity"
@@ -681,6 +873,12 @@
         }
       ],
       "explanation": "Regenerable: Orca's cache and downloaded updates; they are rebuilt or downloaded again when the app needs them. Quit Orca first.",
+      "localized": {
+        "vi": {
+          "title": "Cache ứng dụng Orca",
+          "explanation": "Tạo lại được: cache và các bản cập nhật đã tải của Orca; chúng được tạo lại hoặc tải lại khi ứng dụng cần. Hãy thoát Orca trước."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.stablyai.orca"
@@ -708,6 +906,12 @@
         }
       ],
       "explanation": "Regenerable: downloaded Orca updates. Deleting during an update in progress makes it download again.",
+      "localized": {
+        "vi": {
+          "title": "Bản cập nhật Orca đã tải",
+          "explanation": "Tạo lại được: các bản cập nhật Orca đã tải về. Xóa khi đang cập nhật dở sẽ khiến nó phải tải lại."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.stablyai.orca"
@@ -735,7 +939,13 @@
           "tier": "keep"
         }
       ],
-      "explanation": "Regenerable: temporary and scratch files from Claude Code sessions. Anything touched in the last 24 h may belong to a running session and is kept."
+      "explanation": "Regenerable: temporary and scratch files from Claude Code sessions. Anything touched in the last 24 h may belong to a running session and is kept.",
+      "localized": {
+        "vi": {
+          "title": "Thư mục tạm của Claude Code",
+          "explanation": "Tạo lại được: tệp tạm và tệp nháp từ các phiên Claude Code. Mọi thứ được dùng trong 24 giờ gần nhất có thể thuộc về một phiên đang chạy và được giữ lại."
+        }
+      }
     },
     {
       "id": "system.npm-cache",
@@ -748,7 +958,13 @@
         "kind": "self"
       },
       "tier": "review",
-      "explanation": "Regenerable: npm's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then."
+      "explanation": "Regenerable: npm's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then.",
+      "localized": {
+        "vi": {
+          "title": "Cache tải về của npm",
+          "explanation": "Tạo lại được: cache tải về của npm. Các gói sẽ được tải lại ở lần cài sau, nên việc cài đặt sẽ chậm hơn và cài ngoại tuyến sẽ không thành công cho đến lúc đó."
+        }
+      }
     },
     {
       "id": "system.pnpm-store-cache",
@@ -761,7 +977,13 @@
         "kind": "self"
       },
       "tier": "review",
-      "explanation": "Regenerable: pnpm's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then."
+      "explanation": "Regenerable: pnpm's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then.",
+      "localized": {
+        "vi": {
+          "title": "Cache tải về của pnpm",
+          "explanation": "Tạo lại được: cache tải về của pnpm. Các gói sẽ được tải lại ở lần cài sau, nên việc cài đặt sẽ chậm hơn và cài ngoại tuyến sẽ không thành công cho đến lúc đó."
+        }
+      }
     },
     {
       "id": "system.uv-cache",
@@ -774,7 +996,13 @@
         "kind": "self"
       },
       "tier": "review",
-      "explanation": "Regenerable: uv's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then."
+      "explanation": "Regenerable: uv's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then.",
+      "localized": {
+        "vi": {
+          "title": "Cache tải về của uv",
+          "explanation": "Tạo lại được: cache tải về của uv. Các gói sẽ được tải lại ở lần cài sau, nên việc cài đặt sẽ chậm hơn và cài ngoại tuyến sẽ không thành công cho đến lúc đó."
+        }
+      }
     },
     {
       "id": "system.pip-cache",
@@ -787,7 +1015,13 @@
         "kind": "self"
       },
       "tier": "review",
-      "explanation": "Regenerable: pip's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then."
+      "explanation": "Regenerable: pip's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then.",
+      "localized": {
+        "vi": {
+          "title": "Cache tải về của pip",
+          "explanation": "Tạo lại được: cache tải về của pip. Các gói sẽ được tải lại ở lần cài sau, nên việc cài đặt sẽ chậm hơn và cài ngoại tuyến sẽ không thành công cho đến lúc đó."
+        }
+      }
     },
     {
       "id": "system.bun-cache",
@@ -800,7 +1034,13 @@
         "kind": "self"
       },
       "tier": "review",
-      "explanation": "Regenerable: bun's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then."
+      "explanation": "Regenerable: bun's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then.",
+      "localized": {
+        "vi": {
+          "title": "Cache tải về của bun",
+          "explanation": "Tạo lại được: cache tải về của bun. Các gói sẽ được tải lại ở lần cài sau, nên việc cài đặt sẽ chậm hơn và cài ngoại tuyến sẽ không thành công cho đến lúc đó."
+        }
+      }
     }
   ]
 }

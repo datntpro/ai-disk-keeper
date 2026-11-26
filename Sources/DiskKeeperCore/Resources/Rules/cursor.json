@@ -39,6 +39,12 @@
       },
       "tier": "safe",
       "explanation": "Cursor is an Electron app; these are Chromium HTTP, code, GPU and shader caches. They are rebuilt automatically when the app starts.",
+      "localized": {
+        "vi": {
+          "title": "Cache web của Cursor",
+          "explanation": "Cursor là ứng dụng Electron; đây là các cache HTTP, mã, GPU và shader của Chromium. Chúng được tạo lại tự động khi ứng dụng khởi động."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.todesktop.230313mzl4w4u92"
@@ -65,6 +71,12 @@
         }
       ],
       "explanation": "Diagnostic logs written by Cursor. Safe to delete; new logs are created as it runs. Logs from the last day are kept in case the app is running.",
+      "localized": {
+        "vi": {
+          "title": "Nhật ký ứng dụng Cursor",
+          "explanation": "Nhật ký chẩn đoán do Cursor ghi. Xóa được; nhật ký mới sẽ được tạo khi ứng dụng chạy. Nhật ký trong ngày gần nhất được giữ lại phòng khi ứng dụng đang chạy."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.todesktop.230313mzl4w4u92"
@@ -91,6 +103,12 @@
         }
       ],
       "explanation": "Per-workspace state for one folder opened in Cursor (chat history, editor state, indexes). Deleting it loses that workspace's chat history and open-editor state; folders touched in the last 14 days are kept.",
+      "localized": {
+        "vi": {
+          "title": "Trạng thái workspace của Cursor",
+          "explanation": "Trạng thái theo workspace cho một thư mục đã mở trong Cursor (lịch sử chat, trạng thái trình soạn thảo, chỉ mục). Xóa đi là mất lịch sử chat và trạng thái các trình soạn thảo đang mở của workspace đó; các thư mục được dùng trong 14 ngày gần nhất được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.todesktop.230313mzl4w4u92"
@@ -117,6 +135,12 @@
         }
       ],
       "explanation": "Local file history (earlier versions of files you edited) kept per file. Deleting it removes Timeline entries for those files; your current files are not affected. Entries touched in the last 14 days are kept.",
+      "localized": {
+        "vi": {
+          "title": "Lịch sử tệp cục bộ của Cursor",
+          "explanation": "Lịch sử tệp cục bộ (các phiên bản trước của tệp bạn đã sửa), lưu theo từng tệp. Xóa đi là mất các mục Timeline của những tệp đó; tệp hiện tại của bạn không bị ảnh hưởng. Các mục được dùng trong 14 ngày gần nhất được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.todesktop.230313mzl4w4u92"
@@ -134,6 +158,12 @@
       },
       "tier": "safe",
       "explanation": "Downloaded extension packages (.vsix) kept after installation. Cursor downloads them again if needed; installed extensions are not affected.",
+      "localized": {
+        "vi": {
+          "title": "Gói tiện ích mở rộng Cursor đã tải",
+          "explanation": "Các gói tiện ích mở rộng (.vsix) đã tải và còn lại sau khi cài. Cursor sẽ tải lại nếu cần; các tiện ích đã cài không bị ảnh hưởng."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.todesktop.230313mzl4w4u92"

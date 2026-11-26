@@ -61,6 +61,12 @@
         }
       ],
       "explanation": "Diagnostic logs written by Kiro. Safe to delete; new logs are created as it runs. Logs from the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Nhật ký agent Kiro",
+          "explanation": "Nhật ký chẩn đoán do Kiro ghi. Xóa được; nhật ký mới sẽ được tạo khi Kiro chạy. Nhật ký trong ngày gần nhất được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash"
       }
@@ -85,6 +91,12 @@
       },
       "tier": "safe",
       "explanation": "Kiro is an Electron app; these are Chromium HTTP, code, GPU and shader caches. They are rebuilt automatically when the app starts.",
+      "localized": {
+        "vi": {
+          "title": "Cache web của Kiro",
+          "explanation": "Kiro là ứng dụng Electron; đây là các cache HTTP, mã, GPU và shader của Chromium. Chúng được tạo lại tự động khi ứng dụng khởi động."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "dev.kiro.desktop"
@@ -111,6 +123,12 @@
         }
       ],
       "explanation": "Diagnostic logs written by Kiro. Safe to delete; new logs are created as it runs. Logs from the last day are kept in case the app is running.",
+      "localized": {
+        "vi": {
+          "title": "Nhật ký ứng dụng Kiro",
+          "explanation": "Nhật ký chẩn đoán do Kiro ghi. Xóa được; nhật ký mới sẽ được tạo khi ứng dụng chạy. Nhật ký trong ngày gần nhất được giữ lại phòng khi ứng dụng đang chạy."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "dev.kiro.desktop"
@@ -137,6 +155,12 @@
         }
       ],
       "explanation": "Per-workspace state for one folder opened in Kiro (chat history, editor state, indexes). Deleting it loses that workspace's chat history and open-editor state; folders touched in the last 14 days are kept.",
+      "localized": {
+        "vi": {
+          "title": "Trạng thái workspace của Kiro",
+          "explanation": "Trạng thái theo workspace cho một thư mục đã mở trong Kiro (lịch sử chat, trạng thái trình soạn thảo, chỉ mục). Xóa đi là mất lịch sử chat và trạng thái các trình soạn thảo đang mở của workspace đó; các thư mục được dùng trong 14 ngày gần nhất được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "dev.kiro.desktop"
@@ -156,6 +180,12 @@
       },
       "tier": "review",
       "explanation": "Local embedding model downloaded by Kiro Crew (~600 MB). Re-downloaded when needed; semantic search is unavailable until then.",
+      "localized": {
+        "vi": {
+          "title": "Mô hình cục bộ của Kiro Crew",
+          "explanation": "Mô hình embedding cục bộ do Kiro Crew tải về (~600 MB). Sẽ được tải lại khi cần; tính năng tìm kiếm ngữ nghĩa không dùng được cho đến lúc đó."
+        }
+      },
       "cleanup": {
         "method": "trash"
       }
@@ -172,6 +202,12 @@
       },
       "tier": "review",
       "explanation": "Chromium build downloaded for Kiro Crew's browser tool. Re-downloaded on next use.",
+      "localized": {
+        "vi": {
+          "title": "Bản dựng trình duyệt của Kiro Crew",
+          "explanation": "Bản dựng Chromium tải về cho công cụ trình duyệt của Kiro Crew. Sẽ được tải lại ở lần dùng sau."
+        }
+      },
       "cleanup": {
         "method": "trash"
       }
@@ -198,6 +234,12 @@
         }
       ],
       "explanation": "Downloaded app packages used by Kiro Crew. Re-downloaded when needed. Packages from the last 7 days are kept.",
+      "localized": {
+        "vi": {
+          "title": "Gói ứng dụng Kiro Crew đã tải",
+          "explanation": "Các gói ứng dụng đã tải mà Kiro Crew sử dụng. Sẽ được tải lại khi cần. Các gói trong 7 ngày gần nhất được giữ lại."
+        }
+      },
       "cleanup": {
         "method": "trash"
       }
@@ -221,6 +263,12 @@
       },
       "tier": "safe",
       "explanation": "Kiro Crew is an Electron app; these are Chromium HTTP, code, GPU and shader caches. They are rebuilt automatically when the app starts.",
+      "localized": {
+        "vi": {
+          "title": "Cache web của Kiro Crew",
+          "explanation": "Kiro Crew là ứng dụng Electron; đây là các cache HTTP, mã, GPU và shader của Chromium. Chúng được tạo lại tự động khi ứng dụng khởi động."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.amazon.kiro.crew"

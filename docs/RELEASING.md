@@ -54,6 +54,13 @@ No keychain password secret is needed: a random one is generated per run.
 2. `git tag -a v0.1.0 -m "v0.1.0" && git push origin v0.1.0`
 3. Review the release (a draft if the build was unsigned) and edit the Highlights before publishing.
 
+Before tagging, check localization: `python3 -I scripts/l10n-extract.py --check` must pass and the catalog must have
+**zero `needs_review`** entries (a native speaker has signed off every Vietnamese string):
+
+```sh
+grep -c '"state" : "needs_review"' Sources/AIDiskKeeperUI/Resources/Localizable.xcstrings   # expect 0
+```
+
 ## 4. Dry run
 
 Actions → Release → Run workflow (`dry_run=true`) on `main`, or push a test tag `v0.0.1-rc.1`

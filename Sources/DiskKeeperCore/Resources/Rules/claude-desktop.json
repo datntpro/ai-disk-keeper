@@ -35,6 +35,12 @@
       },
       "tier": "review",
       "explanation": "Linux VM image used by Claude's agent / Cowork mode (several GB on disk). Claude downloads it again (over 1 GB) the next time you use that mode, and files saved inside the VM's session disk are lost. Quit Claude first.",
+      "localized": {
+        "vi": {
+          "title": "Ảnh VM của chế độ agent",
+          "explanation": "Ảnh máy ảo Linux dùng cho chế độ agent / Cowork của Claude (chiếm vài GB trên ổ đĩa). Claude sẽ tải lại (hơn 1 GB) vào lần tiếp theo bạn dùng chế độ đó, và các tệp lưu trong ổ phiên của máy ảo sẽ bị mất. Hãy thoát Claude trước."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.anthropic.claudefordesktop"
@@ -61,6 +67,12 @@
         }
       ],
       "explanation": "A copy of Claude Code bundled by the desktop app (one folder per version). Claude re-downloads the version it needs (about 350 MB) the next time it starts a Claude Code session; folders for older versions are not used.",
+      "localized": {
+        "vi": {
+          "title": "Claude Code đi kèm",
+          "explanation": "Một bản Claude Code đi kèm ứng dụng desktop (mỗi phiên bản một thư mục). Claude sẽ tải lại phiên bản cần dùng (khoảng 350 MB) vào lần tiếp theo bắt đầu một phiên Claude Code; các thư mục của phiên bản cũ hơn không được dùng đến."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.anthropic.claudefordesktop"
@@ -87,6 +99,12 @@
         }
       ],
       "explanation": "Claude Code build for the agent VM (one folder per version). Claude re-downloads the version it needs (about 350 MB) the next time it starts a Claude Code session; folders for older versions are not used.",
+      "localized": {
+        "vi": {
+          "title": "Claude Code cho VM agent",
+          "explanation": "Bản Claude Code dành cho máy ảo agent (mỗi phiên bản một thư mục). Claude sẽ tải lại phiên bản cần dùng (khoảng 350 MB) vào lần tiếp theo bắt đầu một phiên Claude Code; các thư mục của phiên bản cũ hơn không được dùng đến."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.anthropic.claudefordesktop"
@@ -111,6 +129,12 @@
       },
       "tier": "safe",
       "explanation": "Chromium HTTP, code and GPU caches. Rebuilt automatically; the app may start a little slower once.",
+      "localized": {
+        "vi": {
+          "title": "Cache web",
+          "explanation": "Cache HTTP, mã và GPU của Chromium. Được tạo lại tự động; ứng dụng có thể khởi động chậm hơn một chút ở lần đầu."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.anthropic.claudefordesktop"
@@ -129,6 +153,12 @@
       },
       "tier": "safe",
       "explanation": "Crash dumps that were already reported (or will never be). Not needed to run Claude.",
+      "localized": {
+        "vi": {
+          "title": "Bản ghi sự cố",
+          "explanation": "Các bản ghi sự cố đã được báo cáo (hoặc sẽ không bao giờ được báo cáo). Không cần để chạy Claude."
+        }
+      },
       "cleanup": {
         "method": "trash",
         "requiresAppQuit": "com.anthropic.claudefordesktop"
