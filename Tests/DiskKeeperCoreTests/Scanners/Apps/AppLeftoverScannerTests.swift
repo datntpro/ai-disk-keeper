@@ -120,4 +120,25 @@ final class AppLeftoverScannerTests: XCTestCase {
         _ = try await run(apps: [app("com.foo.app", "Foo")])
         XCTAssertEqual(try fx.snapshot(), before)
     }
+
+    // N4
+    func testSymlinkedEntriesAndLocationsAreIgnored() async throws {
+        let outside = fx.tmp.path("outside")
+        try FileManager.default.createDirectory(atPath: outside + "/com.foo.app", withIntermediateDirectories: true)
+        try fx.file("Library/Containers/real/x")
+        try fx.symlink("Library/Caches/com.foo.app", to: outside + "/com.foo.app")      // linked entry
+        try fx.symlink("Library/Logs", to: outside)                                      // linked location
+        let box = try await run(apps: [app("com.foo.app", "Foo")])
+        XCTAssertTrue(box.items.isEmpty, "\(box.items.map(\.path))")
+    }
+
+    func testAppleTeamAppIsTreatedAsApple() async throws {
+        try AppFixtures.makeApp(at: fx.tmp.path("Applications/Xcode.app"), bundleID: "com.apple.dt.Xcode", receipt: true)
+        let roots = AppRoots(applications: fx.tmp.path("Applications"), userApplications: fx.home + "/Applications",
+                             library: lib)
+        let inv = try await AppInventoryScanner(roots: roots, signatures: FakeSignatures(fallback: .developerID(teamID: "59GAB85EFG")),
+                                                usage: FakeUsage(), runningApps: FakeRunning()).inventory()
+        XCTAssertEqual(inv.apps.first?.source, .apple)
+        XCTAssertEqual(inv.apps.first?.viewOnlyReason, .apple)
+    }
 }

@@ -134,6 +134,7 @@ final class LeftoverResolverTests: XCTestCase {
             e(.containers, "com.gone.tool"),                                  // orphan
             e(.preferences, "com.gone.prefs.plist", dir: false),             // orphan
             e(.savedState, "com.gone.state.savedState"),                      // orphan
+            e(.containers, "com.gone.prefs"), e(.containers, "com.gone.state"),   // evidence for the two above
             e(.caches, "com.new.recent", modified: recent),                   // too new
             e(.caches, "com.known.installed"),                                // LS knows it
             e(.caches, "com.unknown.lookup"),                                 // LS nil
@@ -151,7 +152,7 @@ final class LeftoverResolverTests: XCTestCase {
             }
         })
         XCTAssertEqual(Set(m.filter { $0.level == .orphan }.map(\.entry.name)),
-                       ["com.gone.tool", "com.gone.prefs.plist", "com.gone.state.savedState"])
+                       ["com.gone.tool", "com.gone.prefs.plist", "com.gone.state.savedState", "com.gone.prefs", "com.gone.state"])
         // The one claimed by com.foo.app is a normal exact (prefix) owner only when it is its own id; here it is not exact.
         XCTAssertFalse(m.contains { $0.entry.name == "com.foo.app.extra" && $0.level == .orphan })
     }
@@ -167,5 +168,50 @@ final class LeftoverResolverTests: XCTestCase {
         let a = AppFixtures.app("com.foo.app", name: "Foo")
         let dup = AppFixtures.app("com.foo.app", name: "Foo", path: "/Users/x/Applications/Foo.app")
         XCTAssertEqual(resolve([a, dup], [e(.containers, "com.foo.app")]).count, 1)
+    }
+
+    // B1: cookies files of installed apps
+    func testBinaryCookiesOfInstalledAppAreExactNotOrphans() {
+        let m = resolve([foo], [e(.httpStorages, "com.foo.app.binarycookies", dir: false),
+                                e(.httpStorages, "com.foo.app")])
+        XCTAssertEqual(m.map(\.level), [.exact, .exact])
+        // Installed elsewhere (not in the inventory): LaunchServices says true, so never an orphan.
+        let m2 = resolve([], [e(.httpStorages, "com.microsoft.SharePoint-mac.binarycookies", dir: false),
+                              e(.containers, "com.microsoft.SharePoint-mac")], lookup: { _ in true })
+        XCTAssertTrue(m2.isEmpty)
+        // Even with no LaunchServices answer for the stripped id, the extension is not part of the id.
+        let m3 = resolve([], [e(.httpStorages, "com.gone.tool.binarycookies", dir: false), e(.containers, "com.gone.tool")],
+                         lookup: { $0 == "com.gone.tool.binarycookies" ? true : false })
+        XCTAssertEqual(m3.count, 2)
+    }
+
+    // B2: extension containers whose host is installed elsewhere
+    func testExtensionContainerWithInstalledHostIsNotAnOrphan() {
+        let entries = [e(.containers, "com.macwall.ogapps.extension")]
+        XCTAssertTrue(resolve([], entries, lookup: { $0 == "com.macwall.ogapps" }).isEmpty)
+        XCTAssertTrue(resolve([], entries, lookup: { $0 == "com.macwall.ogapps" ? nil : false }).isEmpty)
+        XCTAssertEqual(resolve([], entries, lookup: { _ in false }).count, 1)
+        // 2-component hosts are never asked about (too generic).
+        var asked: [String] = []
+        _ = resolve([], entries, lookup: { asked.append($0); return false })
+        XCTAssertEqual(asked, ["com.macwall.ogapps.extension", "com.macwall.ogapps"])
+    }
+
+    // B3: CLI / framework caches
+    func testToolAndFrameworkCachesAreNeverOrphans() {
+        let entries = [
+            e(.caches, "org.swift.swiftpm"), e(.caches, "com.plausiblelabs.crashreporter.data"),
+            e(.containers, "org.swift.swiftpm"),                  // even with a container: known non-app prefix
+            e(.caches, "com.unknown.cacheonly"),                  // looks like an app id but nothing says an app existed
+            e(.containers, "com.gone.real"), e(.caches, "com.gone.real"),
+        ]
+        let m = resolve([], entries)
+        XCTAssertEqual(Set(m.map(\.entry.path)), Set(entries.filter { $0.name == "com.gone.real" }.map(\.path)))
+    }
+
+    // N2
+    func testAppleBundleIDIsNeverAnOrphanEvenFromAppStore() {
+        let m = resolve([], [e(.containers, "com.apple.dt.Xcode.helper")])
+        XCTAssertTrue(m.isEmpty)
     }
 }

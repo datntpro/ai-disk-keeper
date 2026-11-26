@@ -50,14 +50,24 @@ Safety rules:
   default, shared, electron, chromium, google, microsoft, adobe, jetbrains, temp, tmp, data, cache, crashpad,
   sentry, squirrel`.
 - Symlinked library entries are ignored. Entries owned by another user are dropped.
+- `~/Library/Preferences` (including `ByHost`) is protected by the scan guard, so Preferences matches are
+  dropped and never emitted today; T36 needs a guard exception before they can be offered.
+- Apple's own apps from the App Store (Xcode, Pages, Keynote) do not satisfy `anchor apple`; any `com.apple.*`
+  bundle id or Apple's team id (59GAB85EFG) is treated as Apple.
+- A `~/Library` location that is itself a symlink is not followed.
 - Every match passes the scan guard before it is emitted; protected paths are dropped silently.
 
 ### Orphans
 
 All of: a folder or plist in Containers, Caches, HTTPStorages, WebKit, Saved Application State, Preferences
-or Application Support whose name is a valid bundle id with 3+ components; not `com.apple.*`; no installed app
-claims it (equal, or a namespace parent or child of an installed id); LaunchServices says `false` (unknown is
-treated as "not an orphan"); last modified more than 30 days ago, both the entry itself and the newest file
+or Application Support whose name (minus `.plist`, `.savedState`, `.binarycookies`) is a valid bundle id with
+3+ components; not `com.apple.*`; not a known developer-tool/framework prefix (`org.swift.`, `org.llvm.`,
+`com.plausiblelabs.`, ...); **evidence an app existed**: a Containers or Saved Application State entry for the
+same id (CLI tools and frameworks such as `org.swift.swiftpm` have neither, so their caches are never offered);
+no installed app claims it (equal, or a namespace parent or child of an installed id); LaunchServices says
+`false` for the id **and every namespace parent with 3+ components**, so an extension container such as
+`com.x.app.extension` is skipped while `com.x.app` is installed in any location (Setapp, App Store,
+Homebrew casks, other volumes). Unknown (nil) is treated as "not an orphan"; last modified more than 30 days ago, both the entry itself and the newest file
 inside it. LaunchAgents are never orphans: broken launch agents are T38's job.
 
 ## Permissions (TCC)

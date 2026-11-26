@@ -44,6 +44,13 @@ enum LeftoverResolver {
         var byTeam: [String: [InstalledApp]] = [:]
         for a in candidates { if let t = a.source.teamID { byTeam[PathCanonicalizer.fold(t), default: []].append(a) } }
 
+        // An id is only called an app's leftover if an app-only location mentions it too (a sandbox container or
+        // saved window state). CLI tools and frameworks (org.swift.swiftpm, crash reporters) have neither.
+        var evidence = Set<String>()
+        for entry in index.entries where entry.location == .containers || entry.location == .savedState {
+            if let id = orphanCandidate(entry, ids: Set(byID.keys)) { evidence.insert(PathCanonicalizer.fold(id)) }
+        }
+
         var out: [LeftoverMatch] = []
         var seenPaths = Set<PathKey>()
         func emit(_ m: LeftoverMatch) {
@@ -63,9 +70,9 @@ enum LeftoverResolver {
             // 2. Name level.
             if let m = nameMatch(entry, byName: byName, byTeam: byTeam) { emit(m); continue }
 
-            // 3. Orphan.
-            if let id = orphanCandidate(entry, ids: Set(byID.keys)), orphanIsOld(entry, now: now),
-               isInstalledAnywhere(id) == false {
+            // 3. Orphan (fail safe: every doubt means "not an orphan").
+            if let id = orphanCandidate(entry, ids: Set(byID.keys)), evidence.contains(PathCanonicalizer.fold(id)),
+               orphanIsOld(entry, now: now), !hasKnownNonAppOwner(id), hostMayBeInstalled(id, isInstalledAnywhere) == false {
                 emit(LeftoverMatch(entry: entry, level: .orphan, owner: nil, sharedWith: []))
             }
         }
@@ -86,7 +93,9 @@ enum LeftoverResolver {
             return String(s[..<i])
         }
         switch entry.location {
-        case .applicationSupport, .caches, .containers, .httpStorages, .webKit, .logs:
+        case .httpStorages:
+            return [stripped(".binarycookies") ?? entry.name]
+        case .applicationSupport, .caches, .containers, .webKit, .logs:
             return [entry.name]
         case .preferences, .preferencesByHost:
             guard let stem = stripped(".plist") else { return [] }
@@ -182,6 +191,8 @@ enum LeftoverResolver {
         case .savedState:
             guard entry.name.lowercased().hasSuffix(".savedstate") else { return nil }
             raw = String(entry.name.dropLast(11))
+        case .httpStorages:
+            raw = entry.name.lowercased().hasSuffix(".binarycookies") ? String(entry.name.dropLast(14)) : entry.name
         default:
             raw = entry.name
         }
@@ -191,6 +202,30 @@ enum LeftoverResolver {
         // Claimed by an installed app (it, or a namespace parent/child of it)?
         for id in installed where folded == id || folded.hasPrefix(id + ".") || id.hasPrefix(folded + ".") { return nil }
         return raw
+    }
+
+    /// Frameworks and developer tools whose ids look like app ids but are never "an app that was removed".
+    static let nonAppPrefixes = [
+        "org.swift.", "org.llvm.", "org.python.", "org.gnu.", "org.gradle.", "io.flutter.", "com.plausiblelabs.",
+        "com.google.keystone", "com.microsoft.autoupdate", "com.github.", "sh.brew.", "com.jetbrains.",
+    ]
+
+    static func hasKnownNonAppOwner(_ id: String) -> Bool {
+        let f = PathCanonicalizer.fold(id)
+        return nonAppPrefixes.contains { f.hasPrefix($0) }
+    }
+
+    /// Asks LaunchServices (all install locations: /Applications, ~/Applications, Setapp, App Store, Homebrew
+    /// casks, other volumes) about the id and each namespace parent with 3+ components, so an extension or
+    /// helper container (`com.x.app.extension`) is not an orphan while its host (`com.x.app`) is installed.
+    /// Returns false only when every answer is a definite "no"; true or unknown both mean "may be installed".
+    static func hostMayBeInstalled(_ id: String, _ lookup: (String) -> Bool?) -> Bool {
+        var parts = id.split(separator: ".").map(String.init)
+        while parts.count >= 3 {
+            if lookup(parts.joined(separator: ".")) != false { return true }
+            parts.removeLast()
+        }
+        return false
     }
 
     private static func orphanIsOld(_ entry: LibraryEntry, now: Date) -> Bool {

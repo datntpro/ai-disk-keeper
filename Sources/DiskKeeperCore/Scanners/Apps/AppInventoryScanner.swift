@@ -115,6 +115,10 @@ public struct AppInventoryScanner: Sendable {
             if source != .apple, AppBundleReader.hasAppStoreReceipt(bundlePath: infoPath) {
                 source = .appStore(teamID: source.teamID)
             }
+            // App Store Apple apps (Xcode, Pages, Keynote) fail `anchor apple`; treat Apple's own ids and team as Apple.
+            if source != .apple, PathCanonicalizer.fold(bundleID).hasPrefix("com.apple.") || source.teamID == "59GAB85EFG" {
+                source = .apple
+            }
             let stem = String(((c.path as NSString).lastPathComponent as NSString).deletingPathExtension)
             let resolved = kind.isSymlink ? realPath(c.path) : nil
             let reason = Self.viewOnlyReason(source: source, path: c.path, resolved: resolved, isSymlink: kind.isSymlink,

@@ -47,6 +47,8 @@ struct LibraryIndex: Sendable {
         for location in LibraryLocation.allCases {
             if Task.isCancelled { break }
             let dir = library + "/" + location.rawValue
+            var dirStat = stat()
+            if lstat(dir, &dirStat) == 0, (dirStat.st_mode & S_IFMT) == S_IFLNK { continue }   // a linked location is never followed
             switch DirectoryLister.names(at: dir) {
             case .failure(let e):
                 switch e.code {
