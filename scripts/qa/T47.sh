@@ -15,8 +15,10 @@ case "${1:-}" in
     echo "T47 fixtures created in $ROOT and $CLAUDE"
     ;;
   fill)
+    # Real allocation (not sparse `mkfile -n`), and only ever inside a VM.
+    [ "$(sysctl -n kern.hv_vmm_present 2>/dev/null)" = "1" ] || { echo "refusing to fill a disk outside a VM" >&2; exit 1; }
     mkdir -p "$ROOT"
-    mkfile -n "${2:?size in MB}m" "$ROOT/fill.bin"
+    dd if=/dev/zero of="$ROOT/fill.bin" bs=1048576 count="${2:?size in MB}" 2>/dev/null
     echo "fill.bin: ${2} MB"
     ;;
   unfill)

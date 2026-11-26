@@ -36,7 +36,7 @@ struct AIDiskKeeperApp: App {
 extension AIDiskKeeperApp {
     @SceneBuilder private var mainScenes: some Scene {
         let _ = models.env.settings.languageRevision   // re-evaluate menus (Scan menu title, shortcuts) after a language switch
-        WindowGroup(Text(verbatim: "AI Disk Keeper"), id: "main") {
+        Window(Text(verbatim: "AI Disk Keeper"), id: "main") {
             RootView(models: models)
         }
         .defaultSize(width: 1200, height: 760)

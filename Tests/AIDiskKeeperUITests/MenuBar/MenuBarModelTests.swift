@@ -8,6 +8,25 @@ final class FakeNotifier: LowSpaceNotifying {
     func notify(freeBytes: Int64, percent: Int) async { calls.append((freeBytes, percent)) }
 }
 
+final class OverviewLoads: @unchecked Sendable {
+    private let lock = NSLock()
+    private var n = 0
+    func hit() { lock.lock(); n += 1; lock.unlock() }
+    var count: Int { lock.lock(); defer { lock.unlock() }; return n }
+}
+
+final class Steps: @unchecked Sendable {
+    private let lock = NSLock()
+    private var free: [Int64]
+    private let total: Int64
+    init(_ free: [Int64], total: Int64) { self.free = free; self.total = total }
+    func next() -> VolumeCapacity? {
+        lock.lock(); defer { lock.unlock() }
+        let f = free.count > 1 ? free.removeFirst() : free[0]
+        return VolumeCapacity(free: f, total: total)
+    }
+}
+
 @MainActor
 final class MenuBarModelTests: XCTestCase {
     private var dir: URL!
@@ -32,23 +51,52 @@ final class MenuBarModelTests: XCTestCase {
                       probe: { .notGranted })
     }
 
-    /// Volume of 494 GB whose free space steps through `freePercents` on each load (the last one repeats).
+    /// Volume of 494 GB whose free space steps through `freePercents` on each poll (the last one repeats).
+    /// `storage.loads` counts full overviews (Trash walk + tmutil): the poll must leave it at 0.
     private func rig(_ freePercents: [Double], settings: SettingsModel? = nil) -> (MenuBarModel, FakeNotifier, CareRig, SettingsModel) {
-        let overviews = freePercents.map { Result<StorageOverview, Error>.success(StorageFix.overview(important: Int64($0 / 100 * 494 * Double(gb)))) }
-        let counter = LoadCounter(overviews)
-        let storage = StorageModel(load: { try await counter.next() }, minInterval: 0)
+        let (model, notifier, care, s, _) = rigWithCounter(freePercents, settings: settings)
+        return (model, notifier, care, s)
+    }
+
+    private func rigWithCounter(_ freePercents: [Double], settings: SettingsModel? = nil)
+        -> (MenuBarModel, FakeNotifier, CareRig, SettingsModel, OverviewLoads) {
+        let steps = Steps(freePercents.map { Int64($0 / 100 * 494 * Double(gb)) }, total: 494 * gb)
+        let loads = OverviewLoads()
+        let storage = StorageModel(load: { loads.hit(); return StorageFix.overview() }, minInterval: 0)
         let care = CareRig()
         let notifier = FakeNotifier()
         let s = settings ?? self.settings()
-        let model = MenuBarModel(storage: storage, care: care.model, scan: care.scan, settings: s, notifier: notifier, defaults: defaults)
-        return (model, notifier, care, s)
+        let model = MenuBarModel(storage: storage, care: care.model, scan: care.scan, settings: s, notifier: notifier,
+                                 defaults: defaults, probe: { steps.next() })
+        return (model, notifier, care, s, loads)
+    }
+
+    func testPollNeverRunsTheFullOverview() async {
+        let (model, _, _, _, loads) = rigWithCounter([50, 40, 30])
+        for _ in 0..<3 { await model.tick() }
+        XCTAssertEqual(loads.count, 0, "the 60 s poll must not walk the Trash or spawn tmutil")
+        XCTAssertNotNil(model.freeBytes)
+        XCTAssertEqual(Double(model.freeFraction ?? 0), 0.30, accuracy: 0.001)
+    }
+
+    func testPopoverOpenRefreshesTheFullOverview() async {
+        let (model, _, _, _, loads) = rigWithCounter([50])
+        model.popoverOpened()
+        await model.storage.settle()
+        XCTAssertEqual(loads.count, 1)
+    }
+
+    func testNotificationShowsCurrentFreePercentNotTheThreshold() async {
+        let (model, notifier, _, _) = rig([7.9])
+        await model.tick()
+        XCTAssertEqual(notifier.calls.first?.percent, 8)
     }
 
     func testPollNotifiesOncePerCrossing() async {
         let (model, notifier, _, _) = rig([15, 9, 8, 9.5, 12.5, 9, 9])
         for _ in 0..<7 { await model.tick() }
         XCTAssertEqual(notifier.calls.count, 2)
-        XCTAssertEqual(notifier.calls.first?.percent, 10)
+        XCTAssertEqual(notifier.calls.first?.percent, 9)
     }
 
     func testNeverNotifiesWhenAlertDisabled() async {

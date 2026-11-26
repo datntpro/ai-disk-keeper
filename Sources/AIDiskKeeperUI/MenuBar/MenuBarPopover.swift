@@ -30,6 +30,7 @@ struct MenuBarPopover: View {
         .background(Color.adkBg)
         .tint(.adkAccent)
         .environment(\.locale, L10n.locale)
+        .onAppear { model.popoverOpened() }
     }
 
     private var volumeRow: some View {

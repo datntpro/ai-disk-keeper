@@ -4,6 +4,23 @@ import Foundation
 import Observation
 import SwiftUI
 
+/// Free and total bytes of the data volume: the only thing the 60 s poll measures.
+struct VolumeCapacity: Equatable, Sendable {
+    var free: Int64
+    var total: Int64
+
+    /// Two `URLResourceValues` reads: no Trash walk, no child process. Free counts purgeable space, like Finder.
+    static let live: @Sendable () -> VolumeCapacity? = {
+        for path in ["/System/Volumes/Data", "/"] {
+            let keys: Set<URLResourceKey> = [.volumeTotalCapacityKey, .volumeAvailableCapacityKey, .volumeAvailableCapacityForImportantUsageKey]
+            guard let v = try? URL(fileURLWithPath: path).resourceValues(forKeys: keys), let total = v.volumeTotalCapacity,
+                  let free = v.volumeAvailableCapacityForImportantUsage ?? v.volumeAvailableCapacity.map(Int64.init) else { continue }
+            return VolumeCapacity(free: free, total: Int64(total))
+        }
+        return nil
+    }
+}
+
 /// What the menu bar popover shows, derived from the window's own models (the same instances: storage, care, scan),
 /// plus the 60 s volume poll that feeds the low-space alert. Read-only: nothing here selects, cleans or deletes.
 @MainActor @Observable
@@ -16,6 +33,11 @@ final class MenuBarModel {
     /// The "Next Care Scan" row stays hidden until scheduled scans (#23) exist.
     var nextScheduledScan: Date?
 
+    /// The last cheap poll result and when it was taken; the full overview wins only when it is newer.
+    private var polled: (capacity: VolumeCapacity, at: Date)?
+
+    @ObservationIgnored private let probe: @Sendable () -> VolumeCapacity?
+    @ObservationIgnored private let clock: () -> Date
     @ObservationIgnored private let notifier: any LowSpaceNotifying
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let pollInterval: Duration
@@ -26,7 +48,10 @@ final class MenuBarModel {
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
 
     init(storage: StorageModel, care: CareScanModel, scan: ScanViewModel, settings: SettingsModel,
-         notifier: any LowSpaceNotifying, defaults: UserDefaults = .standard, pollInterval: Duration = .seconds(60)) {
+         notifier: any LowSpaceNotifying, defaults: UserDefaults = .standard, pollInterval: Duration = .seconds(60),
+         probe: @escaping @Sendable () -> VolumeCapacity? = VolumeCapacity.live, clock: @escaping () -> Date = Date.init) {
+        self.probe = probe
+        self.clock = clock
         self.storage = storage
         self.care = care
         self.scan = scan
@@ -39,13 +64,21 @@ final class MenuBarModel {
 
     // MARK: Derived (pure)
 
-    var freeBytes: Int64? { storage.freeBytes }
+    /// The newer of the poll's capacity and the full overview (which a cleanup or the popover refreshes on demand).
+    private var currentCapacity: VolumeCapacity? {
+        let fromOverview = storage.freeBytes.flatMap { free in storage.totalBytes.map { VolumeCapacity(free: free, total: $0) } }
+        guard let polled else { return fromOverview }
+        if let fromOverview, let at = storage.lastRefreshed, at > polled.at { return fromOverview }
+        return polled.capacity
+    }
+
+    var freeBytes: Int64? { currentCapacity?.free }
     var usedFraction: Double? { storage.usedFraction }
     var volumeName: String { storage.volumeName }
 
     var freeFraction: Double? {
-        guard let free = freeBytes, let total = storage.totalBytes, total > 0 else { return nil }
-        return min(1, max(0, Double(free) / Double(total)))
+        guard let c = currentCapacity, c.total > 0 else { return nil }
+        return min(1, max(0, Double(c.free) / Double(c.total)))
     }
 
     /// The Care Scan's deduped Safe total; before one exists, the rule scan's Safe total. Nil before any scan
@@ -99,12 +132,15 @@ final class MenuBarModel {
 
     // MARK: Poll
 
-    /// One poll step: refresh the volume (coalesced to ≥ 60 s by `StorageModel`), then feed the alert.
+    /// One poll step: read the volume's capacity (cheap), then feed the alert. Never touches `StorageModel`, so the
+    /// poll does not walk the Trash or spawn a child process.
     func tick() async {
-        storage.refresh()
-        await storage.settle()
+        if let capacity = probe() { polled = (capacity, clock()) }
         await evaluateLowSpace()
     }
+
+    /// The popover opened: refresh the full overview (coalesced by `StorageModel`).
+    func popoverOpened() { storage.refresh() }
 
     func evaluateLowSpace() async {
         guard settings.settings.lowSpaceAlertEnabled, let fraction = freeFraction, let free = freeBytes else { return }
@@ -119,7 +155,7 @@ final class MenuBarModel {
         lastThreshold = percent
         let fire = monitor.observe(freeFraction: fraction, threshold: threshold)
         monitor.save(to: defaults)
-        if fire { await notifier.notify(freeBytes: free, percent: percent) }
+        if fire { await notifier.notify(freeBytes: free, percent: Int((fraction * 100).rounded())) }
     }
 
     /// Polls while the app runs, never faster than `pollInterval`, and pauses while the Mac sleeps.
