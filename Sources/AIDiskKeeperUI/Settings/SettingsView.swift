@@ -4,7 +4,7 @@ public struct SettingsView: View {
     let model: SettingsModel
     @State private var tab = Tab.general
 
-    private enum Tab: Hashable { case general, scope, tools }
+    private enum Tab: Hashable { case general, scope, tools, menuBar }
 
     public init(model: SettingsModel) { self.model = model }
 
@@ -22,6 +22,8 @@ public struct SettingsView: View {
                 .tabItem { Label(loc("settings.tab.scope", "Scan scope"), systemImage: "folder.badge.gearshape") }
             ToolsSettingsView(model: model).tag(Tab.tools)
                 .tabItem { Label(loc("settings.tab.tools", "Tools"), systemImage: "wrench.and.screwdriver") }
+            MenuBarSettingsView(model: model).tag(Tab.menuBar)
+                .tabItem { Label(loc("settings.tab.menubar", "Menu bar"), systemImage: "menubar.rectangle") }
         }
         .frame(minWidth: 560, minHeight: 420)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in

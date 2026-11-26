@@ -25,6 +25,21 @@ public struct AppSettings: Codable, Sendable, Hashable {
     /// Alert when free space falls below this percent of the volume. Kept within `thresholdRange`.
     public var lowSpaceThresholdPercent = AppSettings.defaultLowSpaceThresholdPercent
 
+    // System monitor (T50). All additive with defaults; the default menu bar is unchanged from T47.
+    /// Order of the metrics in the popover, the Settings list and the bar. Always a permutation of `MetricID.allCases`.
+    public var monitorOrder: [MetricID] = MetricID.defaultOrder
+    /// Disabled = not sampled, not in the popover, not in the bar. Disk can't be disabled.
+    public var monitorDisabled: Set<MetricID> = []
+    /// CPU / memory / network drawn in the bar. Disk in the bar is `menuBarShowsFreeSpace`.
+    public var menuBarMetrics: Set<MetricID> = []
+    public var menuBarStyle: MenuBarStyle = .readout
+    public var menuBarRefreshSeconds = 5
+    public var networkUnits: NetworkUnits = .bytes
+    public var popoverShowsTopProcesses = false
+    public var popoverHistoryMinutes = 1
+
+    public static let historyMinuteChoices = [1, 5]
+
     public static let lowSpaceThresholdRange = 1...50
     public static let defaultLowSpaceThresholdPercent = 10
 
@@ -44,6 +59,8 @@ public struct AppSettings: Codable, Sendable, Hashable {
     private enum CodingKeys: String, CodingKey {
         case schemaVersion, hasCompletedOnboarding, projectRoots, excludedPaths, disabledTools, language
         case showMenuBarItem, menuBarShowsFreeSpace, lowSpaceAlertEnabled, lowSpaceThresholdPercent
+        case monitorOrder, monitorDisabled, menuBarMetrics, menuBarStyle, menuBarRefreshSeconds, networkUnits
+        case popoverShowsTopProcesses, popoverHistoryMinutes
     }
 
     /// Lenient: unknown keys are ignored and missing keys take defaults.
@@ -60,6 +77,52 @@ public struct AppSettings: Codable, Sendable, Hashable {
         lowSpaceAlertEnabled = try c.decodeIfPresent(Bool.self, forKey: .lowSpaceAlertEnabled) ?? true
         let percent = try c.decodeIfPresent(Int.self, forKey: .lowSpaceThresholdPercent) ?? Self.defaultLowSpaceThresholdPercent
         lowSpaceThresholdPercent = Self.clampThreshold(percent)
+        monitorOrder = Self.normalizedOrder(try c.decodeIfPresent([String].self, forKey: .monitorOrder) ?? [])
+        monitorDisabled = Self.metricSet(try c.decodeIfPresent([String].self, forKey: .monitorDisabled) ?? []).subtracting([.disk])
+        menuBarMetrics = Self.metricSet(try c.decodeIfPresent([String].self, forKey: .menuBarMetrics) ?? []).subtracting([.disk])
+        menuBarStyle = (try c.decodeIfPresent(String.self, forKey: .menuBarStyle)).flatMap(MenuBarStyle.init(rawValue:)) ?? .readout
+        menuBarRefreshSeconds = SamplingPolicy.snapBarSeconds(try c.decodeIfPresent(Int.self, forKey: .menuBarRefreshSeconds) ?? 5)
+        networkUnits = (try c.decodeIfPresent(String.self, forKey: .networkUnits)).flatMap(NetworkUnits.init(rawValue:)) ?? .bytes
+        popoverShowsTopProcesses = try c.decodeIfPresent(Bool.self, forKey: .popoverShowsTopProcesses) ?? false
+        popoverHistoryMinutes = Self.snapHistoryMinutes(try c.decodeIfPresent(Int.self, forKey: .popoverHistoryMinutes) ?? 1)
+    }
+
+    /// Unknown and duplicate ids are dropped; missing ones are appended in the default order.
+    public static func normalizedOrder(_ raw: [String]) -> [MetricID] {
+        var seen = Set<MetricID>()
+        var out = raw.compactMap(MetricID.init(rawValue:)).filter { seen.insert($0).inserted }
+        out += MetricID.defaultOrder.filter { !seen.contains($0) }
+        return out
+    }
+
+    private static func metricSet(_ raw: [String]) -> Set<MetricID> { Set(raw.compactMap(MetricID.init(rawValue:))) }
+
+    public static func snapHistoryMinutes(_ m: Int) -> Int { m >= 5 ? 5 : 1 }
+
+    /// Metrics that are sampled and shown, in the user's order.
+    public var enabledMetricsInOrder: [MetricID] { monitorOrder.filter { !monitorDisabled.contains($0) } }
+    public func isMonitored(_ m: MetricID) -> Bool { m == .disk || !monitorDisabled.contains(m) }
+    /// Whether `m` is drawn in the bar (disk = the T47 free-space text).
+    public func isInMenuBar(_ m: MetricID) -> Bool {
+        m == .disk ? menuBarShowsFreeSpace : (menuBarMetrics.contains(m) && isMonitored(m))
+    }
+    /// The bar's metrics in the user's order.
+    public var menuBarMetricsInOrder: [MetricID] { monitorOrder.filter { isInMenuBar($0) } }
+
+    public mutating func setMetric(_ m: MetricID, monitored: Bool) {
+        guard m != .disk else { return }
+        if monitored { monitorDisabled.remove(m) } else { monitorDisabled.insert(m) }
+    }
+    public mutating func setMetric(_ m: MetricID, inMenuBar on: Bool) {
+        if m == .disk { menuBarShowsFreeSpace = on; return }
+        if on { menuBarMetrics.insert(m) } else { menuBarMetrics.remove(m) }
+    }
+    /// Moves one step (negative = up); a no-op at the ends.
+    public mutating func moveMetric(_ m: MetricID, by offset: Int) {
+        guard let i = monitorOrder.firstIndex(of: m) else { return }
+        let j = i + offset
+        guard monitorOrder.indices.contains(j) else { return }
+        monitorOrder.swapAt(i, j)
     }
 
     public static func clampThreshold(_ percent: Int) -> Int {

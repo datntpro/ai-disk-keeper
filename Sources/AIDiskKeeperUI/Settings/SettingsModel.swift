@@ -1,6 +1,7 @@
 import DiskKeeperCore
 import Foundation
 import Observation
+import SwiftUI
 
 /// A tool the user can switch on or off (built from the loaded rule sets).
 public struct ToolChoice: Sendable, Hashable, Identifiable {
@@ -91,6 +92,19 @@ public final class SettingsModel {
     public func setLowSpaceAlertEnabled(_ on: Bool) { mutate { $0.lowSpaceAlertEnabled = on } }
     /// Clamped to 1…50.
     public func setLowSpaceThresholdPercent(_ percent: Int) { mutate { $0.setLowSpaceThreshold(percent: percent) } }
+
+    // System monitor (T50)
+    public func setMetric(_ m: MetricID, monitored: Bool) { mutate { $0.setMetric(m, monitored: monitored) } }
+    public func setMetric(_ m: MetricID, inMenuBar on: Bool) { mutate { $0.setMetric(m, inMenuBar: on) } }
+    public func moveMetric(_ m: MetricID, by offset: Int) { mutate { $0.moveMetric(m, by: offset) } }
+    public func moveMetrics(from source: IndexSet, to destination: Int) {
+        mutate { $0.monitorOrder.move(fromOffsets: source, toOffset: destination) }
+    }
+    public func setMenuBarStyle(_ style: MenuBarStyle) { mutate { $0.menuBarStyle = style } }
+    public func setMenuBarRefresh(seconds: Int) { mutate { $0.menuBarRefreshSeconds = SamplingPolicy.snapBarSeconds(seconds) } }
+    public func setNetworkUnits(_ units: NetworkUnits) { mutate { $0.networkUnits = units } }
+    public func setShowsTopProcesses(_ on: Bool) { mutate { $0.popoverShowsTopProcesses = on } }
+    public func setHistoryMinutes(_ minutes: Int) { mutate { $0.popoverHistoryMinutes = AppSettings.snapHistoryMinutes(minutes) } }
 
     public func setOnboardingCompleted(_ done: Bool) { mutate { $0.hasCompletedOnboarding = done } }
 

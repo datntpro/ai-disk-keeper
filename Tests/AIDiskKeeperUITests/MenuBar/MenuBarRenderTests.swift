@@ -22,6 +22,13 @@ final class MenuBarRenderTests: XCTestCase {
         return (model, suite, care)
     }
 
+    /// The popover draws its content only while open, so a render has to open it first.
+    private func mon(_ m: MenuBarModel) -> SystemMonitorModel {
+        let monitor = SystemMonitorModel(settings: m.settings, menuBar: m)
+        monitor.setPopoverOpen(true)
+        return monitor
+    }
+
     private func render(_ view: some View, _ what: String) {
         for scheme in [ColorScheme.light, .dark] {
             let r = ImageRenderer(content: view.environment(\.colorScheme, scheme))
@@ -31,7 +38,7 @@ final class MenuBarRenderTests: XCTestCase {
 
     func testPopoverRendersBeforeScanAfterScanAndLowSpace() async {
         let (before, suite, _) = await make()
-        render(MenuBarPopover(model: before, suite: suite), "before scan")
+        render(MenuBarPopover(model: before, monitor: mon(before), suite: suite), "before scan")
 
         let (after, suite2, rig) = await make()
         await rig.begin()
@@ -41,11 +48,11 @@ final class MenuBarRenderTests: XCTestCase {
                        .finished(CareFix.report(safe: 6 * gb, summaries: [.aiTools: ModuleSummary(module: .aiTools, safeBytes: 6 * gb)],
                                                 growth: growth)))
         await rig.settle()
-        render(MenuBarPopover(model: after, suite: suite2), "after scan")
+        render(MenuBarPopover(model: after, monitor: mon(after), suite: suite2), "after scan")
 
         let (low, suite3, _) = await make(free: 20 * gb)
-        render(MenuBarPopover(model: low, suite: suite3), "low space")
-        render(MenuBarLabel(model: low), "label")
+        render(MenuBarPopover(model: low, monitor: mon(low), suite: suite3), "low space")
+        render(MenuBarLabel(monitor: mon(low)), "label")
     }
 
     func testLowSpaceBodyFormatsInBothLanguages() {
