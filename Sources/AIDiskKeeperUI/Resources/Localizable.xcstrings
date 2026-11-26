@@ -4225,6 +4225,230 @@
         }
       }
     },
+    "storage.explain.purgeable" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purgeable space is what macOS can free on its own when it needs room. This app never deletes it. The number changes from minute to minute and can read zero even when Finder shows some."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dung lượng có thể thu hồi là phần macOS tự giải phóng khi cần chỗ trống. Ứng dụng này không bao giờ xóa phần đó. Con số thay đổi theo từng phút và có thể bằng 0 dù Finder vẫn hiển thị."
+          }
+        }
+      }
+    },
+    "storage.explain.snapshots" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time Machine keeps local snapshots for about 24 hours, and macOS removes them when space is needed. This app only lists them and can't show their size. To remove them, use Time Machine settings."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Time Machine giữ ảnh chụp cục bộ khoảng 24 giờ, và macOS sẽ xóa chúng khi cần dung lượng. Ứng dụng này chỉ liệt kê và không hiển thị được kích thước. Để xóa, hãy dùng cài đặt Time Machine."
+          }
+        }
+      }
+    },
+    "storage.explain.systemData" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System Data is what macOS counts as neither apps, documents nor media: caches, logs, virtual-memory swap, local snapshots and other APFS volumes. macOS computes it, so this app can't match it exactly."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dữ liệu hệ thống là phần macOS không tính vào ứng dụng, tài liệu hay phương tiện: bộ nhớ đệm, nhật ký, tệp hoán đổi bộ nhớ ảo, ảnh chụp cục bộ và các ổ APFS khác. Do macOS tự tính nên ứng dụng này không thể khớp chính xác."
+          }
+        }
+      }
+    },
+    "storage.explain.trashNeedsFDA" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS won't let this app look inside the Trash without Full Disk Access, so its size is unknown."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "macOS không cho ứng dụng này xem bên trong Thùng rác nếu chưa có Toàn quyền truy cập ổ đĩa, nên chưa biết dung lượng."
+          }
+        }
+      }
+    },
+    "storage.explain.whyNumbersDiffer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finder, System Settings and this app measure at different moments and count clones, purgeable space and snapshots differently, so the numbers rarely match exactly."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Finder, Cài đặt hệ thống và ứng dụng này đo vào những thời điểm khác nhau và tính bản sao, dung lượng có thể thu hồi và ảnh chụp theo cách khác nhau, nên các con số hiếm khi trùng khớp tuyệt đối."
+          }
+        }
+      }
+    },
+    "storage.snapshot.osUpdate" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS update snapshot"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ảnh chụp cập nhật macOS"
+          }
+        }
+      }
+    },
+    "storage.snapshot.other" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other snapshot"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ảnh chụp khác"
+          }
+        }
+      }
+    },
+    "storage.snapshot.timeMachine" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time Machine snapshot"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ảnh chụp Time Machine"
+          }
+        }
+      }
+    },
+    "storage.snapshots.badVolume" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That volume path isn't valid."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đường dẫn ổ đĩa này không hợp lệ."
+          }
+        }
+      }
+    },
+    "storage.snapshots.failed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listing snapshots failed (exit code %lld)."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Liệt kê ảnh chụp thất bại (mã thoát %lld)."
+          }
+        }
+      }
+    },
+    "storage.snapshots.timedOut" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listing snapshots took too long."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Liệt kê ảnh chụp mất quá nhiều thời gian."
+          }
+        }
+      }
+    },
+    "storage.snapshots.toolMissing" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't run Time Machine's snapshot list."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không chạy được danh sách ảnh chụp của Time Machine."
+          }
+        }
+      }
+    },
+    "storage.trash.unavailable" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't measure the Trash."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không đo được Thùng rác."
+          }
+        }
+      }
+    },
+    "storage.trash.unavailableErrno" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't measure the Trash (%@)."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không đo được Thùng rác (%@)."
+          }
+        }
+      }
+    },
     "strata.bar.a11y" : {
       "localizations" : {
         "en" : {
