@@ -21,6 +21,7 @@ public final class CleanupFlowModel {
 
     @ObservationIgnored private let engine: any CleanupEngineProtocol
     @ObservationIgnored private var items: [ScanItem] = []
+    @ObservationIgnored private var duplicateGroups: [String: DuplicateGroup] = [:]
     /// Bumped whenever a plan is requested or abandoned; a late `plan()` result is dropped unless it still matches.
     @ObservationIgnored private var planGeneration = 0
     @ObservationIgnored private var executeTask: Task<CleanupReport, Error>?
@@ -31,13 +32,18 @@ public final class CleanupFlowModel {
     public var isActive: Bool { if case .idle = state { return false } else { return true } }
 
     /// idle | failed | finished → planning → previewing.
-    public func review(_ newItems: [ScanItem]) async {
+    public func review(_ newItems: [ScanItem]) async { await review(newItems, duplicateGroups: [:]) }
+
+    /// Same, for items that may be duplicate copies: `duplicateGroups` (keyed by `ScanItem.groupID`) is kept for
+    /// `recheck()` and expiry re-plans.
+    public func review(_ newItems: [ScanItem], duplicateGroups groups: [String: DuplicateGroup]) async {
         switch state {
         case .idle, .failed, .finished: break
         default: return
         }
         guard !newItems.isEmpty else { return }
         items = newItems
+        duplicateGroups = groups
         await makePlan(notice: nil)
     }
 
@@ -51,7 +57,7 @@ public final class CleanupFlowModel {
         planGeneration += 1
         let generation = planGeneration
         state = .planning
-        let plan = await engine.plan(items)
+        let plan = await engine.plan(items, duplicateGroups: duplicateGroups)
         // Dismissed (or superseded) while planning: drop the result instead of re-opening the sheet.
         guard generation == planGeneration, case .planning = state else { return }
         state = .previewing(plan, notice: notice)
@@ -107,5 +113,6 @@ public final class CleanupFlowModel {
         planGeneration += 1
         state = .idle
         items = []
+        duplicateGroups = [:]
     }
 }

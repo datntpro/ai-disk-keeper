@@ -4,17 +4,17 @@ import SwiftUI
 public struct RootView: View {
     let env: AppEnvironment
     @State private var scan: ScanViewModel
-    @State private var selection: SidebarSelection = .overview
+    @State private var suite: SuiteModel
     @State private var query = ItemQuery()
     @State private var inspectedID: ScanItem.ID?
     @State private var list = ItemListModel()
     @State private var showInspector = true
     @State private var cleanupSelection = SelectionModel()
-    @State private var cleanupFlow: CleanupFlowModel?
 
     public init(env: AppEnvironment) {
         self.env = env
         _scan = State(initialValue: ScanViewModel(makeEngine: env.makeScanEngine))
+        _suite = State(initialValue: SuiteModel(env: env))
     }
 
     /// The language revision is the view identity of the whole tree, so every `loc()` call re-runs after a switch.
@@ -27,20 +27,28 @@ public struct RootView: View {
             .environment(\.locale, L10n.locale)
     }
 
+    private var selection: SidebarSelection { suite.navigation.selection }
+
+    private var context: ModuleContext {
+        ModuleContext(env: env, scan: scan, suite: suite, scanSelection: cleanupSelection, list: list,
+                      query: $query, inspectedID: $inspectedID)
+    }
+
     private var mainContent: some View {
-        NavigationSplitView {
-            SidebarView(scan: scan, selection: $selection)
+        let ctx = context
+        return NavigationSplitView {
+            SidebarView(ctx: ctx)
                 .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 280)
         } detail: {
             VStack(spacing: 0) {
-                content
+                content(ctx)
                 Divider()
                 ScanStatusBar(scan: scan)
             }
             .frame(minWidth: 560)
         }
         .inspector(isPresented: $showInspector) {
-            ItemDetailView(item: inspectedID.flatMap { scan.item(id: $0) })
+            inspector(ctx)
                 .inspectorColumnWidth(min: 260, ideal: 300, max: 400)
         }
         .toolbar {
@@ -56,7 +64,8 @@ public struct RootView: View {
         .focusedSceneValue(\.scanActions, ScanActions(
             canStart: !scan.isScanning, canStop: scan.phase == .scanning || scan.phase == .starting,
             start: { scan.startScan() }, stop: { scan.cancelScan() }))
-        .onChange(of: selection) { _, new in query.scope = new }
+        .focusedSceneValue(\.suiteNavigation, SuiteNavigation(go: { suite.navigation.selection = SidebarSelection(module: $0) }))
+        .onChange(of: suite.navigation.selection) { _, new in query.scope = new }
         .onChange(of: query) { _, _ in refreshList() }
         .onChange(of: scan.items.count) { _, _ in refreshList() }
         .onChange(of: scan.phase) { _, _ in refreshList() }
@@ -64,14 +73,11 @@ public struct RootView: View {
         .onAppear { refreshList() }
         .onChange(of: scan.scanGeneration) { _, _ in inspectedID = nil }
         .onChange(of: scan.scanGeneration) { _, g in cleanupSelection.syncScanGeneration(g) }
-        .sheet(isPresented: Binding(get: { cleanupFlow?.isActive ?? false },
-                                    set: { if !$0 { cleanupFlow?.dismiss() } })) {
-            if let flow = cleanupFlow {
-                CleanupSheetContent(flow: flow, environment: env.pathEnvironment) { trashed in
-                    scan.removeItems(trashed)
-                    cleanupSelection.deselectAll()
-                }
-                .interactiveDismissDisabled(flow.isExecuting)
+        .sheet(isPresented: Binding(get: { suite.cleanup.isPresented },
+                                    set: { if !$0 { suite.cleanup.dismiss() } })) {
+            if let flow = suite.cleanup.flow {
+                CleanupSheetContent(flow: flow, environment: env.pathEnvironment) { suite.cleanup.finished($0) }
+                    .interactiveDismissDisabled(flow.isExecuting)
             }
         }
         .onChange(of: scan.phase) { _, phase in announce(phase) }
@@ -83,19 +89,22 @@ public struct RootView: View {
         }
     }
 
-    @ViewBuilder private var content: some View {
-        switch selection {
-        case .overview:
-            OverviewView(scan: scan, inspect: { id in inspectedID = id }, showWarnings: { selection = .warnings }) {
-                if scan.phase != .idle {
-                    SelectAllSafeButton(items: scan.items, scopeName: nil, selection: cleanupSelection)
-                }
-            }
-        case .warnings:
+    @ViewBuilder private func content(_ ctx: ModuleContext) -> some View {
+        if let id = selection.moduleID {
+            ModuleRegistry.provider(for: id).makeDetail(ctx)
+        } else if case .warnings = selection {
             WarningsView(warnings: scan.warnings)
-        case .tool, .category:
-            ItemTableView(rows: list.rows, tierCounts: list.tierCounts, query: $query, inspectedID: $inspectedID,
-                          selection: cleanupSelection, scopeName: scopeName)
+        } else {
+            ScopedItemListView(ctx: ctx, scopeName: scopeName)
+        }
+    }
+
+    /// A module may bring its own inspector; otherwise the shared item inspector.
+    @ViewBuilder private func inspector(_ ctx: ModuleContext) -> some View {
+        if let id = selection.moduleID, let custom = ModuleRegistry.provider(for: id).makeInspector(ctx) {
+            custom
+        } else {
+            ItemDetailView(item: inspectedID.flatMap { scan.item(id: $0) })
         }
     }
 
@@ -108,11 +117,11 @@ public struct RootView: View {
     }
 
     private func startReview() {
-        guard let engine = env.cleanup.engine else { return }
-        let flow = cleanupFlow ?? CleanupFlowModel(engine: engine)
-        cleanupFlow = flow
-        let items = cleanupSelection.selectedItems(in: scan.items)
-        Task { await flow.review(items) }
+        let selected = cleanupSelection.selectedItems(in: scan.items)
+        suite.cleanup.review(selected) { trashed in
+            scan.removeItems(trashed)
+            cleanupSelection.deselectAll()
+        }
     }
 
     private func refreshList() { list.update(items: scan.items, query: query) }
