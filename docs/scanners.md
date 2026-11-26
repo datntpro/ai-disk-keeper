@@ -69,3 +69,5 @@ struct ExampleScanner: Scanner {
 ```
 
 Foundation also has a `Scanner` type, so a file that imports both should add `import protocol DiskKeeperCore.Scanner`.
+
+Large & Old Files (`LargeFileScanner`, id `large-files`): big, long-unopened files from the disk index, always Review. See [large-files.md](large-files.md).
