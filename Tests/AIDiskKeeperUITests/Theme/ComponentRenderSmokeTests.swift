@@ -39,4 +39,10 @@ final class ComponentRenderSmokeTests: XCTestCase {
             }
         }
     }
+
+    /// The gallery under Increase Contrast renders (the snapshot the previews show).
+    func testGalleryRendersWithIncreasedContrast() {
+        let r = ImageRenderer(content: StrataGallery().environment(\.adkIncreasedContrast, true).frame(width: 720, height: 900))
+        XCTAssertNotNil(r.cgImage)
+    }
 }

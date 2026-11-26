@@ -62,7 +62,7 @@ struct StateView: View {
             ForEach(actions) { a in
                 if a.id == firstSafeActionID {
                     Button(a.title, role: a.isDestructive ? .destructive : nil, action: a.action)
-                        .buttonStyle(.borderedProminent).tint(.adkAccent)
+                        .adkProminentButton()
                         .prefersDefaultFocus(true, in: focusScope)
                 } else {
                     Button(a.title, role: a.isDestructive ? .destructive : nil, action: a.action)
@@ -70,6 +70,7 @@ struct StateView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .focusScope(focusScope)
         .accessibilityElement(children: .contain)
     }

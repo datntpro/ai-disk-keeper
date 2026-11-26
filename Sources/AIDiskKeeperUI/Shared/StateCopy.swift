@@ -13,7 +13,7 @@ enum StateCopy {
     }
 
     // Full Disk Access (optional)
-    static func fdaTitle(_ count: Int) -> String { loc("state.fda.title", "\(Formatting.count(count)) folders need Full Disk Access") }
+    static func fdaTitle(_ count: Int) -> String { loc("state.fda.title", "\(count) folders need Full Disk Access") }
     static var fdaBody: String { loc("state.fda.body", "Mail downloads, Safari caches and other apps' containers are hidden by macOS. Everything else still works without it.") }
     static var fdaOpen: String { loc("state.fda.open", "Open Privacy settings") }
     static var fdaNotNow: String { loc("state.fda.notNow", "Not now") }
@@ -28,10 +28,12 @@ enum StateCopy {
     // Filtered empty
     static func filteredTitle(_ query: String) -> String { loc("state.filtered.title", "Nothing matches “\(query)”") }
     static var filteredBody: String { loc("state.filtered.body", "Try another name, or show Keep items too.") }
+    static var filteredTiersTitle: String { loc("state.filtered.tiers.title", "Every match is hidden by the tier filter") }
+    static var filteredShowAll: String { loc("state.filtered.tiers.show", "Show all tiers") }
     static var filteredClear: String { loc("state.filtered.clear", "Clear search") }
 
     // Partial error
-    static func partialTitle(_ count: Int) -> String { loc("state.partial.title", "Scan finished with \(Formatting.count(count)) warnings") }
+    static func partialTitle(_ count: Int) -> String { loc("state.partial.title", "Scan finished with \(count) warnings") }
     static var partialBody: String { loc("state.partial.body", "Some folders couldn't be read. Results from every other module are complete.") }
     static var partialShow: String { loc("state.partial.show", "Show warnings") }
 
