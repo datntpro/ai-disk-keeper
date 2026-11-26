@@ -148,7 +148,7 @@ Items with an unknown modification time never satisfy the two age conditions. If
 | `method` | `trash` (default), `none` (report only) or `toolCommand` |
 | `command` | required with `toolCommand`: `^[a-z0-9][a-z0-9._-]*$`, no `/` |
 | `arguments` | required with `toolCommand`: ≤ 16 strings; `{name}` and `{path}` placeholders are substituted at cleanup time |
-| `requiresAppQuit` | optional bundle id (`com.example.App`) of an app that must be quit first |
+| `requiresAppQuit` | optional bundle id (`com.example.App`) of an app that must be quit first. The literal `{name}` is allowed only with `match.kind: children` and `depth: 1`: the scanner uses the entry's own name as the bundle id (`~/Library/Caches/com.example.App`). An entry whose name is not a bundle id is not emitted (no warning) |
 
 `command`/`arguments` together with `trash` or `none` are rejected as unknown keys.
 

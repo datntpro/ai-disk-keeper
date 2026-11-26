@@ -19,7 +19,7 @@ final class FixtureHome {
     let tmp: TemporaryDirectory
     let home: String
     let tempDir: String
-    let env: PathEnvironment
+    var env: PathEnvironment
 
     init() throws {
         tmp = try TemporaryDirectory()

@@ -1,0 +1,479 @@
+{
+  "schemaVersion": 1,
+  "tool": {
+    "id": "dev-caches",
+    "name": "Developer caches",
+    "docs": "https://developer.apple.com/documentation/xcode"
+  },
+  "protect": [
+    "${CARGO_HOME:-~/.cargo}/credentials*",
+    "${CARGO_HOME:-~/.cargo}/config*",
+    "${GRADLE_USER_HOME:-~/.gradle}/gradle.properties",
+    "${GRADLE_USER_HOME:-~/.gradle}/init.d",
+    "~/.cocoapods/repos/trunk/.netrc",
+    "~/.yarnrc*"
+  ],
+  "rules": [
+    {
+      "id": "dev-caches.yarn",
+      "title": "Yarn cache",
+      "category": "systemJunk",
+      "paths": [
+        "${YARN_CACHE_FOLDER:-$CACHES/Yarn}"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: Yarn's download cache. Packages are downloaded again on the next install, so installs are slower and offline installs fail until then. Folders changed in the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Cache Yarn",
+          "explanation": "Tạo lại được: cache tải về của Yarn. Các gói sẽ được tải lại ở lần cài sau, nên việc cài đặt sẽ chậm hơn và cài ngoại tuyến sẽ không thành công cho đến lúc đó. Thư mục thay đổi trong ngày gần nhất được giữ lại."
+        }
+      },
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "dev-caches.yarn-berry",
+      "title": "Yarn (Berry) global cache",
+      "category": "systemJunk",
+      "paths": [
+        "~/.yarn/berry/cache"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: the shared package cache of Yarn 2+. Packages are downloaded again on the next install. Projects that keep their own offline cache are not affected. Folders changed in the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Cache toàn cục của Yarn (Berry)",
+          "explanation": "Tạo lại được: cache gói dùng chung của Yarn 2 trở lên. Các gói sẽ được tải lại ở lần cài sau. Các dự án có cache ngoại tuyến riêng không bị ảnh hưởng. Thư mục thay đổi trong ngày gần nhất được giữ lại."
+        }
+      },
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "dev-caches.cargo-registry",
+      "title": "Cargo registry cache",
+      "category": "systemJunk",
+      "paths": [
+        "${CARGO_HOME:-~/.cargo}/registry/cache",
+        "${CARGO_HOME:-~/.cargo}/registry/src"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: downloaded crates and their unpacked sources. Cargo downloads them again when a build needs them, so the next builds are slower and offline builds fail until then. Folders changed in the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Cache registry của Cargo",
+          "explanation": "Tạo lại được: các crate đã tải và mã nguồn đã giải nén. Cargo tải lại khi một bản dựng cần đến, nên các bản dựng tiếp theo sẽ chậm hơn và bản dựng ngoại tuyến sẽ không thành công cho đến lúc đó. Thư mục thay đổi trong ngày gần nhất được giữ lại."
+        }
+      },
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "dev-caches.cargo-git",
+      "title": "Cargo git cache",
+      "category": "systemJunk",
+      "paths": [
+        "${CARGO_HOME:-~/.cargo}/git/db",
+        "${CARGO_HOME:-~/.cargo}/git/checkouts"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: git repositories that Cargo cloned for git dependencies. Cargo clones them again when a build needs them, so the next builds are slower and offline builds fail until then. Folders changed in the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Cache git của Cargo",
+          "explanation": "Tạo lại được: các kho git mà Cargo đã sao chép cho các phụ thuộc git. Cargo sao chép lại khi một bản dựng cần đến, nên các bản dựng tiếp theo sẽ chậm hơn và bản dựng ngoại tuyến sẽ không thành công cho đến lúc đó. Thư mục thay đổi trong ngày gần nhất được giữ lại."
+        }
+      },
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "dev-caches.go-build",
+      "title": "Go build cache",
+      "category": "systemJunk",
+      "paths": [
+        "${GOCACHE:-$CACHES/go-build}"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: Go's build cache. Go rebuilds it automatically; the next builds are slower. Same as `go clean -cache`. Folders changed in the last day are kept, because a build may be running.",
+      "localized": {
+        "vi": {
+          "title": "Cache bản dựng Go",
+          "explanation": "Tạo lại được: cache bản dựng của Go. Go tự tạo lại; các bản dựng tiếp theo sẽ chậm hơn. Giống lệnh `go clean -cache`. Thư mục thay đổi trong ngày gần nhất được giữ lại vì có thể một bản dựng đang chạy."
+        }
+      },
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "dev-caches.go-mod",
+      "title": "Go module cache",
+      "category": "systemJunk",
+      "paths": [
+        "${GOMODCACHE:-~/go/pkg/mod}"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: downloaded Go modules (read-only files). Go downloads them again when a project needs them (`go clean -modcache`); offline builds fail until then. Folders changed in the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Cache module Go",
+          "explanation": "Tạo lại được: các module Go đã tải (tệp chỉ đọc). Go tải lại khi một dự án cần đến (`go clean -modcache`); bản dựng ngoại tuyến sẽ không thành công cho đến lúc đó. Thư mục thay đổi trong ngày gần nhất được giữ lại."
+        }
+      },
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "dev-caches.gradle",
+      "title": "Gradle caches",
+      "category": "systemJunk",
+      "paths": [
+        "${GRADLE_USER_HOME:-~/.gradle}/caches"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: Gradle's dependency and build caches. Gradle downloads and rebuilds them, so the next builds are slower and offline builds fail until then. Folders changed in the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Cache Gradle",
+          "explanation": "Tạo lại được: cache phụ thuộc và cache bản dựng của Gradle. Gradle tải và dựng lại, nên các bản dựng tiếp theo sẽ chậm hơn và bản dựng ngoại tuyến sẽ không thành công cho đến lúc đó. Thư mục thay đổi trong ngày gần nhất được giữ lại."
+        }
+      },
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "dev-caches.gradle-wrapper",
+      "title": "Gradle distribution",
+      "category": "systemJunk",
+      "paths": [
+        "${GRADLE_USER_HOME:-~/.gradle}/wrapper/dists"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "directory"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: a Gradle version downloaded by a project's wrapper. The wrapper downloads it again the next time a project that uses that version is built. Folders changed in the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Bản phân phối Gradle",
+          "explanation": "Tạo lại được: một phiên bản Gradle do wrapper của dự án tải về. Wrapper tải lại ở lần dựng tiếp theo của dự án dùng phiên bản đó. Thư mục thay đổi trong ngày gần nhất được giữ lại."
+        }
+      },
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "dev-caches.cocoapods",
+      "title": "CocoaPods cache",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES/CocoaPods"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: CocoaPods' download cache. Pods are downloaded again on the next `pod install`. Folders changed in the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Cache CocoaPods",
+          "explanation": "Tạo lại được: cache tải về của CocoaPods. Các pod sẽ được tải lại ở lần `pod install` sau. Thư mục thay đổi trong ngày gần nhất được giữ lại."
+        }
+      },
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "dev-caches.swiftpm",
+      "title": "Swift Package Manager cache",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES/org.swift.swiftpm"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: Swift Package Manager's repository and package cache. Packages are fetched again when a project needs them. Folders changed in the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Cache Swift Package Manager",
+          "explanation": "Tạo lại được: cache kho và gói của Swift Package Manager. Các gói được tải lại khi một dự án cần đến. Thư mục thay đổi trong ngày gần nhất được giữ lại."
+        }
+      },
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "dev-caches.homebrew",
+      "title": "Homebrew download cache",
+      "category": "systemJunk",
+      "paths": [
+        "${HOMEBREW_CACHE:-$CACHES/Homebrew}"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: bottles and sources Homebrew downloaded. Homebrew downloads them again when you install or upgrade a formula. Folders changed in the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Cache tải về của Homebrew",
+          "explanation": "Tạo lại được: các bottle và mã nguồn mà Homebrew đã tải. Homebrew tải lại khi bạn cài hoặc nâng cấp một formula. Thư mục thay đổi trong ngày gần nhất được giữ lại."
+        }
+      },
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "dev-caches.xcode-archives",
+      "title": "Xcode archives",
+      "category": "systemJunk",
+      "paths": [
+        "~/Library/Developer/Xcode/Archives"
+      ],
+      "match": {
+        "kind": "children",
+        "depth": 2,
+        "glob": "*.xcarchive",
+        "type": "directory"
+      },
+      "tier": "review",
+      "explanation": "An Xcode archive of a build you made. It contains the debug symbols (dSYMs) needed to read crash reports for that version, and it may be the only copy of a build you shipped. Deleting it cannot be undone by rebuilding. Never marked Safe.",
+      "localized": {
+        "vi": {
+          "title": "Bản lưu trữ Xcode",
+          "explanation": "Bản lưu trữ (archive) Xcode của một bản dựng bạn đã tạo. Nó chứa các ký hiệu gỡ lỗi (dSYM) cần để đọc báo cáo lỗi của phiên bản đó, và có thể là bản duy nhất của bản dựng bạn đã phát hành. Dựng lại không khôi phục được nội dung đã xóa. Không bao giờ được xếp vào mức An toàn."
+        }
+      },
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "dev-caches.device-support",
+      "title": "Xcode device support",
+      "category": "systemJunk",
+      "paths": [
+        "~/Library/Developer/Xcode/iOS DeviceSupport",
+        "~/Library/Developer/Xcode/watchOS DeviceSupport",
+        "~/Library/Developer/Xcode/tvOS DeviceSupport",
+        "~/Library/Developer/Xcode/visionOS DeviceSupport"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "directory"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "olderThanDays": 180
+          },
+          "tier": "safe"
+        },
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Debug symbols Xcode copied from a device running this OS version. Xcode copies them again (takes a few minutes) the next time you connect a device with this version. Safe after 180 days unused; changed in the last day is kept. Quit Xcode first.",
+      "localized": {
+        "vi": {
+          "title": "Ký hiệu thiết bị của Xcode",
+          "explanation": "Ký hiệu gỡ lỗi mà Xcode đã sao chép từ một thiết bị chạy phiên bản hệ điều hành này. Xcode sẽ sao chép lại (mất vài phút) ở lần tiếp theo bạn kết nối thiết bị có phiên bản này. An toàn sau 180 ngày không dùng; thay đổi trong ngày gần nhất thì được giữ lại. Hãy thoát Xcode trước."
+        }
+      },
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.apple.dt.Xcode"
+      }
+    },
+    {
+      "id": "dev-caches.simulator-caches",
+      "title": "Simulator caches",
+      "category": "systemJunk",
+      "paths": [
+        "~/Library/Developer/CoreSimulator/Caches"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: caches of the iOS Simulator (such as dyld caches). They are rebuilt the next time a simulator boots, which then starts more slowly. Quit Simulator first.",
+      "localized": {
+        "vi": {
+          "title": "Cache Simulator",
+          "explanation": "Tạo lại được: cache của iOS Simulator (như cache dyld). Chúng được tạo lại ở lần khởi động simulator tiếp theo, khi đó simulator sẽ khởi động chậm hơn. Hãy thoát Simulator trước."
+        }
+      },
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.apple.iphonesimulator"
+      }
+    },
+    {
+      "id": "dev-caches.xcode-previews",
+      "title": "Xcode previews cache",
+      "category": "systemJunk",
+      "paths": [
+        "~/Library/Developer/Xcode/UserData/Previews"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: build products of SwiftUI previews. Xcode rebuilds them when a preview is shown, so the first preview afterwards is slower. Quit Xcode first.",
+      "localized": {
+        "vi": {
+          "title": "Cache bản xem trước Xcode",
+          "explanation": "Tạo lại được: sản phẩm dựng của bản xem trước SwiftUI. Xcode dựng lại khi hiển thị bản xem trước, nên bản xem trước đầu tiên sau đó sẽ chậm hơn. Hãy thoát Xcode trước."
+        }
+      },
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "com.apple.dt.Xcode"
+      }
+    }
+  ]
+}

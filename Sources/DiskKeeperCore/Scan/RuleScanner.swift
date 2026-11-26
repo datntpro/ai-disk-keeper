@@ -147,6 +147,13 @@ public struct RuleScanner: Scanner {
 
     private static func sizeOne(_ p: Planned, context: ScanContext) async throws -> Outcome {
         let path = p.candidate.path
+        // `{name}`: the entry's own name is the bundle id of the app to quit. Anything else is not emitted.
+        var appQuit = p.rule.rule.cleanup.requiresAppQuit
+        if appQuit == RuleCleanup.namePlaceholder {
+            let leaf = PathNormalization.components(path).last.map(String.init) ?? ""
+            guard RuleCleanup.isValidBundleID(leaf) else { return .skipped }
+            appQuit = leaf
+        }
         let report: SizeReport
         do {
             report = try await context.size(URL(fileURLWithPath: path))
@@ -163,12 +170,12 @@ public struct RuleScanner: Scanner {
             return .warning(ScanWarning(kind: .permissionDenied, path: path, ruleID: p.rule.rule.id,
                                         message: "cannot size \(path): \(error)", code: .cannotSize(errno: nil)))
         }
-        return .item(buildItem(p, report: report, now: context.now))
+        return .item(buildItem(p, report: report, now: context.now, appQuit: appQuit))
     }
 
     // MARK: Phase 3: build the item
 
-    private static func buildItem(_ p: Planned, report: SizeReport, now: Date) -> ScanItem {
+    private static func buildItem(_ p: Planned, report: SizeReport, now: Date, appQuit: String?) -> ScanItem {
         let rule = p.rule.rule
         let path = p.candidate.path
         let parent = "/" + PathNormalization.components(path).dropLast().joined(separator: "/")
@@ -195,6 +202,6 @@ public struct RuleScanner: Scanner {
             project: p.project, sizeAllocated: report.allocatedBytes, sizeLogical: report.logicalBytes,
             fileCount: report.fileCount, lastModified: report.newestModification, tier: tier,
             explanation: rule.explanation, ruleID: rule.id, cleanupMethod: rule.cleanup.cleanupMethod,
-            requiresAppQuit: rule.cleanup.requiresAppQuit, flags: flags)
+            requiresAppQuit: appQuit, flags: flags)
     }
 }

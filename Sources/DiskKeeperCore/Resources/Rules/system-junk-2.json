@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "tool": {
+    "id": "system",
+    "name": "System"
+  },
+  "rules": [
+    {
+      "id": "system.installers.dmg",
+      "title": "Disk image installers",
+      "category": "systemJunk",
+      "paths": [
+        "~/Downloads"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "*.dmg",
+        "type": "file"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 30
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "A downloaded installer (disk image). If the app is already installed you don't need it; you can download it again from the developer. Files newer than 30 days are kept.",
+      "localized": {
+        "vi": {
+          "title": "Trình cài đặt dạng ảnh đĩa",
+          "explanation": "Trình cài đặt đã tải về (ảnh đĩa). Nếu ứng dụng đã được cài thì bạn không cần nó; bạn có thể tải lại từ nhà phát triển. Tệp mới hơn 30 ngày được giữ lại."
+        }
+      },
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "system.installers.pkg",
+      "title": "Package installers",
+      "category": "systemJunk",
+      "paths": [
+        "~/Downloads"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "*.pkg",
+        "type": "file"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 30
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "A downloaded installer (package). If the app is already installed you don't need it; you can download it again from the developer. Files newer than 30 days are kept.",
+      "localized": {
+        "vi": {
+          "title": "Trình cài đặt dạng gói",
+          "explanation": "Trình cài đặt đã tải về (gói). Nếu ứng dụng đã được cài thì bạn không cần nó; bạn có thể tải lại từ nhà phát triển. Tệp mới hơn 30 ngày được giữ lại."
+        }
+      },
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "system.installers.xip",
+      "title": "Compressed installers (xip)",
+      "category": "systemJunk",
+      "paths": [
+        "~/Downloads"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "*.xip",
+        "type": "file"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 30
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "A downloaded installer (compressed archive, such as an Xcode download). If the app is already installed you don't need it; you can download it again from the developer. Files newer than 30 days are kept.",
+      "localized": {
+        "vi": {
+          "title": "Trình cài đặt dạng tệp nén (xip)",
+          "explanation": "Trình cài đặt đã tải về (tệp nén, chẳng hạn bản tải Xcode). Nếu ứng dụng đã được cài thì bạn không cần nó; bạn có thể tải lại từ nhà phát triển. Tệp mới hơn 30 ngày được giữ lại."
+        }
+      },
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "system.ios-backups",
+      "title": "iPhone and iPad backups",
+      "category": "systemJunk",
+      "paths": [
+        "$APP_SUPPORT/MobileSync/Backup"
+      ],
+      "match": {
+        "kind": "children",
+        "type": "directory"
+      },
+      "tier": "review",
+      "explanation": "A backup of an iPhone or iPad made by Finder. Deleting it means you can't restore the device to this backup. If it's your only backup, keep it. Encrypted backups also hold saved passwords. Never marked Safe.",
+      "localized": {
+        "vi": {
+          "title": "Bản sao lưu iPhone và iPad",
+          "explanation": "Bản sao lưu iPhone hoặc iPad do Finder tạo. Xóa nó nghĩa là bạn không thể khôi phục thiết bị về bản sao lưu này. Nếu đây là bản sao lưu duy nhất, hãy giữ lại. Các bản sao lưu được mã hóa cũng chứa mật khẩu đã lưu. Không bao giờ được xếp vào mức An toàn."
+        }
+      },
+      "cleanup": {
+        "method": "trash"
+      }
+    },
+    {
+      "id": "system.app-caches",
+      "title": "App caches",
+      "category": "systemJunk",
+      "paths": [
+        "$CACHES"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "*.*",
+        "type": "directory",
+        "exclude": [
+          "com.apple.*",
+          "CloudKit",
+          "com.crashlytics*",
+          "*.savedState",
+          "GeoServices",
+          "familycircled",
+          "com.anthropic.*",
+          "com.todesktop.230313mzl4w4u92*",
+          "com.exafunction.*",
+          "dev.kiro.*",
+          "com.amazon.kiro.*",
+          "com.google.antigravity*",
+          "com.stablyai.*",
+          "org.swift.swiftpm"
+        ]
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Cache files for this app. Apps rebuild their caches when needed; the app may start more slowly the first time. Quit the app before cleaning. Folders changed in the last day are kept.",
+      "localized": {
+        "vi": {
+          "title": "Cache ứng dụng",
+          "explanation": "Các tệp cache của ứng dụng này. Ứng dụng tạo lại cache khi cần; lần đầu ứng dụng có thể khởi động chậm hơn. Hãy thoát ứng dụng trước khi dọn dẹp. Thư mục thay đổi trong ngày gần nhất được giữ lại."
+        }
+      },
+      "cleanup": {
+        "method": "trash",
+        "requiresAppQuit": "{name}"
+      }
+    }
+  ]
+}

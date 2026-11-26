@@ -139,8 +139,12 @@ public struct RuleCleanup: Sendable, Hashable {
     public let method: Method
     public let command: String?
     public let arguments: [String]
-    /// Bundle id of an app that must be quit first.
+    /// Bundle id of an app that must be quit first. May be the literal `{name}` (see `namePlaceholder`).
     public let requiresAppQuit: String?
+
+    /// Placeholder for `match.kind == children, depth == 1` rules: the scanner replaces it with the entry's
+    /// own name (e.g. a `~/Library/Caches/<bundle-id>` folder). An entry whose name isn't a bundle id is dropped.
+    public static let namePlaceholder = "{name}"
 
     static let allowedKeys: Set<String> = ["method", "command", "arguments", "requiresAppQuit"]
 
@@ -412,8 +416,9 @@ extension RuleCleanup: Decodable {
             arguments = []
         }
         if let bundle = try c.decodeIfPresent(String.self, forKey: .requiresAppQuit) {
-            guard Self.isValidBundleID(bundle) else {
-                throw invalid(CodingKeys.requiresAppQuit, c, "requiresAppQuit must be a bundle id like com.example.App")
+            guard bundle == Self.namePlaceholder || Self.isValidBundleID(bundle) else {
+                throw invalid(CodingKeys.requiresAppQuit, c,
+                              "requiresAppQuit must be a bundle id like com.example.App, or the placeholder {name}")
             }
             requiresAppQuit = bundle
         } else {
