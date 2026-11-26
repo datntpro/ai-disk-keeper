@@ -22,9 +22,7 @@ public struct CleanupResultView: View {
         self.onDone = onDone
     }
 
-    private var trashedIDs: Set<ScanItem.ID> {
-        Set(report.results.compactMap { if case .trashed = $0.outcome { $0.itemID } else { nil } })
-    }
+    private var trashedIDs: Set<ScanItem.ID> { CleanupCoordinator.trashedIDs(in: report) }
     private var failedCount: Int { report.results.filter { if case .failed = $0.outcome { true } else { false } }.count }
     private var skippedCount: Int { report.results.filter { if case .skipped = $0.outcome { true } else { false } }.count }
 

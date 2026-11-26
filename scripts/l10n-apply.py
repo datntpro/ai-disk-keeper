@@ -10,7 +10,13 @@ Apply is idempotent: a key whose vi value already equals the file's value and wh
 
 --verify fails when a vi-file key is missing from the catalog, its catalog vi text differs from the file, a key
 appears in two vi files, or a key lacks the file's allowed prefix. A file may declare `PREFIXES = ("apps.",)`;
-otherwise the defaults below apply (files not listed there are not prefix-checked)."""
+otherwise the defaults below apply (files not listed there are not prefix-checked).
+
+Plural keys: a vi file may also declare
+    PLURALS = {"key": {"en": {"one": "%lld item", "other": "%lld items"}, "vi": {"other": "%lld mục"}}}
+for a key whose code default is an Int interpolation (`loc("key", "\\(n) items")`). They become `variations.plural`
+entries of the String Catalog (Vietnamese has only `other`). The English `other` must equal the code default
+(`l10n-extract.py --check` enforces it); `VI` and `PLURALS` keys must not overlap."""
 import glob, json, os, runpy, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CAT = os.path.join(ROOT, "Sources", "AIDiskKeeperUI", "Resources", "Localizable.xcstrings")
@@ -28,7 +34,24 @@ def entries(path):
         for k, v in ns.get(name, {}).items():
             out[prefix + k] = v
     stem = os.path.basename(path).split(".")[0]
+    for k, v in ns.get("PLURALS", {}).items():
+        if k in out:
+            sys.exit(f"{path}: {k} is in both VI and PLURALS")
+        out[k] = v
     return out, ns.get("PREFIXES") or DEFAULT_PREFIXES.get(stem)
+
+
+def plural_loc(forms, state):
+    return {"variations": {"plural": {c: {"stringUnit": {"state": state, "value": t}} for c, t in forms.items()}}}
+
+
+def current_vi(entry):
+    loc = entry.get("localizations", {}).get("vi", {})
+    if "variations" in loc:
+        return {c: u["stringUnit"]["value"] for c, u in loc["variations"]["plural"].items()}, \
+            {u["stringUnit"]["state"] for u in loc["variations"]["plural"].values()}
+    unit = loc.get("stringUnit", {})
+    return unit.get("value"), {unit.get("state")}
 
 
 def write(cat):
@@ -57,14 +80,26 @@ def main(args):
             if key not in strings:
                 errors.append(f"{name}: unknown key {key}")
                 continue
-            unit = strings[key].setdefault("localizations", {}).get("vi", {}).get("stringUnit", {})
+            plural = isinstance(vi, dict)
+            want_vi = vi["vi"] if plural else vi
+            have, states = current_vi(strings[key])
+            en_ok = True
+            if plural:
+                en_forms = {c: u["stringUnit"]["value"] for c, u in
+                            strings[key]["localizations"].get("en", {}).get("variations", {}).get("plural", {}).items()}
+                en_ok = en_forms == vi["en"]
             if verify:
-                if unit.get("value") != vi:
-                    errors.append(f"{name}: {key} catalog vi differs from the vi file (run scripts/l10n-regen.sh)")
-            elif unit.get("value") == vi and unit.get("state") in ("translated", "needs_review"):
+                if have != want_vi or not en_ok:
+                    errors.append(f"{name}: {key} catalog text differs from the vi file (run scripts/l10n-regen.sh)")
+            elif have == want_vi and en_ok and states <= {"translated", "needs_review"}:
                 continue
             else:
-                strings[key]["localizations"]["vi"] = {"stringUnit": {"state": "needs_review", "value": vi}}
+                locs = strings[key].setdefault("localizations", {})
+                if plural:
+                    locs["en"] = plural_loc(vi["en"], "translated")
+                    locs["vi"] = plural_loc(vi["vi"], "needs_review")
+                else:
+                    locs["vi"] = {"stringUnit": {"state": "needs_review", "value": vi}}
                 changed += 1
     for e in errors:
         print("error:", e, file=sys.stderr)

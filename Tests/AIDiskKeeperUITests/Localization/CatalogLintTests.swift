@@ -16,7 +16,11 @@ final class CatalogLintTests: XCTestCase {
         let strings = try XCTUnwrap(json["strings"] as? [String: [String: Any]])
         return strings.map { key, v in
             func unit(_ lang: String) -> [String: Any]? {
-                ((v["localizations"] as? [String: Any])?[lang] as? [String: Any])?["stringUnit"] as? [String: Any]
+                let loc = (v["localizations"] as? [String: Any])?[lang] as? [String: Any]
+                // A plural key (`variations.plural`) is judged by its `other` form, which the code default must equal.
+                let plural = (((loc?["variations"] as? [String: Any])?["plural"] as? [String: Any])?["other"]
+                    as? [String: Any])?["stringUnit"] as? [String: Any]
+                return loc?["stringUnit"] as? [String: Any] ?? plural
             }
             return Entry(key: key, en: unit("en")?["value"] as? String, vi: unit("vi")?["value"] as? String,
                          viState: unit("vi")?["state"] as? String, stale: v["extractionState"] as? String == "stale", raw: v)

@@ -5,11 +5,11 @@ import SwiftUI
 struct CleanupSummaryTrio: View {
     let plan: CleanupPlan
 
-    /// Apps and shared-storage duplicates may free less than their size.
+    /// Apps and duplicate copies (clones, hard links) may free less than their size; Duplicates says "up to" too.
     private var freesIsUpperBound: Bool {
         plan.executableEntries.contains { e in
             if case .trashApplication = e.item.cleanupMethod { return true }
-            return e.item.flags.contains(.sharedStorage)
+            return e.item.category == .duplicate || e.item.flags.contains(.sharedStorage)
         }
     }
 

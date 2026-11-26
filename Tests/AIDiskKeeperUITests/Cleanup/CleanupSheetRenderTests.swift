@@ -8,9 +8,10 @@ import XCTest
 @MainActor
 final class CleanupSheetRenderTests: XCTestCase {
     private func entry(_ name: String, tool: ToolID = .claudeCode, tier: RiskTier = .safe, size: Int64 = 50_000_000,
-                       cleanup: CleanupMethod = .trash, blockers: [CleanupBlocker] = []) -> CleanupPlanEntry {
+                       cleanup: CleanupMethod = .trash, blockers: [CleanupBlocker] = [],
+                       survivors: DuplicateSurvivorSet? = nil) -> CleanupPlanEntry {
         CleanupPlanEntry(item: ItemFixtures.item(name, tool: tool, tier: tier, size: size, cleanup: cleanup),
-                         action: .trash, blockers: blockers, fingerprint: nil)
+                         action: .trash, blockers: blockers, fingerprint: nil, survivors: survivors)
     }
 
     private var plan: CleanupPlan {
@@ -18,6 +19,10 @@ final class CleanupSheetRenderTests: XCTestCase {
             entry("cache1"), entry("cache2"), entry("logs", size: 12_000_000),
             entry("wt", tool: "cursor", cleanup: .trashWorktree(mainRepoPath: "/tmp/fixture/repo")),
             entry("history", tier: .review),
+            entry("dup-copy.bin", tool: "files", tier: .review, survivors: DuplicateSurvivorSet(
+                groupID: "dup:x:1", logicalBytes: 3_000_000, partialDigest: "p", survivors: [
+                    SurvivorFingerprint(path: "/tmp/fixture/keep/dup.bin", device: 1, inode: 1, modified: .distantPast),
+                    SurvivorFingerprint(path: "/tmp/fixture/keep2/dup.bin", device: 1, inode: 2, modified: .distantPast)])),
             entry("Claude cache", blockers: [.appRunning(bundleID: "com.anthropic.claudefordesktop")]),
             entry("system", tier: .keep, blockers: [.keepTier]),
         ])
@@ -38,7 +43,7 @@ final class CleanupSheetRenderTests: XCTestCase {
 
     private func render(_ name: String, _ view: some View) {
         for scheme in [ColorScheme.light, .dark] {
-            let r = ImageRenderer(content: view.frame(width: 680, height: 560).background(.adkBg)
+            let r = ImageRenderer(content: view.frame(width: 680).fixedSize(horizontal: false, vertical: true).background(.adkBg)
                 .environment(\.colorScheme, scheme))
             r.scale = 2
             guard let img = r.cgImage else { XCTFail("\(name) \(scheme) did not render"); continue }

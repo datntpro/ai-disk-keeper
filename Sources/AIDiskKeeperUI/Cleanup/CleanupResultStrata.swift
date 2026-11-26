@@ -17,7 +17,7 @@ struct CleanupResultStrata: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ADKTheme.Spacing.sm) {
             label(CleanupCopy.resultBefore(freeBefore))
-            bar(beforeFraction: 1, freedFraction: 0)
+            bar(beforeFraction: before, freedFraction: 0)
             label(CleanupCopy.resultAfter(freeAfter))
             bar(beforeFraction: before, freedFraction: shown || reduceMotion || !animatesIn ? 1 - before : 0)
         }

@@ -4,11 +4,11 @@ VI = {
     "cleanup.review.titleBytes": "Chuyển %@ vào Thùng rác?",
     "cleanup.review.dryRun": "Đây là chạy thử: chưa có gì thay đổi. Mỗi mục được kiểm tra lại ngay trước khi chuyển.",
     "cleanup.trio.willMove": "Sẽ chuyển",
-    "cleanup.trio.items": "%@ mục",
     "cleanup.trio.frees": "Giải phóng sau khi dọn sạch Thùng rác",
     "cleanup.trio.skipped": "Bỏ qua",
     "cleanup.row.thenPrune": "sau đó git worktree prune",
     "cleanup.row.tickedByYou": "do bạn chọn",
+    "cleanup.row.keeping": "Giữ lại %@",
     "cleanup.row.moreReasons": "+%@ lý do khác",
     "cleanup.row.quitFirst": "%@ đang chạy — hãy thoát trước",
     "cleanup.planValid": "Kế hoạch còn hiệu lực %@",
@@ -17,7 +17,7 @@ VI = {
     "cleanup.result.complete": "Đã dọn dẹp xong",
     "cleanup.result.stopped": "Đã dừng dọn dẹp",
     "cleanup.result.problems": "Dọn dẹp xong nhưng có lỗi",
-    "cleanup.result.summary": "đã chuyển vào Thùng rác · %@ mục · %@ lỗi · %@ bỏ qua",
+    "cleanup.result.summary": "đã chuyển vào Thùng rác · %@ · %@ · %@ bỏ qua",
     "cleanup.result.before": "Trước · trống %@",
     "cleanup.result.after": "Sau khi dọn sạch Thùng rác · trống %@",
     "cleanup.outcome.trashed": "Đã chuyển vào Thùng rác",
@@ -33,4 +33,24 @@ VI = {
     "cleanup.audit.paused": "Đã tạm dừng: không ghi được nhật ký thao tác. Không chuyển thêm mục nào.",
     "cleanup.audit.revealFolder": "Hiển thị thư mục",
     "cleanup.a11y.row": "%@, %@, %@, %@",
+}
+
+# Plural keys (String Catalog `variations.plural`). Vietnamese has no plural forms, so only `other`.
+PLURALS = {
+    "cleanup.trio.items": {
+        "en": {"one": "%lld item", "other": "%lld items"},
+        "vi": {"other": "%lld mục"},
+    },
+    "cleanup.result.items": {
+        "en": {"one": "%lld item", "other": "%lld items"},
+        "vi": {"other": "%lld mục"},
+    },
+    "cleanup.result.errors": {
+        "en": {"one": "%lld error", "other": "%lld errors"},
+        "vi": {"other": "%lld lỗi"},
+    },
+    "cleanup.row.otherCopies": {
+        "en": {"one": "+%lld other copy", "other": "+%lld other copies"},
+        "vi": {"other": "+%lld bản sao khác"},
+    },
 }

@@ -22,11 +22,20 @@ struct CleanupPlanRow: View {
         return CleanupCopy.sentence(for: b)
     }
 
+    /// Duplicate copies: the copy that stays (verified at plan time), plus how many more.
+    private var keepingLine: String? {
+        guard let kept = entry.survivors?.survivors, let first = kept.first else { return nil }
+        let line = CleanupCopy.rowKeeping(Self.displayPath(first.path, home: home))
+        return kept.count > 1 ? line + " " + CleanupCopy.rowOtherCopies(kept.count - 1) : line
+    }
+
     private var annotation: String? {
         if let s = firstBlockerSentence { return s }
-        if case .trashWorktree = entry.item.cleanupMethod { return CleanupCopy.rowThenPrune }
-        if entry.item.tier == .review { return CleanupCopy.rowTickedByYou }
-        return nil
+        var parts: [String] = []
+        if case .trashWorktree = entry.item.cleanupMethod { parts.append(CleanupCopy.rowThenPrune) }
+        if let keepingLine { parts.append(keepingLine) }
+        if entry.item.tier == .review { parts.append(CleanupCopy.rowTickedByYou) }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     private var moreHelp: String? {

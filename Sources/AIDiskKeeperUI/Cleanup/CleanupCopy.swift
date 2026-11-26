@@ -46,12 +46,16 @@ public enum CleanupCopy {
         loc("cleanup.review.dryRun", "This is a dry run: nothing has changed yet. Each item is checked again right before it moves.")
     }
     public static var trioWillMove: String { loc("cleanup.trio.willMove", "Will move") }
-    public static func trioItems(_ n: Int) -> String { loc("cleanup.trio.items", "\(Formatting.count(n)) items") }
+    /// Plural key: "1 item" / "N items" (String Catalog plural variants, en + vi).
+    public static func trioItems(_ n: Int) -> String { loc("cleanup.trio.items", "\(n) items") }
     public static var trioFrees: String { loc("cleanup.trio.frees", "Frees after emptying Trash") }
     public static var trioSkipped: String { loc("cleanup.trio.skipped", "Skipped") }
     public static var rowThenPrune: String { loc("cleanup.row.thenPrune", "then git worktree prune") }
     public static var rowTickedByYou: String { loc("cleanup.row.tickedByYou", "ticked by you") }
     public static func rowMoreReasons(_ n: Int) -> String { loc("cleanup.row.moreReasons", "+\(Formatting.count(n)) more") }
+    public static func rowKeeping(_ path: String) -> String { loc("cleanup.row.keeping", "Keeping \(path)") }
+    /// Plural key: "+1 other copy" / "+N other copies".
+    public static func rowOtherCopies(_ n: Int) -> String { loc("cleanup.row.otherCopies", "+\(n) other copies") }
     public static func rowQuitFirst(app: String) -> String { loc("cleanup.row.quitFirst", "\(app) is running — quit it first") }
     /// "Plan valid %@" split around the placeholder, so the countdown can be a live `Text(timerInterval:)`.
     public static var planValidParts: (before: String, after: String) {
@@ -65,9 +69,11 @@ public enum CleanupCopy {
     public static var resultComplete: String { loc("cleanup.result.complete", "Cleanup complete") }
     public static var resultStopped: String { loc("cleanup.result.stopped", "Cleanup stopped") }
     public static var resultProblems: String { loc("cleanup.result.problems", "Cleanup finished with problems") }
+    public static func resultItems(_ n: Int) -> String { loc("cleanup.result.items", "\(n) items") }
+    public static func resultErrors(_ n: Int) -> String { loc("cleanup.result.errors", "\(n) errors") }
     public static func resultSummary(items: Int, errors: Int, skipped: Int) -> String {
         loc("cleanup.result.summary",
-            "moved to the Trash · \(Formatting.count(items)) items · \(Formatting.count(errors)) errors · \(Formatting.count(skipped)) skipped")
+            "moved to the Trash · \(resultItems(items)) · \(resultErrors(errors)) · \(Formatting.count(skipped)) skipped")
     }
     public static func resultBefore(_ n: Int64) -> String { loc("cleanup.result.before", "Before · \(bytes(n)) free") }
     public static func resultAfter(_ n: Int64) -> String {
