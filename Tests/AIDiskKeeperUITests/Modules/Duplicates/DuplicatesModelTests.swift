@@ -298,12 +298,20 @@ final class DuplicatesModelTests: XCTestCase {
         print("analyse 10k groups (guard + items):", ContinuousClock.now - start)
         XCTAssertEqual(m.groups.count, N)
         let clock = ContinuousClock()
-        let t = clock.measure { m.rule = .insideGitRepo }
-        print("reorder 10k groups:", t)
-        XCTAssertLessThan(t, .milliseconds(250))
+        // Median of 5 runs (a single run is noisy on shared CI); CI gets twice the limit.
+        let scale: Int64 = ProcessInfo.processInfo.environment["CI"] != nil ? 2 : 1
+        func median(_ body: () -> Void) -> Duration {
+            let runs = (0..<5).map { _ in clock.measure(body) }.sorted()
+            return runs[2]
+        }
+        let rules: [KeeperRule] = [.insideGitRepo, .oldest]
+        var flip = 0
+        let t = median { flip += 1; m.rule = rules[flip % 2] }
+        print("reorder 10k groups (median of 5):", t)
+        XCTAssertLessThan(t, .milliseconds(250 * scale))
         // toggle is O(1) in the number of groups: 1 000 toggles stay quick.
-        let t2 = clock.measure { for g in m.groups.prefix(1000) { m.toggle(g.members[1], in: g) } }
-        print("1000 toggles:", t2)
-        XCTAssertLessThan(t2, .milliseconds(500))
+        let t2 = median { for g in m.groups.prefix(1000) { m.toggle(g.members[1], in: g) } }
+        print("1000 toggles (median of 5):", t2)
+        XCTAssertLessThan(t2, .milliseconds(500 * scale))
     }
 }

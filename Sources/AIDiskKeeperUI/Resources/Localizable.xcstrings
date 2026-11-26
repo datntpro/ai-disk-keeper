@@ -5605,6 +5605,22 @@
         }
       }
     },
+    "dup.action.keepThis" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep this one"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Giữ bản này"
+          }
+        }
+      }
+    },
     "dup.action.quickLook" : {
       "localizations" : {
         "en" : {

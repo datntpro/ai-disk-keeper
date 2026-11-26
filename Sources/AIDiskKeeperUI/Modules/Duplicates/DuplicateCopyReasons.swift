@@ -20,8 +20,10 @@ enum DuplicateCopyReasons {
     static let maxChips = 3
 
     private static let oldFolderNames: Set<String> = ["old", "backup", "bak", "archive"]
+    /// Unambiguous copy markers. A bare `-N` is not here: it only counts when a sibling without it exists.
     private static let copyName = try! NSRegularExpression(
-        pattern: #"( copy( \d+)?| \(\d+\)| - copy|_copy|-\d+| bản sao( \d+)?)$"#, options: [.caseInsensitive])
+        pattern: #"( copy( \d+)?| \(\d+\)| - copy|_copy| [2-9]| bản sao( \d+)?)$"#, options: [.caseInsensitive])
+    private static let dashNumber = try! NSRegularExpression(pattern: #"-\d{1,2}$"#)
 
     /// Chips for one row, most important first, at most ``maxChips``.
     static func reasons(for member: DuplicateMember, in group: DuplicateGroup, rule: KeeperRule, isManualKeeper: Bool,
@@ -33,10 +35,12 @@ enum DuplicateCopyReasons {
             if !member.otherLinkPaths.isEmpty { out.append(.hardLinks(member.otherLinkPaths.count)) }
             return Array(out.prefix(maxChips))
         }
-        if member.sharesAllStorage { out.append(.cloneOfKept) }
+        // Derived from the current keeper on every call (never stored): the member shares everything, or the keeper
+        // does and this member shares storage with it.
+        if member.sharesAllStorage || (group.keeper.sharesAllStorage && member.sharesStorage) { out.append(.cloneOfKept) }
         else if member.sharesStorage { out.append(.partlyShared) }
         if !member.otherLinkPaths.isEmpty { out.append(.hardLinks(member.otherLinkPaths.count)) }
-        if hasCopyInName(member.path) { out.append(.copyInName) }
+        if hasCopyInName(member.path, siblingPaths: group.members.map(\.path)) { out.append(.copyInName) }
         if isIn(member.path, home + "/Downloads") { out.append(.inDownloads) }
         if isIn(member.path, home + "/Desktop") { out.append(.onDesktop) }
         if inOldFolder(member.path, home: home) { out.append(.inOldFolder) }
@@ -45,11 +49,23 @@ enum DuplicateCopyReasons {
         return Array(out.prefix(maxChips))
     }
 
-    /// The file stem ends like a Finder or app copy ("report copy 2", "report (1)", "report bản sao").
-    static func hasCopyInName(_ path: String) -> Bool {
-        let stem = ((path as NSString).lastPathComponent as NSString).deletingPathExtension
+    /// The file stem ends like a Finder or app copy ("report copy 2", "report (1)", "report 2", "report bản sao").
+    /// `invoice-2` counts only when `siblingPaths` holds `invoice` with the same extension; `invoice-2024` and
+    /// `report-v2` never count on their own.
+    static func hasCopyInName(_ path: String, siblingPaths: [String] = []) -> Bool {
+        let name = path as NSString
+        let ext = name.pathExtension
+        let stem = (name.lastPathComponent as NSString).deletingPathExtension
         let range = NSRange(stem.startIndex..., in: stem)
-        return copyName.firstMatch(in: stem, options: [], range: range) != nil
+        if copyName.firstMatch(in: stem, options: [], range: range) != nil { return true }
+        guard let dash = dashNumber.firstMatch(in: stem, options: [], range: range), let r = Range(dash.range, in: stem)
+        else { return false }
+        let base = String(stem[..<r.lowerBound])
+        guard !base.isEmpty else { return false }
+        return siblingPaths.contains { other in
+            let o = other as NSString
+            return o.pathExtension == ext && (o.lastPathComponent as NSString).deletingPathExtension == base
+        }
     }
 
     private static func isIn(_ path: String, _ folder: String) -> Bool { path.hasPrefix(folder + "/") }
