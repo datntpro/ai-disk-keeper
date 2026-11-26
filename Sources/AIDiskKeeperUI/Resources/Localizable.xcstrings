@@ -1,6 +1,22 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "a11y.ring" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ percent used, %@ free"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã dùng %@ phần trăm, còn trống %@"
+          }
+        }
+      }
+    },
     "action.reveal" : {
       "localizations" : {
         "en" : {
@@ -5523,22 +5539,6 @@
         }
       }
     },
-    "empty.readOnlyNote" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scanning is read-only. AI Disk Keeper only looks: nothing is changed until you review a cleanup plan and confirm it."
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Quét chỉ đọc dữ liệu. AI Disk Keeper chỉ xem: không có gì bị thay đổi cho đến khi bạn xem lại kế hoạch dọn dẹp và xác nhận."
-          }
-        }
-      }
-    },
     "fda.explain" : {
       "localizations" : {
         "en" : {
@@ -8035,6 +8035,22 @@
         }
       }
     },
+    "module.generic" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "this"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "này"
+          }
+        }
+      }
+    },
     "module.history" : {
       "localizations" : {
         "en" : {
@@ -8099,22 +8115,6 @@
         }
       }
     },
-    "module.noItems.title" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nothing found"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Không tìm thấy gì"
-          }
-        }
-      }
-    },
     "module.row.a11y" : {
       "localizations" : {
         "en" : {
@@ -8143,22 +8143,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Hãy quét để xem thứ gì đang chiếm dung lượng ở đây."
-          }
-        }
-      }
-    },
-    "module.scanFirst.title" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scan to see this data"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Quét để xem dữ liệu này"
           }
         }
       }
@@ -10451,6 +10435,22 @@
         }
       }
     },
+    "sidebar.settings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cài đặt"
+          }
+        }
+      }
+    },
     "sidebar.warnings" : {
       "localizations" : {
         "en" : {
@@ -11471,6 +11471,454 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Không đọc được mục nào đang được nạp. Trạng thái hiển thị là không rõ."
+          }
+        }
+      }
+    },
+    "state.cleanup.allBlocked" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing in this selection can be cleaned"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không mục nào trong lựa chọn này có thể dọn dẹp"
+          }
+        }
+      }
+    },
+    "state.empty.module" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No %@ data found"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không tìm thấy dữ liệu %@"
+          }
+        }
+      }
+    },
+    "state.empty.nothing" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing to reclaim right now"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hiện không có gì để giải phóng"
+          }
+        }
+      }
+    },
+    "state.error.audit.body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We only act when every action can be recorded. Nothing was moved. Check free space in ~/Library/Application Support."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chúng tôi chỉ thực hiện khi mọi thao tác đều được ghi lại. Không có gì bị chuyển đi. Hãy kiểm tra dung lượng trống trong ~/Library/Application Support."
+          }
+        }
+      }
+    },
+    "state.error.audit.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cleanup paused: audit log unavailable"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã tạm dừng dọn dẹp: không ghi được nhật ký thao tác"
+          }
+        }
+      }
+    },
+    "state.error.cleanup.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cleanup paused. Nothing was moved."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã tạm dừng dọn dẹp. Không có gì bị chuyển đi."
+          }
+        }
+      }
+    },
+    "state.error.index" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't map the disk. Nothing was changed."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không lập bản đồ ổ đĩa được. Không có gì bị thay đổi."
+          }
+        }
+      }
+    },
+    "state.error.scan" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't start the scan. Nothing was changed."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không bắt đầu quét được. Không có gì bị thay đổi."
+          }
+        }
+      }
+    },
+    "state.error.startup" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't read launch agents. Nothing was changed."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không đọc được launch agent. Không có gì bị thay đổi."
+          }
+        }
+      }
+    },
+    "state.fda.body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mail downloads, Safari caches and other apps' containers are hidden by macOS. Everything else still works without it."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "macOS ẩn tệp tải về của Mail, cache của Safari và container của các ứng dụng khác. Mọi thứ khác vẫn hoạt động mà không cần quyền này."
+          }
+        }
+      }
+    },
+    "state.fda.notNow" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not now"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Để sau"
+          }
+        }
+      }
+    },
+    "state.fda.open" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Privacy settings"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mở cài đặt Quyền riêng tư"
+          }
+        }
+      }
+    },
+    "state.fda.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ folders need Full Disk Access"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ thư mục cần Toàn quyền truy cập ổ đĩa"
+          }
+        }
+      }
+    },
+    "state.filtered.body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try another name, or show Keep items too."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hãy thử tên khác, hoặc hiển thị cả mục Giữ lại."
+          }
+        }
+      }
+    },
+    "state.filtered.clear" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear search"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Xóa tìm kiếm"
+          }
+        }
+      }
+    },
+    "state.filtered.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing matches “%@”"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không có gì khớp “%@”"
+          }
+        }
+      }
+    },
+    "state.firstRun.body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A read-only scan of your home folder. Nothing is deleted until you review it."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quét chỉ đọc thư mục Home của bạn. Không có gì bị xóa cho tới khi bạn xem lại."
+          }
+        }
+      }
+    },
+    "state.firstRun.start" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start Care Scan"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bắt đầu quét tổng thể"
+          }
+        }
+      }
+    },
+    "state.firstRun.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See what your AI tools left behind"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Xem các công cụ AI đã để lại những gì"
+          }
+        }
+      }
+    },
+    "state.firstRun.what" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What gets scanned?"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Những gì sẽ được quét?"
+          }
+        }
+      }
+    },
+    "state.firstRun.whatBody" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI tool folders (~/.claude, ~/.cursor…), agent worktrees, model caches, system and developer caches, large and old files, duplicates in Home, and app leftovers in ~/Library. Folder sizes only; file contents are read only to compare duplicates."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Thư mục của công cụ AI (~/.claude, ~/.cursor…), worktree của agent, cache mô hình, cache hệ thống và cache phát triển, tệp lớn và cũ, tệp trùng lặp trong Home, và tệp sót lại của ứng dụng trong ~/Library. Chỉ đọc kích thước thư mục; nội dung tệp chỉ được đọc để so sánh tệp trùng lặp."
+          }
+        }
+      }
+    },
+    "state.noWarnings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No warnings"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không có cảnh báo"
+          }
+        }
+      }
+    },
+    "state.notScanned" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not scanned yet"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chưa quét"
+          }
+        }
+      }
+    },
+    "state.partial.body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some folders couldn't be read. Results from every other module are complete."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Một số thư mục không đọc được. Kết quả của mọi mô-đun khác vẫn đầy đủ."
+          }
+        }
+      }
+    },
+    "state.partial.show" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show warnings"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Xem cảnh báo"
+          }
+        }
+      }
+    },
+    "state.partial.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan finished with %@ warnings"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quét xong với %@ cảnh báo"
+          }
+        }
+      }
+    },
+    "state.retry" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try again"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Thử lại"
+          }
+        }
+      }
+    },
+    "state.revealFolder" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reveal folder"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hiển thị thư mục"
           }
         }
       }
