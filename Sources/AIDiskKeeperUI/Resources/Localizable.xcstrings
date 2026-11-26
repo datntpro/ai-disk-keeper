@@ -353,6 +353,22 @@
         }
       }
     },
+    "cleanup.blocker.allCopies" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every copy in this duplicate group is selected. Keep at least one."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mọi bản sao trong nhóm trùng lặp này đều đang được chọn. Hãy giữ lại ít nhất một bản."
+          }
+        }
+      }
+    },
     "cleanup.blocker.appRunning" : {
       "localizations" : {
         "en" : {
@@ -413,6 +429,22 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Mục này được chọn nhiều hơn một lần."
+          }
+        }
+      }
+    },
+    "cleanup.blocker.groupUnknown" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duplicate details are missing. Rescan and review the group."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Thiếu thông tin về nhóm trùng lặp. Hãy quét lại và xem lại nhóm."
           }
         }
       }
@@ -589,6 +621,22 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Không đo lại được dung lượng của mục này: %@"
+          }
+        }
+      }
+    },
+    "cleanup.blocker.survivorChanged" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The copy you're keeping changed or disappeared. Rescan before deleting this duplicate."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bản sao bạn giữ lại đã thay đổi hoặc không còn nữa. Hãy quét lại trước khi xóa bản trùng này."
           }
         }
       }

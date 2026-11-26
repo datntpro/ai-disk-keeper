@@ -142,6 +142,12 @@ public enum CleanupCopy {
         case .duplicate: loc("cleanup.blocker.duplicate", "The item was selected more than once.")
         case .permanentDeleteDisabled: loc("cleanup.blocker.permanentOff", "Permanent delete is turned off.")
         case .sizingFailed(let e): loc("cleanup.blocker.sizing", "Could not re-measure the item: \(e)")
+        case .wouldRemoveAllCopies:
+            loc("cleanup.blocker.allCopies", "Every copy in this duplicate group is selected. Keep at least one.")
+        case .survivorChanged:
+            loc("cleanup.blocker.survivorChanged", "The copy you're keeping changed or disappeared. Rescan before deleting this duplicate.")
+        case .duplicateGroupUnknown:
+            loc("cleanup.blocker.groupUnknown", "Duplicate details are missing. Rescan and review the group.")
         }
     }
 }

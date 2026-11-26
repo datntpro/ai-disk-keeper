@@ -8,13 +8,44 @@ public struct CleanupPlanEntry: Identifiable, Codable, Sendable, Hashable {
     public let blockers: [CleanupBlocker]
     /// nil when blocked before it could be taken.
     public let fingerprint: ItemFingerprint?
+    /// Duplicate items only: the copies that stay behind, verified at plan time and again before the move.
+    public let survivors: DuplicateSurvivorSet?
     public var isExecutable: Bool { blockers.isEmpty }
 
-    public init(item: ScanItem, action: CleanupAction, blockers: [CleanupBlocker], fingerprint: ItemFingerprint?) {
+    public init(item: ScanItem, action: CleanupAction, blockers: [CleanupBlocker], fingerprint: ItemFingerprint?,
+                survivors: DuplicateSurvivorSet? = nil) {
         self.item = item
         self.action = action
         self.blockers = blockers
         self.fingerprint = fingerprint
+        self.survivors = survivors
+    }
+}
+
+/// A copy that is not selected and was verified to still hold the group's content.
+public struct SurvivorFingerprint: Codable, Sendable, Hashable {
+    public let path: String
+    public let device: Int32
+    public let inode: UInt64
+    public let modified: Date
+
+    public init(path: String, device: Int32, inode: UInt64, modified: Date) {
+        self.path = path; self.device = device; self.inode = inode; self.modified = modified
+    }
+}
+
+/// The keep-one evidence of one duplicate group (PLAN invariant 13). Part of the plan, so `planModified`
+/// guards it too.
+public struct DuplicateSurvivorSet: Codable, Sendable, Hashable {
+    public let groupID: String
+    public let logicalBytes: Int64
+    public let partialDigest: String
+    /// Unselected members verified at plan time.
+    public let survivors: [SurvivorFingerprint]
+
+    public init(groupID: String, logicalBytes: Int64, partialDigest: String, survivors: [SurvivorFingerprint]) {
+        self.groupID = groupID; self.logicalBytes = logicalBytes
+        self.partialDigest = partialDigest; self.survivors = survivors
     }
 }
 
