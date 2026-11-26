@@ -1,7 +1,8 @@
 # AI Disk Keeper — Plan
 
 Native macOS app (SwiftUI, macOS 14+) that **finds, explains and safely cleans** disk usage created
-by AI coding tools and their side effects. This document is the source of truth for scope,
+by AI coding tools **and the rest of your disk**. The AI-tool, worktree, model and Docker awareness stays
+the differentiator (D1, [§8.1](#81-owner-decisions-m4)); the M4 suite adds whole-disk management on top. This document is the source of truth for scope,
 architecture, the safety model and the milestone/subtask breakdown. Each subtask is tracked as a
 GitHub issue (see [§9](#9-subtasks)); tracking issue: #28.
 
@@ -34,13 +35,21 @@ to remove — especially for worktrees, where deleting the wrong one loses uncom
 4. **Break down** usage per tool and per project (a repo's worktrees + artifacts + sessions).
 5. **Stay on top of it**: optional scheduled scan + notification, menu bar summary.
 6. Native, fast, private: no network, no telemetry, no helper daemons with root.
+7. **See and manage the whole disk** (M4): disk map, large & old files, duplicates, app uninstall with
+   leftovers, startup items, wider system junk, storage overview, one-click Care Scan that only *finds*.
+8. **Speak the user's language** (issue #76): every user-facing string ships in Vietnamese (vi) and
+   English (en) through a String Catalog (`Localizable.xcstrings`) keyed by stable keys. Rule JSON
+   `title`/`explanation` are localizable too (per-locale fields or a key → catalog mapping, English
+   fallback). Follows the system language; no hard-coded user-facing strings in views, alerts, menu bar,
+   notifications, tier names, errors, onboarding or Settings. Applies to every M4 UI issue.
 
 ## 3. Non-goals
 
-- General-purpose Mac cleaning (mail attachments, photos, app uninstalling, "speed up your Mac").
-- Duplicate-file finding or a full disk visualizer (DaisyDisk/GrandPerspective territory).
-- Running with root / privileged helpers, or cleaning other users' files.
-- Deleting anything automatically. Scheduled scans only notify.
+- Snake-oil maintenance and anything in the [§7.1](#71-deliberately-not-built) skip list.
+- Touching the contents of Photos/Music/TV libraries or the Mail store (they are protected packages).
+- Network features (updater, cloud cleanup) in M4; an opt-in updater is an M5 spike (D4).
+- Running with root / privileged helpers, or cleaning other users' files (D3).
+- Deleting anything automatically. Scheduled scans and Care Scan only notify (D5).
 - Managing AI tool settings, accounts or subscriptions.
 - Windows/Linux (core is kept UI-free so a CLI could be added later, but not planned).
 - Mac App Store sandboxed build in v1 (needs broad `~` access; see §6.6).
@@ -106,7 +115,7 @@ to remove — especially for worktrees, where deleting the wrong one loses uncom
 - **Read-only by default:** scanners get a read-only FS facade; only `CleanupEngine` can mutate,
   and only from an explicit, user-confirmed `CleanupPlan`.
 
-### 5.1 Module layout
+### 5.1 Module layout (M1–M3)
 
 ```
 Package.swift
@@ -131,6 +140,26 @@ Tests/
   DiskKeeperCoreTests/   (+ Fixtures/ fake HOME trees, git repo builders, recorded JSON)
 scripts/make-app.sh
 docs/PLAN.md, docs/rules.md, docs/PERF.md
+```
+
+### 5.2 M4 modules
+
+Each module is a `Scanner` (or reads the shared `DiskTree`); only `CleanupEngine` mutates.
+
+```
+DiskKeeperCore
+ ├─ Index/      DiskIndexer (actor) → DiskTree: one walk serves Map + Large & Old + Duplicates
+ ├─ Map/        DiskMapLayout (pure): strata (icicle) + squarified treemap, hit-test, ScanItem overlay
+ ├─ Scanners/   LargeFileScanner, DuplicateScanner, AppInventoryScanner, LeftoverResolver,
+ │              StartupItemScanner, (rules) system-junk-2.json, dev-caches.json
+ ├─ Care/       CareScanCoordinator: runs every scanner + index, ModuleSummary per module
+ ├─ Volume/     VolumeInfo: capacity, important-usage free, purgeable, local snapshots (report-only)
+ ├─ Safety/     ProtectedPaths + ApplicationBundlePolicy (narrow /Applications/*.app exception)
+ └─ Cleanup/    + blocker wouldRemoveAllCopies, + performer trashApplication, + toolCommand (T17)
+AIDiskKeeperUI
+ ├─ Theme/      ADKTheme tokens, TierBadge v2, StrataBar, ModuleTile, StateView ("Strata" design)
+ ├─ Modules/    DiskMap/, LargeOld/, Duplicates/, Apps/, Startup/, Overview/ (Care hero)
+ └─ MenuBar/    extended by T47
 ```
 
 ## 6. Scanner rule format
@@ -195,6 +224,8 @@ paths intersect protected paths. Full reference: `docs/rules.md` (T03).
      old transcripts past the retention threshold). Can be selected with "Select all Safe".
    - **Review** — probably disposable but costs something (reinstall time, history, a model
      download). Must be ticked individually; never bulk-selectable. All model weights are Review.
+     **Personal data is never Safe:** large files, duplicates, applications and app leftovers are at
+     most Review.
    - **Keep** — shown for visibility, not selectable: dirty/unpushed/stashed worktrees, recently
      modified data (< 7 days for sessions, < 24 h for temp), in-use items.
 3. **Protected paths** (T04) — a hard-coded, non-overridable denylist for credentials, auth and
@@ -222,6 +253,48 @@ paths intersect protected paths. Full reference: `docs/rules.md` (T03).
 11. **Distribution** — Developer ID signed + notarized, hardened runtime, non-sandboxed in v1
     (needs `~` and Trash access across tools); Full Disk Access optional and explained.
 
+M4 amendments (items 1–11 above are unchanged; numbering continues):
+
+12. **The disk map is a viewer.** `DiskTree`/`DiskMapLayout` nodes are never accepted by
+    `CleanupEngine`; the only input to `plan()` is `[ScanItem]` produced by a scanner. Enforced by type
+    (there is no `ScanItem` initializer from a node) and by a test in T30
+    (`testLayoutTypesDoNotReferenceCleanup`).
+13. **Duplicates keep one copy.** `CleanupEngine.plan` blocks every selected member of a duplicate
+    group with `wouldRemoveAllCopies` when no unselected member survives; `execute` re-checks that a
+    survivor still exists and still matches (size, mtime, head/tail digest) right before each trash.
+    Members that share storage with another member (hard link, APFS clone) count **0 reclaimable
+    bytes** and are report-only.
+14. **No content reads of dataless files.** No scanner opens a file with `SF_DATALESS`, and every
+    content-reading thread sets `IOPOL_TYPE_VFS_MATERIALIZE_DATALESS_FILES = OFF`. Metadata only.
+15. **Narrow application-bundle exception** (the only exception to "outside `~` is protected"):
+    exactly `{/Applications, ~/Applications}/<name>.app`, top level, not a symlink, not Apple-signed,
+    not on the sealed system volume, owned by the current user, not running; `trashApplication` only
+    (never permanent delete). Every other path outside `~` stays denied. Design:
+    [docs/protected-paths.md](protected-paths.md#application-bundle-exception-design-implemented-in-t36);
+    code: T36.
+16. **Startup items:** never `launchctl bootout/disable/unload/remove`, never write under `/Library`;
+    the only action is trashing a **user** LaunchAgent plist in `~/Library/LaunchAgents` whose
+    `Program`/`ProgramArguments[0]` no longer exists.
+17. **Media libraries and Mail are protected packages:** `*.photoslibrary`, `*.photolibrary`,
+    `*.musiclibrary`, `*.tvlibrary`, `*.aplibrary`, `*.imovielibrary`, `*.fcpbundle` (basename rule,
+    wherever they live) plus the existing `~/Library/Mail`. Never an item, never hashed, never
+    descended by duplicate or large-file scanners (the disk map may show their total size).
+18. **Scheduled scans and Care Scan only notify / find.** Never auto-select Review, never call
+    `CleanupEngine` (unchanged from T22, restated for M4).
+
+### 7.1 Deliberately not built
+
+| Feature | Why not |
+|---|---|
+| RAM purge | Needs sudo; evicts caches and slows the Mac |
+| Maintenance scripts | `periodic` was removed in macOS 15; launchd does it |
+| Malware scanner | Needs the Endpoint Security entitlement; XProtect exists |
+| Shredder / secure erase | Meaningless on SSD/APFS; use FileVault |
+| Language-file removal | Breaks code signatures |
+| Browser history/cookie wipe | Data loss, not junk; caches stay in System Junk |
+| Cloud cleanup | Network + OAuth, a different product |
+| "Speed up" boosters | No measurable effect |
+
 ## 8. Milestones
 
 | Milestone | Outcome | Subtasks |
@@ -229,6 +302,47 @@ paths intersect protected paths. Full reference: `docs/rules.md` (T03).
 | **M1 — MVP** | Read-only scan of AI-tool data (Claude, Cursor, Codex, Gemini/Antigravity, Kiro, Windsurf, Copilot, Aider, Continue, Orca) with tiers + explanations; dry-run + Trash cleanup with audit log; runnable `.app` | T01–T12 |
 | **M2 — Git-aware & breadth** | Worktree classification by git state; build artifacts per project/worktree; models (Ollama, HF, LM Studio); Docker; system junk; in-use detection; per-tool/per-project breakdown | T13–T20 |
 | **M3 — Background & polish** | Menu bar summary; scheduled scans + notifications; user rules/ignore list; history viewer; performance cache; signed/notarized releases | T21–T26 |
+| **M4 — Disk-management suite** | Disk map, large & old, duplicates, uninstaller + leftovers, startup items, system junk II, storage overview, Care Scan, Strata redesign | T27–T48 |
+
+### 8.1 Owner decisions (M4)
+
+Accepted by the owner (suite plan D1–D10):
+
+| # | Decision |
+|---|---|
+| D1 | Decision: accepted, scope expansion yes; AI-first positioning kept (AI-tool, worktree, model and Docker awareness stays the differentiator) |
+| D2 | Decision: accepted, narrow app-bundle Trash exception (invariant 15) |
+| D3 | Decision: accepted, no privileged helper; system items are view-only; root-owned apps → Finder guidance |
+| D4 | Decision: accepted, updater → M5 opt-in spike |
+| D5 | Decision: accepted, schedules notify only |
+| D6 | Decision: accepted, Disk Map defaults to Home; full disk when Full Disk Access is granted |
+| D7 | Decision: accepted, Duplicates ≥ 1 MB, Home, excluding `~/Library` and media libraries, keeper rule "oldest" |
+| D8 | Decision: accepted, Large & Old ≥ 500 MB and not opened for ≥ 6 months |
+| D9 | Decision: accepted, "Strata" design approved |
+| D10 | Decision: accepted, on-device LLM explanations → M5 spike, off by default |
+
+Implementation decisions (planner defaults), each with its owning task:
+
+| # | Decision | Owner |
+|---|---|---|
+| N1 | Media libraries (`*.photoslibrary` …) are protected by **basename**, wherever they live | T27 |
+| N2 | Full-disk index root is `/System/Volumes/Data`; the sealed system volume is not indexed (T40 reports its size) | T29 |
+| N3 | Index granularity: files < 1 MiB fold into one "N small items" node per directory; packages are sized but collapsed; budget 5 M nodes / 2 M file records, folding deeper levels beyond it | T29 |
+| N4 | Without FDA, the first Home index triggers macOS consent prompts for Desktop/Documents/Downloads. Accepted; the UI explains before the first Disk Map / Care Scan (T31/T46). Denied folders are marked, not retried | T29 |
+| N5 | APFS clone detection uses `getattrlist` `ATTR_CMNEXT_{PRIVATESIZE,CLONEID,EXT_FLAGS,CLONE_REFCNT}` (verified on macOS 27.2). Reclaimable = private size; unknown → "may free less" | T33 |
+| N6 | Keep-one is enforced in `CleanupEngine.plan(_:duplicateGroups:)`; the old `plan(_:)` fails closed for duplicates | T33 |
+| N7 | Duplicates also skip hidden dirs, `node_modules`, `Pods`, `DerivedData`, `site-packages`. Full clones are report-only, and groups that waste nothing are hidden. Keeper tie-breaks: created → shortest path → name | T33 |
+| N8 | Survivor re-check at execute = identity + size + mtime + 128 KiB head/tail digest (no full re-hash) | T33 |
+| N9 | App bundles are not emitted through `ScanEngine` in M4 (the guard would drop them). `InstalledApp.makeScanItem()` goes to `CleanupEngine` directly once T36 lands | T35 |
+| N10 | Leftover match level lives in `ruleID` (`apps.leftover.exact/name/orphan`). A Group Container is exact only as `<TEAMID>.<bundleID>`. Vendor stoplist; shared entries are never attached to one app | T35 |
+| N11 | Orphans: bundle-id names with ≥ 3 components, not `com.apple.*`, unknown to LaunchServices, untouched > 30 days. Broken LaunchAgents belong to T38 | T35 |
+| N12 | DeviceSupport is Safe after 180 days (not based on the Xcode version). Per-app caches use the `{name}` app-quit placeholder. `brew cleanup` / `simctl` rules split into a follow-up after #18 | T39 |
+| N13 | Trash size only with FDA. Snapshots listed without sizes. Purgeable = important − available, labelled an estimate. T40 core half now, UI half after #60/#61 | T40 |
+| N14 | Strata: 6 rows, minimum width 2 pt. Tiles: 2 levels, minimum 24 pt². Smaller children merge into one aggregate per parent | T30 |
+| N15 | Care Scan (T44) runs the "your files" scanners (duplicates, app leftovers) in their own `ScanEngine` run, apart from the rule scanners, so `PathClaimSet` doesn't drop members | T44 |
+
+Cross-cutting requirement (issue #76, T49): every M4 UI issue and every user-facing string (including
+rule titles/explanations and error messages) is localized vi + en through String Catalog keys; see §2 goal 8.
 
 ## 9. Subtasks
 
@@ -264,6 +378,28 @@ Full scope and acceptance criteria live in each issue.
 | T24 | #25 | M3 | ui | Cleanup history and audit log viewer | T08 (#9), T10 (#11) | 6 |
 | T25 | #26 | M3 | core | Scan performance: incremental cache and large-tree benchmarks | T05 (#6), T15 (#16) | 5 |
 | T26 | #27 | M3 | infra | Release pipeline: Developer ID signing, notarization, DMG | T12 (#13) | 2 |
+| T27 | #52 | M4 | safety | Plan & safety model amendments for M4 (suite scope) | — | A |
+| T28 | #53 | M4 | core | Model extensions for M4: categories, groups, trashApplication | T27 (#52), #51 merged | B |
+| T29 | #54 | M4 | core | Disk index: DiskIndexer actor and DiskTree | T27 (#52) | B |
+| T41 | #60 | M4 | ui | Strata design foundation: tokens, theme and core components | #49, #50, #51 merged | B |
+| T30 | #55 | M4 | core | Disk map layout engine (strata/icicle + squarified treemap) | T29 (#54) | C |
+| T44 | #56 | M4 | core | Care Scan orchestration and module summaries | #44, T29 (#54) | C |
+| T33 | #57 | M4 | core | Duplicate finder engine (clone/hard-link aware, keep-one invariant) | T28 (#53), T29 (#54) | C |
+| T35 | #58 | M4 | core | App inventory and leftovers resolver (read-only) | T28 (#53) | C |
+| T39 | #67 | M4 | rules | System junk II: developer caches, installers, simulators, backups | T28 (#53) | C |
+| T42 | #61 | M4 | ui | Suite navigation: module sidebar and registry | T41 (#60) | C |
+| T36 | #59 | M4 | safety | Uninstall execution: app-bundle guard exception + trashApplication | T35 (#58), T27 (#52) | D |
+| T31 | #62 | M4 | ui | Disk Map screen (Strata / Tiles, zoom, inspector) | T30 (#55), T41 (#60), T42 (#61) | D |
+| T32 | #63 | M4 | ui | Large & Old Files module (scanner + screen) | T28 (#53), T29 (#54), T41 (#60), T42 (#61) | D |
+| T34 | #64 | M4 | ui | Duplicates screen | T33 (#57), T41 (#60), T42 (#61) | D |
+| T38 | #66 | M4 | ui | Startup Items: launch agents/daemons viewer | T28 (#53), T41 (#60), T42 (#61) | D |
+| T40 | #68 | M4 | ui | Storage overview: capacity, purgeable, snapshots, Trash | T41 (#60), T42 (#61) (core half starts after T27) | D |
+| T45 | #70 | M4 | ui | Cleanup review sheet and results restyle | T41 (#60), #50 merged | D |
+| T48 | #73 | M4 | infra | App icon and menu bar glyph (original Strata mark) | T41 (#60) | D |
+| T37 | #65 | M4 | ui | Uninstaller screen (apps, leftovers, orphaned leftovers) | T35 (#58), T36 (#59), T41 (#60), T42 (#61) | E |
+| T43 | #69 | M4 | ui | Overview + Care Scan hero redesign | T41 (#60), T42 (#61), T44 (#56) | E |
+| T47 | #72 | M4 | ui | Menu bar: free-space gauge, AI growth, low-space alert | #22, T40 (#68) | E |
+| T46 | #71 | M4 | ui | Empty/permission/error states and accessibility audit | T41 (#60), T42 (#61), T43 (#69), T45 (#70) | F |
 
 **Waves** — tasks in the same wave have no dependency on each other and can run in parallel once the previous wave is merged:
 
@@ -273,6 +409,15 @@ Full scope and acceptance criteria live in each issue.
 - Wave 4: T09 (#10), T14 (#15), T15 (#16), T16 (#17), T17 (#18), T20 (#21)
 - Wave 5: T10 (#11), T11 (#12), T19 (#20), T21 (#22), T23 (#24), T25 (#26)
 - Wave 6: T22 (#23), T24 (#25)
+
+M4 waves (suite tracking issue #74; each issue links its full acceptance criteria):
+
+- Wave A: T27 (#52)
+- Wave B: T28 (#53), T29 (#54), T41 (#60), T40 core half (#68)
+- Wave C: T30 (#55), T44 (#56), T33 (#57), T35 (#58), T39 (#67), T42 (#61)
+- Wave D: T36 (#59), T31 (#62), T32 (#63), T34 (#64), T38 (#66), T40 UI half (#68), T45 (#70), T48 (#73)
+- Wave E: T37 (#65), T43 (#69), T47 (#72)
+- Wave F: T46 (#71)
 
 ### Acceptance criteria (summary)
 
