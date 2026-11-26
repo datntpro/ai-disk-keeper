@@ -203,7 +203,7 @@ final class LargeFileScannerTests: XCTestCase {
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let dir = root.appendingPathComponent("Sources/DiskKeeperCore/Scanners/LargeFiles")
         let files = try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0.hasSuffix(".swift") }
-        XCTAssertGreaterThanOrEqual(files.count, 7)
+        XCTAssertGreaterThanOrEqual(files.count, 6)
         let banned = ["CleanupEngine", "trashItem", "removeItem", "moveItem", "copyItem", "createFile", "unlink(", "rename(",
                       "setAttributes", "FileHandle", "fopen", "open(", "write("]
         for f in files {

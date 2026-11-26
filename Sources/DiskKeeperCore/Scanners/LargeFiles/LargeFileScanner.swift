@@ -104,19 +104,33 @@ public struct LargeFileScanner: Scanner {
 
     // MARK: Care Scan adapter
 
+    /// ``report(tree:now:)`` minus the files the path guard denies or another user owns: the same filter Care Scan
+    /// applies, so the Large & Old screen and the Care Scan list agree.
+    public func report(tree: DiskTree, context: ScanContext) async throws -> LargeFileReport {
+        var report = try await report(tree: tree, now: context.now)
+        var kept: [LargeFile] = []
+        for file in report.files {
+            try Task.checkCancellation()
+            if context.pathGuard.check(file.path).denial != nil { report.skipped.guardDropped += 1; continue }
+            var st = stat()
+            if lstat(file.path, &st) == 0, st.st_uid != context.userID { report.skipped.ownerDropped += 1; continue }
+            kept.append(file)
+        }
+        report.files = kept
+        return report
+    }
+
     public func scan(context: ScanContext, sink: ScanSink) async throws {
         let index = try await tree()
         try Task.checkCancellation()
-        let report = try await report(tree: index, now: context.now)
+        let report = try await report(tree: index, context: context)
         for w in report.warnings { await sink.warning(w) }
         var progress = ScannerProgress()
         progress.candidatesFound = report.files.count
-        await sink.progress(progress)
+        progress.guardDropped = report.skipped.guardDropped
+        progress.ownerDropped = report.skipped.ownerDropped
         for file in report.files {
             try Task.checkCancellation()
-            if context.pathGuard.check(file.path).denial != nil { progress.guardDropped += 1; continue }
-            var st = stat()
-            if lstat(file.path, &st) == 0, st.st_uid != context.userID { progress.ownerDropped += 1; continue }
             let item = Self.makeItem(file)
             progress.candidatesSized += 1
             progress.bytesFound += item.sizeAllocated

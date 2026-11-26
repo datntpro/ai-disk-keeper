@@ -47,6 +47,8 @@ public struct LargeFileSkipStats: Sendable, Hashable {
     public var folded = 0
     public var outOfScope = 0
     public var changed = 0
+    public var guardDropped = 0
+    public var ownerDropped = 0
     public init() {}
 }
 
