@@ -337,11 +337,11 @@
           "tier": "keep"
         }
       ],
-      "explanation": "Regenerable: bottles and sources Homebrew downloaded. Homebrew downloads them again when you install or upgrade a formula. Folders changed in the last day are kept.",
+      "explanation": "Regenerable: bottles and sources Homebrew downloaded. Homebrew downloads them again when you install or upgrade a formula. Folders changed in the last day are kept. To also remove old versions of installed formulae, run `brew cleanup` in Terminal.",
       "localized": {
         "vi": {
           "title": "Cache tải về của Homebrew",
-          "explanation": "Tạo lại được: các bottle và mã nguồn mà Homebrew đã tải. Homebrew tải lại khi bạn cài hoặc nâng cấp một formula. Thư mục thay đổi trong ngày gần nhất được giữ lại."
+          "explanation": "Tạo lại được: các bottle và mã nguồn mà Homebrew đã tải. Homebrew tải lại khi bạn cài hoặc nâng cấp một formula. Thư mục thay đổi trong ngày gần nhất được giữ lại. Để xóa cả các phiên bản cũ của formula đã cài, hãy chạy `brew cleanup` trong Terminal."
         }
       },
       "cleanup": {
