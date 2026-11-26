@@ -9,10 +9,11 @@ struct SidebarFooter: View {
     var body: some View {
         let model = StorageModule.model(ctx)
         VStack(spacing: 0) {
-            Divider()
+            if model.freeBytes != nil { Divider() }
+            StorageGauge(model: model) { ctx.suite.navigation.selection = SidebarSelection(module: .storage) }
+                .fixedSize(horizontal: false, vertical: true)
+                .layoutPriority(1)
             HStack(spacing: 0) {
-                StorageGauge(model: model) { ctx.suite.navigation.selection = SidebarSelection(module: .storage) }
-                    .frame(maxWidth: .infinity)
                 Spacer(minLength: 0)
                 SettingsGearButton()
             }

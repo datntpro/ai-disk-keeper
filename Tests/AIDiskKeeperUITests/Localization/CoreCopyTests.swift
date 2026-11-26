@@ -44,6 +44,14 @@ final class CoreCopyTests: XCTestCase {
         }
     }
 
+    func testCareHistoryWarningHasItsOwnCopy() {
+        let w = ScanWarning(kind: .other, message: "Care Scan history could not be saved: x",
+                            code: .scannerFailed(scannerID: "care-history"))
+        XCTAssertEqual(L10n.withLanguage(.en) { w.uiMessage }, "Couldn't save the scan history. Growth won't be shown next time.")
+        XCTAssertFalse(L10n.withLanguage(.vi) { w.uiMessage }.contains("care-history"))
+        assertTranslated({ w.uiMessage }, "care-history")
+    }
+
     func testWarningWithoutCodeFallsBackToMessage() {
         let w = ScanWarning(kind: .other, message: "plain")
         XCTAssertEqual(L10n.withLanguage(.vi) { w.uiMessage }, "plain")

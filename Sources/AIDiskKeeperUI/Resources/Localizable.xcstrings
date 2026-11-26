@@ -6793,22 +6793,6 @@
         }
       }
     },
-    "index.failed" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Couldn't map the disk: %@"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Không thể lập bản đồ ổ đĩa: %@"
-          }
-        }
-      }
-    },
     "index.gate.fullDisk" : {
       "localizations" : {
         "en" : {
@@ -9668,7 +9652,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Giữ lại"
+            "value" : "Đang giữ"
           }
         }
       }
@@ -13100,15 +13084,33 @@
     "state.fda.title" : {
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ folders need Full Disk Access"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld folder needs Full Disk Access"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld folders need Full Disk Access"
+                }
+              }
+            }
           }
         },
         "vi" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ thư mục cần Toàn quyền truy cập ổ đĩa"
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "%lld thư mục cần Toàn quyền truy cập ổ đĩa"
+                }
+              }
+            }
           }
         }
       }
@@ -13141,6 +13143,54 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Xóa tìm kiếm"
+          }
+        }
+      }
+    },
+    "state.filtered.tiers.body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn the hidden tiers back on to see them."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bật lại các mức độ đang ẩn để xem chúng."
+          }
+        }
+      }
+    },
+    "state.filtered.tiers.show" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show all tiers"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hiện tất cả mức độ"
+          }
+        }
+      }
+    },
+    "state.filtered.tiers.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every match is hidden by the tier filter"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mọi kết quả đều bị bộ lọc mức độ ẩn"
           }
         }
       }
@@ -13308,15 +13358,33 @@
     "state.partial.title" : {
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scan finished with %@ warnings"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Scan finished with %lld warning"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Scan finished with %lld warnings"
+                }
+              }
+            }
           }
         },
         "vi" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Quét xong với %@ cảnh báo"
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "Quét xong với %lld cảnh báo"
+                }
+              }
+            }
           }
         }
       }
@@ -15543,6 +15611,22 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Không đo được dung lượng của mục này (%@)."
+          }
+        }
+      }
+    },
+    "warning.code.careHistory" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save the scan history. Growth won't be shown next time."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không lưu được lịch sử quét. Lần sau sẽ không hiện mức tăng."
           }
         }
       }

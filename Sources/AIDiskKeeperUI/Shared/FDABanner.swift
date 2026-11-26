@@ -4,7 +4,9 @@ import SwiftUI
 /// "N folders need Full Disk Access": optional, never blocks. "Not now" hides it until the next launch only.
 struct FDABanner: View {
     let count: Int
-    @SceneStorage("fdaBanner.dismissed") private var dismissed = false
+    @State private var dismissed = Self.dismissedThisLaunch
+    /// Per launch only: a new process shows the banner again.
+    @MainActor private static var dismissedThisLaunch = false
     @Environment(\.adkIncreasedContrast) private var increasedContrast
 
     var body: some View {
@@ -16,9 +18,9 @@ struct FDABanner: View {
                     Text(StateCopy.fdaBody).font(.caption).foregroundStyle(.adkText2)
                 }
                 Spacer(minLength: ADKTheme.Spacing.md)
-                Button(StateCopy.fdaNotNow) { dismissed = true }.buttonStyle(.bordered)
+                Button(StateCopy.fdaNotNow) { dismissed = true; Self.dismissedThisLaunch = true }.buttonStyle(.bordered)
                 Button(StateCopy.fdaOpen) { NSWorkspace.shared.open(SystemSettingsLinks.fullDiskAccess) }
-                    .buttonStyle(.borderedProminent).tint(.adkAccent)
+                    .adkProminentButton()
             }
             .padding(ADKTheme.Spacing.md)
             .background(.adkReviewSoft, in: RoundedRectangle(cornerRadius: 8, style: .continuous))

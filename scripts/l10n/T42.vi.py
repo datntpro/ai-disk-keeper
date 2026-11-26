@@ -1,7 +1,6 @@
 # Vietnamese strings for T42 (suite navigation). Apply with: python3 -I scripts/l10n-apply.py scripts/l10n/T42.vi.py
 VI = {
     "index.builtAgo": "lập chỉ mục %@",
-    "index.failed": "Không thể lập bản đồ ổ đĩa: %@",
     "index.gate.fullDisk": "Lập bản đồ toàn bộ ổ đĩa",
     "index.gate.home": "Lập bản đồ thư mục Home",
     "index.gate.message": "AI Disk Keeper chỉ đọc dung lượng thư mục, không bao giờ đọc nội dung tệp. macOS có thể hỏi quyền truy cập Desktop, Documents và Downloads; nếu bạn từ chối, các thư mục đó sẽ hiển thị là bị khóa.",

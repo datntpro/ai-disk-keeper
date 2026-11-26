@@ -52,6 +52,23 @@ final class ContrastTests: XCTestCase {
         XCTAssertEqual(labelInk(onFill: ADKColor.keep.rgba(.light), appearance: .light), .onAccent)
     }
 
+    func testOnAccentLabelOnAccentFillMeetsAA() {
+        for a in ADKAppearance.allCases {
+            let r = contrastRatio(ADKColor.onAccent.rgba(a), ADKColor.accent.rgba(a))
+            XCTAssertGreaterThanOrEqual(r, 4.5, "onAccent on accent, \(a): \(r)")
+        }
+    }
+
+    func testHatchStaysInsideItsFrame() {
+        let rect = CGRect(x: 10, y: 20, width: 50, height: 30)
+        let b = HatchPattern.path(in: rect).boundingRect
+        XCTAssertGreaterThanOrEqual(b.minX, rect.minX - 0.001)
+        XCTAssertLessThanOrEqual(b.maxX, rect.maxX + 0.001)
+        XCTAssertGreaterThanOrEqual(b.minY, rect.minY - 0.001)
+        XCTAssertLessThanOrEqual(b.maxY, rect.maxY + 0.001)
+        XCTAssertFalse(HatchPattern.path(in: rect).isEmpty)
+    }
+
     func testContrastMath() {
         XCTAssertEqual(contrastRatio(RGBA(hex: 0x000000), RGBA(hex: 0xFFFFFF)), 21, accuracy: 0.01)
         let c = composite(RGBA(0, 0, 0, 0.5), over: RGBA(hex: 0xFFFFFF))

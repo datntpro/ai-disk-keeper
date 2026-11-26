@@ -45,6 +45,8 @@ final class CareScanModel {
     private(set) var biggestWins: [ScanItem] = []
     private(set) var warnings: [ScanWarning] = []
     private(set) var lastFinishedAt: Date?
+    /// The Care Scan couldn't start (building the stages or `scan()` threw). Cleared by the next `start()`.
+    private(set) var startFailed = false
     /// Distinct duplicate groups seen so far (a tile caption).
     private(set) var duplicateGroupCount = 0
     /// Bytes found so far (a running total shown while scanning).
@@ -144,6 +146,7 @@ final class CareScanModel {
     func start() {
         guard phase != .scanning else { return }
         reset()
+        startFailed = false
         phase = .scanning
         let scope: DiskIndexer.Scope = index.scope == .fullDisk && index.fullDiskAvailable ? .fullDisk : .home
         let make = makeCoordinator
@@ -163,6 +166,7 @@ final class CareScanModel {
                 guard let self else { return }
                 self.warnings.append(ScanWarning(kind: .scannerFailed, message: String(describing: error),
                                                  code: .scannerFailed(scannerID: "care-scan")))
+                self.startFailed = true
                 self.endWithoutResults()
             }
         }
