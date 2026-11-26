@@ -79,7 +79,7 @@ public struct ApplicationBundlePolicy: Sendable {
     /// Apple's team ids for Apple-published Mac App Store apps.
     static let appleTeamIDs: Set<String> = ["59GAB85EFG", "74J34U3R6X"]
 
-    static func isAppleIdentity(bundleID: String, teamID: String?) -> Bool {
+    public static func isAppleIdentity(bundleID: String, teamID: String?) -> Bool {
         if PathCanonicalizer.fold(bundleID).hasPrefix("com.apple.") { return true }
         if let teamID, appleTeamIDs.contains(teamID.uppercased()) { return true }
         return false
