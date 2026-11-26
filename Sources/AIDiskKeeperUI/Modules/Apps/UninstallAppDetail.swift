@@ -16,7 +16,7 @@ struct UninstallAppDetail: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: ADKTheme.Spacing.lg) {
                     header
-                    if let g = model.guidance(for: app) { UninstallGuidanceCard(guidance: g, app: app, model: model) }
+                    if let g = model.guidance(for: app) { UninstallGuidanceCard(guidance: g, app: app, model: model, coordinator: coordinator) }
                     bundleSection
                     relatedSection
                     if !group.shared.isEmpty { sharedSection }
@@ -121,19 +121,44 @@ struct UninstallAppDetail: View {
     }
 
     private var actionBar: some View {
+        UninstallActionBar(model: model, availability: availability, help: uninstallHelp, coordinator: coordinator)
+    }
+}
+
+/// The bottom bar: how much will go, and Reset / Uninstall. One row when it fits; otherwise the buttons drop
+/// below the summary (long Vietnamese copy at the narrowest detail width).
+struct UninstallActionBar: View {
+    var model: UninstallerModel
+    let availability: UninstallAvailability
+    let help: String
+    let coordinator: CleanupCoordinator
+
+    private var size: some View { SizeText(model.tickedBytes, qualifier: .upTo).font(.headline).fixedSize() }
+    private var summary: some View {
+        Text(UninstallerCopy.barSummary(Formatting.count(model.tickedRelated.count), count: model.tickedRelated.count))
+            .foregroundStyle(.adkText2).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+    }
+    private var buttons: some View {
         HStack(spacing: ADKTheme.Spacing.md) {
-            SizeText(model.tickedBytes, qualifier: .upTo).font(.headline)
-            Text(UninstallerCopy.barSummary(Formatting.count(model.tickedRelated.count), count: model.tickedRelated.count))
-                .foregroundStyle(.adkText2).lineLimit(1)
-            Spacer()
             Button(UninstallerCopy.reset) { model.resetApp(using: coordinator) }
                 .disabled(!model.canReset).help(UninstallerCopy.resetHelp).fixedSize()
             Button(UninstallerCopy.uninstall) { model.uninstall(using: coordinator) }
                 .buttonStyle(.borderedProminent).tint(.adkAccent)
-                .disabled(availability != .available).help(uninstallHelp).fixedSize()
+                .disabled(availability != .available).help(help).fixedSize()
+        }
+    }
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: ADKTheme.Spacing.md) { size; summary; Spacer(minLength: 0); buttons }
+            VStack(alignment: .leading, spacing: ADKTheme.Spacing.sm) {
+                HStack(alignment: .firstTextBaseline, spacing: ADKTheme.Spacing.md) { size; summary }
+                HStack { Spacer(minLength: 0); buttons }
+            }
         }
         .font(.callout)
         .padding(.horizontal, ADKTheme.Spacing.lg).padding(.vertical, ADKTheme.Spacing.md)
+        .frame(maxWidth: .infinity)
         .background(.bar)
         .overlay(alignment: .top) { Rectangle().fill(.adkLine).frame(height: ADKTheme.hairline) }
     }
@@ -144,29 +169,126 @@ struct UninstallGuidanceCard: View {
     let guidance: UninstallGuidance
     let app: InstalledApp
     var model: UninstallerModel
+    var coordinator: CleanupCoordinator?
+
+    init(guidance: UninstallGuidance, app: InstalledApp, model: UninstallerModel, coordinator: CleanupCoordinator? = nil) {
+        self.guidance = guidance
+        self.app = app
+        self.model = model
+        self.coordinator = coordinator
+    }
 
     static func text(_ g: UninstallGuidance) -> String {
         switch g {
         case .appManagement: UninstallerCopy.guideAppManagement
         case .requiresAdmin: UninstallerCopy.guideAdmin
-        case .running(let name): UninstallerCopy.guideRunning(name)
+        case .running(let name, let quit, let background, let otherUser, let canQuit):
+            runningText(name: name, quit: quit, background: background, otherUser: otherUser, canQuit: canQuit)
+        case .runningUnknown(let name): UninstallerCopy.quitUnknown(name)
+        case .selfApp: UninstallerCopy.selfApp
+        case .quitDone(let name): UninstallerCopy.quitDone(name)
         case .locked(let reason): UninstallerCopy.locked(reason)
+        }
+    }
+
+    private static func runningText(name: String, quit: QuitFlowState?, background: [String], otherUser: Bool, canQuit: Bool) -> String {
+        switch quit {
+        case .stuck?: return UninstallerCopy.quitStuck(name)
+        case .failed?: return UninstallerCopy.quitFailed(name)
+        case .auditFailed?: return UninstallerCopy.auditFailed
+        case .relaunched?: return UninstallerCopy.relaunched(name)
+        case .backgroundRemains? where !background.isEmpty: return UninstallerCopy.background(name, UninstallerCopy.list(background))
+        case .refused(.selfApp)?: return UninstallerCopy.selfApp
+        case .refused(.otherUser)?: return UninstallerCopy.otherUser(name)
+        case nil where !canQuit && !background.isEmpty: return UninstallerCopy.background(name, UninstallerCopy.list(background))
+        case nil where !canQuit && otherUser: return UninstallerCopy.otherUser(name)
+        default: return UninstallerCopy.guideRunning(name)
+        }
+    }
+
+    private var icon: String {
+        switch guidance {
+        case .appManagement: "hand.raised"
+        case .quitDone: "checkmark.circle"
+        default: "lock"
         }
     }
 
     var body: some View {
         SectionCard(padding: ADKTheme.Spacing.md) {
             HStack(alignment: .top, spacing: ADKTheme.Spacing.md) {
-                Image(systemName: guidance.needsSettingsLink ? "hand.raised" : "lock").foregroundStyle(.adkReviewInk)
-                Text(Self.text(guidance)).font(.callout).frame(maxWidth: .infinity, alignment: .leading)
-                if guidance.needsSettingsLink {
-                    Button(UninstallerCopy.openSettings) { NSWorkspace.shared.open(SystemSettingsLinks.appManagement) }
-                }
-                if guidance.needsReveal {
-                    Button(UninstallerCopy.reveal) { FinderReveal.reveal(URL(fileURLWithPath: app.path)) }
+                Image(systemName: icon).foregroundStyle(.adkReviewInk)
+                VStack(alignment: .leading, spacing: ADKTheme.Spacing.sm) {
+                    Text(Self.text(guidance)).font(.callout).frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if hasControls { controls }
                 }
             }
         }
         .accessibilityElement(children: .contain)
+        .confirmationDialog(UninstallerCopy.forceTitle(app.name), isPresented: forcePresented, titleVisibility: .visible) {
+            Button(UninstallerCopy.forceAction, role: .destructive) { model.confirmForceQuit() }
+            Button(UninstallerCopy.forceCancel, role: .cancel) { model.cancelForceQuit() }
+        } message: {
+            let n = model.forceConfirmation?.instances ?? 1
+            Text(n > 1 ? "\(UninstallerCopy.forceMessage(app.name))\n\(UninstallerCopy.forceInstances(n))" : UninstallerCopy.forceMessage(app.name))
+        }
+        .onChange(of: model.quitFlows[app.id]) { _, new in
+            if new == .done { AccessibilityNotification.Announcement(UninstallerCopy.a11yQuit(app.name)).post() }
+        }
+    }
+
+    /// Buttons sit under the text, in one row when they fit and stacked when they don't.
+    @ViewBuilder private var controls: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: ADKTheme.Spacing.sm) { controlButtons }
+            VStack(alignment: .leading, spacing: ADKTheme.Spacing.sm) { controlButtons }
+        }
+    }
+
+    private var hasControls: Bool {
+        if guidance.needsSettingsLink || guidance.needsReveal { return true }
+        switch guidance {
+        case .running, .runningUnknown: return true
+        default: return false
+        }
+    }
+
+    @ViewBuilder private var controlButtons: some View {
+        if guidance.needsSettingsLink {
+            Button(UninstallerCopy.openSettings) { NSWorkspace.shared.open(SystemSettingsLinks.appManagement) }
+        }
+        if guidance.needsReveal {
+            Button(UninstallerCopy.reveal) { FinderReveal.reveal(URL(fileURLWithPath: app.path)) }
+        }
+        quitControls
+    }
+
+    private var forcePresented: Binding<Bool> {
+        Binding(get: { model.forceConfirmation?.appID == app.id },
+                set: { if !$0 { DispatchQueue.main.async { model.cancelForceQuit() } } })
+    }
+
+    @ViewBuilder private var quitControls: some View {
+        switch guidance {
+        case .running(_, let quit, _, _, let canQuit):
+            if quit?.isBusy == true {
+                ProgressView().controlSize(.small)
+                Text(UninstallerCopy.quitting).font(.callout).foregroundStyle(.adkText2)
+            } else {
+                if canQuit {
+                    Button(UninstallerCopy.quitButton) { model.quit(app, coordinator: coordinator) }
+                        .disabled(coordinator?.isPresented == true).help(UninstallerCopy.quitHelp)
+                }
+                if quit?.isStuck == true {
+                    Button(UninstallerCopy.showApp) { model.showApp(app) }
+                    Button(UninstallerCopy.forceQuit, role: .destructive) { model.requestForceQuit(app) }
+                        .disabled(coordinator?.isPresented == true)
+                }
+            }
+        case .runningUnknown:
+            Button(UninstallerCopy.checkAgain) { model.refreshRunning() }
+        default: EmptyView()
+        }
     }
 }

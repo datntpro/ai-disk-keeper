@@ -11,13 +11,15 @@ enum UninstallerModule: ModuleProvider {
         let env = ctx.env.pathEnvironment
         return ctx.suite.state(.uninstaller) {
             UninstallerModel(inventory: liveInventory(env), leftovers: liveLeftovers(env),
-                             runningApps: liveRunning, home: env.home)
+                             processes: WorkspaceAppProcessController(),
+                             audit: liveAudit(env), home: env.home)
         }
     }
 
-    /// Bundle ids of the apps running right now.
-    @MainActor static func liveRunning() -> Set<String> {
-        Set(NSWorkspace.shared.runningApplications.filter { !$0.isTerminated }.compactMap(\.bundleIdentifier))
+    /// Quit / force quit lines go to the same `audit.jsonl` as cleanups (one `write` per line, `O_APPEND`).
+    static func liveAudit(_ env: PathEnvironment) -> UninstallerModel.QuitAudit {
+        let log = AuditLog(fileURL: AuditLog.defaultURL(environment: env))
+        return { try await log.appendQuitEvent($0) }
     }
 
     /// Real folders, real signatures, Spotlight last-used dates. Read-only.

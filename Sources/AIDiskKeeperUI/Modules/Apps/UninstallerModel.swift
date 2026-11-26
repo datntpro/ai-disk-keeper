@@ -25,7 +25,17 @@ final class UninstallerModel {
     private(set) var orphans: [ScanItem] = []
     /// The leftover scan failed: "nothing found" would be a guess, so the screen says it couldn't read them.
     private(set) var leftoversFailed = false
-    private(set) var running: Set<String> = []
+    /// Apps with anything running from them: the app itself, a helper app, or a background process inside the
+    /// bundle. The same three checks the cleanup engine makes, so the screen and the engine agree.
+    private(set) var running: Set<InstalledApp.ID> = []
+    /// The process list couldn't be read: every app that could be uninstalled counts as running.
+    var runningUnknown = false
+    /// What is running from the selected app (nil when nothing is, or it couldn't be read).
+    var detail: AppRunState?
+    var detailUnknown = false
+    /// One quit flow per app id (see `AppQuitFlow.swift`).
+    var quitFlows: [InstalledApp.ID: QuitFlowState] = [:]
+    var forceConfirmation: ForceConfirmation?
     private(set) var selection = UninstallSelection()
     private(set) var orphanSelection: Set<ScanItem.ID> = []
     private(set) var lastGuidance: UninstallGuidance?
@@ -35,17 +45,28 @@ final class UninstallerModel {
 
     @ObservationIgnored private let inventory: Inventorying
     @ObservationIgnored private let leftovers: Leftovers
-    @ObservationIgnored private let runningApps: @MainActor () -> Set<String>
-    @ObservationIgnored private let now: () -> Date
+    @ObservationIgnored let processes: AppProcessControlling
+    @ObservationIgnored let audit: QuitAudit
+    @ObservationIgnored let identity: SelfIdentity
+    @ObservationIgnored let sleep: Sleeper
+    @ObservationIgnored let now: () -> Date
+    @ObservationIgnored var quitTasks: [InstalledApp.ID: Task<Void, Never>] = [:]
+    /// The flow id and targets of the quit in progress per app, so a resumed flow joins its audit lines.
+    @ObservationIgnored var flowInfo: [InstalledApp.ID: (id: UUID, targets: [AppInstance])] = [:]
+    @ObservationIgnored private var poller: Task<Void, Never>?
     @ObservationIgnored let home: String
     @ObservationIgnored private var task: Task<Void, Never>?
 
     init(inventory: @escaping Inventorying, leftovers: @escaping Leftovers,
-         runningApps: @escaping @MainActor () -> Set<String>, home: String = NSHomeDirectory(),
-         now: @escaping () -> Date = Date.init) {
+         processes: AppProcessControlling, audit: @escaping QuitAudit = { _ in },
+         identity: SelfIdentity = .live, sleep: @escaping Sleeper = { try await Task.sleep(for: $0) },
+         home: String = NSHomeDirectory(), now: @escaping () -> Date = Date.init) {
         self.inventory = inventory
         self.leftovers = leftovers
-        self.runningApps = runningApps
+        self.processes = processes
+        self.audit = audit
+        self.identity = identity
+        self.sleep = sleep
         self.home = home
         self.now = now
     }
@@ -76,7 +97,6 @@ final class UninstallerModel {
         task = nil
         switch result {
         case .success(let (inv, found)):
-            running = runningApps()
             apps = inv.apps.sorted { l, r in
                 let lv = l.viewOnlyReason != nil, rv = r.viewOnlyReason != nil
                 if lv != rv { return !lv }
@@ -92,6 +112,10 @@ final class UninstallerModel {
                 selection = UninstallSelection()
             }
             orphanSelection.formIntersection(orphans.map(\.id))
+            let ids = Set(apps.map(\.id))
+            for id in quitFlows.keys where !ids.contains(id) { quitTasks[id]?.cancel(); quitTasks[id] = nil; quitFlows[id] = nil; flowInfo[id] = nil }
+            if let c = forceConfirmation, !ids.contains(c.appID) { forceConfirmation = nil }
+            refreshRunning()
             phase = .ready
         case .failure(let error):
             if error is CancellationError { phase = apps.isEmpty ? .idle : .ready } else { phase = .failed(error.localizedDescription) }
@@ -166,13 +190,23 @@ final class UninstallerModel {
 
     func canUninstall(_ app: InstalledApp) -> UninstallAvailability {
         if let reason = app.viewOnlyReason { return .viewOnly(reason) }
-        return running.contains(app.bundleID) ? .running : .available
+        return running.contains(app.id) ? .running : .available
     }
 
-    func isRunning(_ app: InstalledApp) -> Bool { running.contains(app.bundleID) }
+    func isRunning(_ app: InstalledApp) -> Bool { running.contains(app.id) }
 
     func guidance(for app: InstalledApp) -> UninstallGuidance? {
-        UninstallGuidance.resolve(app: app, availability: canUninstall(app), last: lastGuidance)
+        var info: UninstallGuidance.RunInfo?
+        if canUninstall(app) == .running {
+            let mine = selectedAppID == app.id
+            let state = mine ? detail : nil
+            info = UninstallGuidance.RunInfo(
+                unknown: runningUnknown || (mine && detailUnknown), selfApp: appRefusal(app) == .selfApp,
+                quit: quitFlows[app.id], canQuit: canQuit(app), background: state.map(backgroundNames) ?? [],
+                otherUser: state.map { s in s.instances.contains { $0.kind != .background && instanceRefusal($0) != nil } } ?? false)
+        }
+        return UninstallGuidance.resolve(app: app, availability: canUninstall(app), last: lastGuidance, run: info,
+                                         quit: quitFlows[app.id])
     }
 
     /// The ticked leftovers of the selected app (never another app's).
@@ -192,11 +226,63 @@ final class UninstallerModel {
 
     // MARK: Actions
 
-    func refreshRunning() { running = runningApps() }
+    /// Re-reads what is running. No inventory or leftover scan: only the process lists.
+    func refreshRunning() {
+        if let ids = processes.runningAppIDs(for: apps) {
+            running = ids
+            runningUnknown = false
+        } else {
+            running = Set(apps.filter { $0.viewOnlyReason == nil }.map(\.id))
+            runningUnknown = true
+        }
+        // While we are quitting an app it stays "running" on screen (Quitting…), even after it has gone.
+        for (id, flow) in quitFlows where flow.isBusy { running.insert(id) }
+        clearStaleFlows()
+        refreshDetail()
+        resumeStuckFlows()
+    }
+
+    /// A finished flow that no longer describes reality goes: the app is closed again after "relaunched" / "background
+    /// remains", or it is open again after "done" (or "refused", which belongs to one press).
+    private func clearStaleFlows() {
+        guard !runningUnknown else { return }
+        for (id, flow) in quitFlows {
+            switch flow {
+            case .relaunched, .backgroundRemains: if !running.contains(id) { quitFlows[id] = nil }
+            case .done: if running.contains(id) { quitFlows[id] = nil }
+            default: break
+            }
+        }
+    }
+
+    /// Re-reads what is running now and then every `interval` while the Uninstaller is on screen, from the same
+    /// process snapshot the cleanup engine uses, so an app that never posts a launch notification still shows up.
+    func startPolling(every interval: Duration = .seconds(3)) {
+        guard poller == nil else { return }
+        let sleep = sleep
+        poller = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await sleep(interval)
+                guard !Task.isCancelled, let self else { return }
+                self.refreshRunning()
+            }
+        }
+    }
+
+    func stopPolling() { poller?.cancel(); poller = nil }
+
+    private func refreshDetail() {
+        detail = nil
+        detailUnknown = false
+        guard let app = selectedApp, running.contains(app.id), !runningUnknown else { return }
+        if let state = processes.runState(for: app) { detail = state } else { detailUnknown = true }
+    }
 
     func select(_ app: InstalledApp) {
         selectedAppID = app.id
         selection = UninstallSelection(app: app, group: group(for: app))
+        for (id, state) in quitFlows where state == .done { quitFlows[id] = nil }
+        refreshRunning()
     }
 
     func toggle(_ item: ScanItem) {
@@ -224,12 +310,14 @@ final class UninstallerModel {
     /// Opens the cleanup sheet for the bundle plus the ticked leftovers. A no-op for anything that can't be
     /// uninstalled; the engine refuses those too.
     func uninstall(using coordinator: CleanupCoordinator) {
+        refreshRunning()
         guard let app = selectedApp, canUninstall(app) == .available else { return }
         review([app.makeScanItem()] + tickedRelated, app: app, using: coordinator)
     }
 
     /// Caches and saved state only; the app stays.
     func resetApp(using coordinator: CleanupCoordinator) {
+        refreshRunning()
         guard let app = selectedApp, canReset else { return }
         review(resetItems, app: app, using: coordinator)
     }
@@ -261,6 +349,7 @@ final class UninstallerModel {
         let gone = apps.filter { trashed.contains($0.makeScanItem().id) }.map(\.id)
         if !gone.isEmpty {
             apps.removeAll { gone.contains($0.id) }
+            for id in gone { quitTasks[id]?.cancel(); quitTasks[id] = nil; quitFlows[id] = nil }
             if let id = selectedAppID, gone.contains(id) { selectedAppID = nil; selection = UninstallSelection() }
         }
     }

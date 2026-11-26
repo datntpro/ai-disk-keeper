@@ -865,6 +865,360 @@
         }
       }
     },
+    "apps.quit.a11y.done" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ has quit"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ đã thoát"
+          }
+        }
+      }
+    },
+    "apps.quit.auditFailed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't write to the audit log, so nothing was force quit."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không ghi được vào nhật ký thao tác nên chưa buộc thoát ứng dụng nào."
+          }
+        }
+      }
+    },
+    "apps.quit.background" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A background part of %@ is still running: %@. Restart your Mac, or end it in Activity Monitor."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Một tiến trình nền của %1$@ vẫn đang chạy: %2$@. Hãy khởi động lại máy, hoặc kết thúc nó trong Activity Monitor."
+          }
+        }
+      }
+    },
+    "apps.quit.button" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quit App"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Thoát ứng dụng"
+          }
+        }
+      }
+    },
+    "apps.quit.checkAgain" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check again"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kiểm tra lại"
+          }
+        }
+      }
+    },
+    "apps.quit.confirm.action" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Force Quit"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Buộc thoát"
+          }
+        }
+      }
+    },
+    "apps.quit.confirm.cancel" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hủy"
+          }
+        }
+      }
+    },
+    "apps.quit.confirm.instances" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld copy is running."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld copies are running."
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "Đang có %lld bản chạy."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "apps.quit.confirm.message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unsaved changes in %@ will be lost. Use this only if it doesn't respond."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Những thay đổi chưa lưu trong %@ sẽ bị mất. Chỉ dùng khi ứng dụng không phản hồi."
+          }
+        }
+      }
+    },
+    "apps.quit.confirm.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Force quit %@?"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Buộc thoát %@?"
+          }
+        }
+      }
+    },
+    "apps.quit.done" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ has quit. You can uninstall it now."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ đã thoát. Giờ bạn có thể gỡ cài đặt."
+          }
+        }
+      }
+    },
+    "apps.quit.failed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ didn't quit."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ chưa thoát được."
+          }
+        }
+      }
+    },
+    "apps.quit.force" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Force Quit…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Buộc thoát…"
+          }
+        }
+      }
+    },
+    "apps.quit.help" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asks the app to quit, like ⌘Q. It can ask you to save first."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Yêu cầu ứng dụng thoát, giống như ⌘Q. Ứng dụng có thể hỏi bạn lưu trước."
+          }
+        }
+      }
+    },
+    "apps.quit.otherUser" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is also running for another user on this Mac. They need to quit it first."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ cũng đang chạy cho một người dùng khác trên máy này. Người đó cần thoát nó trước."
+          }
+        }
+      }
+    },
+    "apps.quit.quitting" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quitting…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đang thoát…"
+          }
+        }
+      }
+    },
+    "apps.quit.relaunched" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ opened again by itself. Something keeps starting it — check Startup Items."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ tự mở lại. Có thứ gì đó đang khởi động lại nó — hãy xem Mục khởi động."
+          }
+        }
+      }
+    },
+    "apps.quit.self" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI Disk Keeper can't quit or uninstall itself from here."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "AI Disk Keeper không thể tự thoát hay tự gỡ cài đặt từ đây."
+          }
+        }
+      }
+    },
+    "apps.quit.show" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show App"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chuyển sang ứng dụng"
+          }
+        }
+      }
+    },
+    "apps.quit.stuck" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is still open. It may be asking you to save — switch to it, or force quit."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ vẫn đang mở. Có thể ứng dụng đang hỏi bạn lưu — hãy chuyển sang ứng dụng, hoặc buộc thoát."
+          }
+        }
+      }
+    },
+    "apps.quit.unknown" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't check whether %@ is running. Nothing was quit."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không kiểm tra được %@ có đang chạy không. Chưa thoát ứng dụng nào."
+          }
+        }
+      }
+    },
     "apps.related.none" : {
       "localizations" : {
         "en" : {

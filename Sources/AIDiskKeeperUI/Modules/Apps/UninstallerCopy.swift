@@ -69,6 +69,45 @@ enum UninstallerCopy {
         loc("apps.guide.admin", "Installed for all users. Drag it to the Trash in Finder; you may need an administrator password.")
     }
     static var reveal: String { loc("apps.guide.reveal", "Reveal in Finder") }
+    // Quit / Force Quit (T37b)
+    static var quitButton: String { loc("apps.quit.button", "Quit App") }
+    static var quitHelp: String { loc("apps.quit.help", "Asks the app to quit, like ⌘Q. It can ask you to save first.") }
+    static var quitting: String { loc("apps.quit.quitting", "Quitting…") }
+    static func quitStuck(_ name: String) -> String {
+        loc("apps.quit.stuck", "\(name) is still open. It may be asking you to save — switch to it, or force quit.")
+    }
+    static var showApp: String { loc("apps.quit.show", "Show App") }
+    static var forceQuit: String { loc("apps.quit.force", "Force Quit…") }
+    static func forceTitle(_ name: String) -> String { loc("apps.quit.confirm.title", "Force quit \(name)?") }
+    static func forceMessage(_ name: String) -> String {
+        loc("apps.quit.confirm.message", "Unsaved changes in \(name) will be lost. Use this only if it doesn't respond.")
+    }
+    static func forceInstances(_ n: Int) -> String { loc("apps.quit.confirm.instances", "\(n) copies are running.") }
+    static var forceAction: String { loc("apps.quit.confirm.action", "Force Quit") }
+    static var forceCancel: String { loc("apps.quit.confirm.cancel", "Cancel") }
+    static func quitDone(_ name: String) -> String { loc("apps.quit.done", "\(name) has quit. You can uninstall it now.") }
+    static func quitFailed(_ name: String) -> String { loc("apps.quit.failed", "\(name) didn't quit.") }
+    static func relaunched(_ name: String) -> String {
+        loc("apps.quit.relaunched", "\(name) opened again by itself. Something keeps starting it — check Startup Items.")
+    }
+    static func background(_ name: String, _ parts: String) -> String {
+        loc("apps.quit.background", "A background part of \(name) is still running: \(parts). Restart your Mac, or end it in Activity Monitor.")
+    }
+    static func otherUser(_ name: String) -> String {
+        loc("apps.quit.otherUser", "\(name) is also running for another user on this Mac. They need to quit it first.")
+    }
+    static func quitUnknown(_ name: String) -> String { loc("apps.quit.unknown", "Couldn't check whether \(name) is running. Nothing was quit.") }
+    static var checkAgain: String { loc("apps.quit.checkAgain", "Check again") }
+    static var selfApp: String { loc("apps.quit.self", "AI Disk Keeper can't quit or uninstall itself from here.") }
+    static var auditFailed: String { loc("apps.quit.auditFailed", "Couldn't write to the audit log, so nothing was force quit.") }
+    static func a11yQuit(_ name: String) -> String { loc("apps.quit.a11y.done", "\(name) has quit") }
+    /// "a, b and c" in the in-app language.
+    static func list(_ items: [String]) -> String {
+        let f = ListFormatter()
+        f.locale = L10n.current.locale
+        return f.string(from: items) ?? items.joined(separator: ", ")
+    }
+
     static func guideRunning(_ name: String) -> String { loc("apps.guide.running", "\(name) is running. Quit it to uninstall.") }
     static func locked(_ r: InstalledApp.ViewOnlyReason) -> String {
         switch r {
