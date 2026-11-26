@@ -75,6 +75,9 @@ public enum RuleValidator {
     /// `^<tool>\.[a-z0-9]+([.-][a-z0-9]+)*$`, at most 96 characters; nil if fine.
     static func idProblem(_ id: String, tool: ToolID) -> String? {
         let prefix = tool.rawValue + "."
+        guard !id.hasPrefix(ToolCommandSpec.reservedRuleIDPrefix) else {
+            return "rule id '\(id)' uses the reserved '\(ToolCommandSpec.reservedRuleIDPrefix)' namespace"
+        }
         guard id.utf8.count <= 96 else { return "rule id is longer than 96 characters" }
         guard id.hasPrefix(prefix) else { return "rule id '\(id)' must start with '\(prefix)'" }
         let rest = id.dropFirst(prefix.count)

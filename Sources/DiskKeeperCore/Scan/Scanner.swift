@@ -9,6 +9,12 @@ public protocol Scanner: Sendable {
     /// Runs to completion or throws. `CancellationError` must propagate (do not swallow it).
     /// Any other thrown error becomes one `.scannerFailed` warning; items already emitted are kept.
     func scan(context: ScanContext, sink: ScanSink) async throws
+    /// The only virtual-path namespace this scanner may report items under (see ``VirtualItemPath``); nil = none.
+    var virtualNamespace: String? { get }
+}
+
+extension Scanner {
+    public var virtualNamespace: String? { nil }
 }
 
 public struct ScannerProgress: Sendable, Hashable {

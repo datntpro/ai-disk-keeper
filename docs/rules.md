@@ -145,7 +145,7 @@ Items with an unknown modification time never satisfy the two age conditions. If
 
 | key | rules |
 |---|---|
-| `method` | `trash` (default), `none` (report only) or `toolCommand` |
+| `method` | `trash` (default), `none` (report only) or `toolCommand` (loaded but refused at cleanup, see below) |
 | `command` | required with `toolCommand`: `^[a-z0-9][a-z0-9._-]*$`, no `/` |
 | `arguments` | required with `toolCommand`: ≤ 16 strings; `{name}` and `{path}` placeholders are substituted at cleanup time |
 | `requiresAppQuit` | optional bundle id (`com.example.App`) of an app that must be quit first. The literal `{name}` is allowed only with `match.kind: children` and `depth: 1`: the scanner uses the entry's own name as the bundle id (`~/Library/Caches/com.example.App`). An entry whose name is not a bundle id is not emitted (no warning) |
@@ -312,5 +312,5 @@ A rejected file produces a `RuleLoadError` carrying the file, the JSON path and 
 - A rule path that the protected-path guard refuses is dropped with a warning (fail closed for that path; the other paths and rules of the file still load, and the scanner checks the guard again for every item). For `children`/`find` rules a
   container that is only an *ancestor* of protected data (for example `~/.claude/projects`) is allowed, and each
   resulting item is checked again by the scanner.
-- Rule files never execute anything by themselves; `toolCommand` names a CLI that is resolved and run by the
-  cleanup engine, with the app's own checks.
+- Rule files never execute anything. A `toolCommand` rule still loads (for compatibility), but the cleanup engine
+  refuses it (`toolCommandNotAllowed`): only compiled-in, allowlisted tool commands run (PLAN §7, invariant 19).

@@ -15,13 +15,14 @@ enum CleanupNextStep: Equatable {
     /// An exhaustive switch: a new `CleanupBlocker` fails the build until it is classified.
     static func step(for blocker: CleanupBlocker) -> CleanupNextStep {
         switch blocker {
-        case .changedSinceScan, .identityChanged, .missing: .rescan
+        case .changedSinceScan, .identityChanged, .missing, .inUseByTool: .rescan
         case .appRunning(let id), .appStateUnknown(let id): .quitApp(bundleID: id)
         case .needsAppManagementPermission: .openAppManagement
         case .requiresAdmin: .revealInFinder
-        case .protectedPath, .keepTier, .notActionable, .wouldRemoveAllCopies, .appBundleRefused: .protected
+        case .protectedPath, .keepTier, .notActionable, .wouldRemoveAllCopies, .appBundleRefused, .toolCommandNotAllowed: .protected
+        case .toolUnavailable, .toolNotRunning: .tryLater
         case .methodNotSupported, .isSymlink, .notOwnedByUser, .symlinkInParentChain, .nestedInAnotherItem,
-             .duplicate, .permanentDeleteDisabled, .sizingFailed, .survivorChanged, .duplicateGroupUnknown:
+             .duplicate, .permanentDeleteDisabled, .sizingFailed, .survivorChanged, .duplicateGroupUnknown, .toolCommandUnavailable:
             .sentenceOnly
         }
     }
@@ -36,7 +37,7 @@ enum CleanupNextStep: Equatable {
         switch outcome {
         case .skipped(let blockers): step(for: blockers)
         case .failed: .tryLater
-        case .trashed, .deleted, .notAttempted: nil
+        case .trashed, .deleted, .ranCommand, .notAttempted: nil
         }
     }
 

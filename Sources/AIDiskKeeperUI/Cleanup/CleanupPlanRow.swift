@@ -34,6 +34,7 @@ struct CleanupPlanRow: View {
         var parts: [String] = []
         if case .trashWorktree = entry.item.cleanupMethod { parts.append(CleanupCopy.rowThenPrune) }
         if let keepingLine { parts.append(keepingLine) }
+        if entry.isToolCommand { parts.append(CleanupCopy.rowByTool(entry.item.tool.uiName)) }
         if entry.item.tier == .review { parts.append(CleanupCopy.rowTickedByYou) }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
@@ -48,7 +49,11 @@ struct CleanupPlanRow: View {
             TierBadge(tier: entry.item.tier).frame(minWidth: 70, alignment: .leading)
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.item.uiDisplayName()).lineLimit(1)
-                PathText(Self.displayPath(entry.item.url.path, home: home))
+                if entry.isToolCommand, let line = entry.commandLine {
+                    CommandText(line, help: entry.commandHelp)
+                } else {
+                    PathText(Self.displayPath(entry.item.url.path, home: home))
+                }
                 if let annotation {
                     HStack(spacing: 6) {
                         Text(annotation).font(.caption)

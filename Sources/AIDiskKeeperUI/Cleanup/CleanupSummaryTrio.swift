@@ -13,10 +13,14 @@ struct CleanupSummaryTrio: View {
         }
     }
 
+    private var hasToolCommands: Bool { plan.hasExecutableToolCommands }
+
     var body: some View {
         HStack(spacing: ADKTheme.Spacing.md) {
-            card(CleanupCopy.trioWillMove, CleanupCopy.trioItems(plan.executableEntries.count), muted: false)
-            card(CleanupCopy.trioFrees, SizeText.string(plan.reclaimableBytes, freesIsUpperBound ? .upTo : .exact), muted: false)
+            card(hasToolCommands ? CleanupCopy.trioWillClean : CleanupCopy.trioWillMove,
+                 CleanupCopy.trioItems(plan.executableEntries.count), muted: false)
+            card(hasToolCommands ? CleanupCopy.trioFreesUpTo : CleanupCopy.trioFrees,
+                 SizeText.string(plan.reclaimableBytes, hasToolCommands || freesIsUpperBound ? .upTo : .exact), muted: false)
             card(CleanupCopy.trioSkipped, CleanupCopy.trioItems(plan.blockedCount), muted: plan.blockedCount == 0)
         }
     }

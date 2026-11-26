@@ -61,6 +61,11 @@ public final class CleanupCoordinator {
     }
 
     static func trashedIDs(in report: CleanupReport) -> Set<ScanItem.ID> {
-        Set(report.results.compactMap { if case .trashed = $0.outcome { $0.itemID } else { nil } })
+        Set(report.results.compactMap {
+            switch $0.outcome {
+            case .trashed, .ranCommand: $0.itemID
+            default: nil
+            }
+        })
     }
 }

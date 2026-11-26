@@ -281,6 +281,13 @@ M4 amendments (items 1–11 above are unchanged; numbering continues):
     descended by duplicate or large-file scanners (the disk map may show their total size).
 18. **Scheduled scans and Care Scan only notify / find.** Never auto-select Review, never call
     `CleanupEngine` (unchanged from T22, restated for M4).
+19. **Tool commands are allowlisted, templated and shell-free.** A `.toolCommand` item runs only if it matches a
+    **compiled-in** `ToolCommandSpec`: a fixed executable resolved from absolute candidate paths (never `PATH`), a
+    fixed argument template whose variable slots match strict patterns and are **bound to the item's identity**, a
+    fixed minimal environment, a timeout, and per-spec re-validation that runs right before the command. There is no
+    shell, no user- or rule-supplied argument, and no `--force`-style flag that overrides the tool's own in-use
+    checks. JSON rules cannot create runnable tool commands. Every run writes one audit line with the full argv,
+    exit status and duration.
 
 ### 7.1 Deliberately not built
 

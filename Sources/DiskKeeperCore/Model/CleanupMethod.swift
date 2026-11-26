@@ -13,6 +13,14 @@ public enum CleanupMethod: Codable, Sendable, Hashable {
     /// Report only; never cleanable.
     case none
 
+    /// What a virtual item may declare (see ``VirtualItemPath``).
+    public var isToolCommandOrNone: Bool {
+        switch self {
+        case .toolCommand, .none: true
+        default: false
+        }
+    }
+
     public var isActionable: Bool {
         if case .none = self { return false }
         return true

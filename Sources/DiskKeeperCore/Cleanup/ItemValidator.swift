@@ -10,10 +10,13 @@ struct ItemValidator: Sendable {
     let sizer: FileSizer
     /// nil = every `.trashApplication` entry is blocked (fail closed).
     let appPolicy: ApplicationBundlePolicy?
+    /// False = every `.toolCommand` entry is blocked (fail closed).
+    let toolCommandsAvailable: Bool
 
     init(pathGuard: ProtectedPaths, userID: uid_t, runningApps: any RunningAppChecking,
          tolerance: ChangeTolerance = .default, sizer: FileSizer = FileSizer(),
-         appPolicy: ApplicationBundlePolicy? = nil) {
+         appPolicy: ApplicationBundlePolicy? = nil, toolCommandsAvailable: Bool = false) {
+        self.toolCommandsAvailable = toolCommandsAvailable
         self.appPolicy = appPolicy
         self.pathGuard = pathGuard
         self.userID = userID
@@ -29,7 +32,7 @@ struct ItemValidator: Sendable {
         switch item.cleanupMethod {
         case .none: out.append(.notActionable)
         case .trashWorktree: out.append(.methodNotSupported("trashWorktree"))
-        case .toolCommand: out.append(.methodNotSupported("toolCommand"))
+        case .toolCommand: if !toolCommandsAvailable { out.append(.toolCommandUnavailable) }
         case .trashApplication:
             if action == .deletePermanently { out.append(.appBundleRefused(.permanentDelete)) }
         case .trash: break

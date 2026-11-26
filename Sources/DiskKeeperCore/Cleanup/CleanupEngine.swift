@@ -7,6 +7,7 @@ public actor CleanupEngine {
     private let auditLog: AuditLog
     private let trash: any TrashAdapter
     private let remover: any ItemRemover
+    private let toolCommands: ToolCommandPerformer?
     private let options: CleanupOptions
     private let now: @Sendable () -> Date
     private struct Issued {
@@ -27,9 +28,12 @@ public actor CleanupEngine {
                 options: CleanupOptions = .init(),
                 userID: uid_t = getuid(),
                 appPolicy: ApplicationBundlePolicy? = nil,
+                toolCommands: ToolCommandPerformer? = nil,
                 now: @escaping @Sendable () -> Date = { Date() }) {
         self.validator = ItemValidator(pathGuard: pathGuard, userID: userID, runningApps: runningApps,
-                                       tolerance: options.tolerance, appPolicy: appPolicy)
+                                       tolerance: options.tolerance, appPolicy: appPolicy,
+                                       toolCommandsAvailable: toolCommands != nil)
+        self.toolCommands = toolCommands
         self.auditLog = auditLog
         self.trash = trash
         self.remover = remover
@@ -52,6 +56,7 @@ public actor CleanupEngine {
         var blockers: [[CleanupBlocker]] = []
         var fingerprints: [ItemFingerprint?] = []
         var appBundles: [AppBundleFingerprint?] = []
+        var snapshots: [ToolCommandSnapshot?] = []
         var seenIDs: Set<String> = []
         var accepted: [(key: PathKey, id: String)] = []
 
@@ -60,6 +65,7 @@ public actor CleanupEngine {
                 blockers.append([.duplicate])
                 fingerprints.append(nil)
                 appBundles.append(nil)
+                snapshots.append(nil)
                 continue
             }
             var b = validator.policyBlockers(item, action: action, options: options)
@@ -69,6 +75,8 @@ public actor CleanupEngine {
                 let app = validator.appFastChecks(item, action: action, expected: nil)
                 fast = (app.blockers, app.fingerprint)
                 bundle = app.bundle
+            } else if Self.isVirtualToolCommand(item) {
+                fast = ([], nil)   // no file behind it: nothing to lstat
             } else {
                 fast = validator.fastChecks(item, expected: nil)
             }
@@ -84,10 +92,11 @@ public actor CleanupEngine {
             blockers.append(b)
             fingerprints.append(fast.fingerprint)
             appBundles.append(bundle)
+            snapshots.append(nil)
         }
 
         // Slow re-size for the entries still unblocked, bounded sliding window.
-        let pending = items.indices.filter { blockers[$0].isEmpty }
+        let pending = items.indices.filter { blockers[$0].isEmpty && !Self.isVirtualToolCommand(items[$0]) }
         let window = max(1, options.maxConcurrentChecks)
         let validator = self.validator
         let checked: [(Int, [CleanupBlocker])] = await withTaskGroup(of: (Int, [CleanupBlocker]).self) { group in
@@ -109,16 +118,37 @@ public actor CleanupEngine {
         }
         for (index, extra) in checked { blockers[index] += extra }
 
+        // Tool commands: the allowlist check always runs; probes (one cache per plan) only for unblocked entries.
+        if let performer = toolCommands {
+            let probes = ToolProbeCache()
+            for index in items.indices {
+                guard case .toolCommand = items[index].cleanupMethod, blockers[index] != [.duplicate] else { continue }
+                if blockers[index].isEmpty {
+                    let check = await performer.planCheck(items[index], probes: probes)
+                    blockers[index] = check.blockers
+                    snapshots[index] = check.snapshot
+                } else {
+                    blockers[index] = (blockers[index] + performer.allowlistBlockers(items[index])).uniqued()
+                }
+            }
+        }
+
         var survivorSets: [Int: DuplicateSurvivorSet] = [:]
         await applyKeepOne(items: items, groups: duplicateGroups, blockers: &blockers, survivors: &survivorSets)
 
         let entries = items.indices.map {
             CleanupPlanEntry(item: items[$0], action: action, blockers: blockers[$0], fingerprint: fingerprints[$0],
-                             survivors: survivorSets[$0], appBundle: appBundles[$0])
+                             survivors: survivorSets[$0], appBundle: appBundles[$0],
+                             toolCommand: snapshots[$0])
         }
         let plan = CleanupPlan(createdAt: now(), entries: entries)
         issued[plan.id] = Issued(plan: plan, monotonic: ContinuousClock.now)
         return plan
+    }
+
+    private static func isVirtualToolCommand(_ item: ScanItem) -> Bool {
+        if case .toolCommand = item.cleanupMethod { return item.isVirtual }
+        return false
     }
 
     private static func overlaps(_ a: PathKey, _ b: PathKey) -> Bool {
@@ -171,14 +201,14 @@ public actor CleanupEngine {
                 results.append(result(entry, .notAttempted))
                 continue
             }
-            let (outcome, trashPath) = await run(entry, trashedKeys: trashedKeys, claimed: claimed)
+            let (outcome, trashPath, toolRun) = await run(entry, trashedKeys: trashedKeys, claimed: claimed)
             switch outcome {
             case .trashed, .deleted: trashedKeys.insert(PathCanonicalizer.key(entry.item.path))
             default: break
             }
             results.append(result(entry, outcome))
             do {
-                try await auditLog.append(record(entry, outcome, runID: plan.id, trashPath: trashPath))
+                try await auditLog.append(record(entry, outcome, runID: plan.id, trashPath: trashPath, toolRun: toolRun))
             } catch {
                 auditFailure = "\(error)"
             }
@@ -198,7 +228,38 @@ public actor CleanupEngine {
         if waiters.isEmpty { isExecuting = false } else { waiters.removeFirst().resume() }
     }
 
-    private func run(_ entry: CleanupPlanEntry, trashedKeys: Set<PathKey>, claimed: [PathKey]) async -> (CleanupOutcome, String?) {
+    private func run(_ entry: CleanupPlanEntry, trashedKeys: Set<PathKey>,
+                     claimed: [PathKey]) async -> (CleanupOutcome, String?, ToolRunRecord?) {
+        if case .toolCommand = entry.item.cleanupMethod {
+            let (outcome, record) = await runToolCommand(entry)
+            return (outcome, nil, record)
+        }
+        let (outcome, trashPath) = await runTrash(entry, trashedKeys: trashedKeys, claimed: claimed)
+        return (outcome, trashPath, nil)
+    }
+
+    /// Policy + (file targets) change and fast checks + the performer's fresh re-validation. Any blocker means the
+    /// command is not run.
+    private func runToolCommand(_ entry: CleanupPlanEntry) async -> (CleanupOutcome, ToolRunRecord?) {
+        let item = entry.item
+        let planned = ToolRunRecord(command: entry.toolCommand?.command, exitStatus: nil, durationMs: nil,
+                                    stderrTail: nil, target: entry.toolCommand?.targetLabel)
+        if !entry.blockers.isEmpty { return (.skipped(entry.blockers), planned) }
+        var blockers = validator.policyBlockers(item, action: entry.action, options: options)
+        if !item.isVirtual {
+            blockers += await validator.changeCheck(item)
+            blockers += validator.fastChecks(item, expected: entry.fingerprint).blockers
+        }
+        blockers = blockers.uniqued()
+        if !blockers.isEmpty { return (.skipped(blockers), planned) }
+        guard let toolCommands else { return (.skipped([.toolCommandUnavailable]), planned) }
+        switch await toolCommands.execute(item, expected: entry.toolCommand) {
+        case .blocked(let b, let record): return (.skipped(b), record)
+        case .ran(let outcome, let record): return (outcome, record)
+        }
+    }
+
+    private func runTrash(_ entry: CleanupPlanEntry, trashedKeys: Set<PathKey>, claimed: [PathKey]) async -> (CleanupOutcome, String?) {
         if !entry.blockers.isEmpty { return (.skipped(entry.blockers), nil) }
         let item = entry.item
 
@@ -271,7 +332,7 @@ public actor CleanupEngine {
     }
 
     private func record(_ entry: CleanupPlanEntry, _ outcome: CleanupOutcome, runID: UUID,
-                        trashPath: String?) -> AuditRecord {
+                        trashPath: String?, toolRun: ToolRunRecord? = nil) -> AuditRecord {
         var kind = "failed"
         var reasons: [String] = []
         var error: String?
@@ -281,6 +342,7 @@ public actor CleanupEngine {
         switch outcome {
         case .trashed: kind = "trashed"
         case .deleted: kind = "deleted"
+        case .ranCommand: kind = "ran"
         case .skipped(let b): kind = "skipped"; reasons = b.map(\.auditReason)
         case .failed(let e): error = e
         case .notAttempted: break
@@ -289,6 +351,8 @@ public actor CleanupEngine {
         return AuditRecord(timestamp: now(), runID: runID, itemID: entry.item.id, path: entry.item.path,
                            bytes: entry.item.sizeAllocated, action: entry.action, result: kind,
                            trashPath: path, ruleID: entry.item.ruleID, tool: entry.item.tool,
-                           reasons: reasons, error: error, bundleID: bundleID)
+                           reasons: reasons, error: error, bundleID: bundleID,
+                           command: toolRun?.command, exitStatus: toolRun?.exitStatus, durationMs: toolRun?.durationMs,
+                           stderrTail: toolRun?.stderrTail, toolTarget: toolRun?.target)
     }
 }

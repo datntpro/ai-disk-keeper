@@ -49,17 +49,29 @@ public struct CleanupReviewSheet: View {
         return CleanupCopy.several
     }
 
+    private var toolEntries: [CleanupPlanEntry] { executable.filter(\.isToolCommand) }
+    private var hasTools: Bool { !toolEntries.isEmpty }
+    private var toolNames: String {
+        Array(Set(toolEntries.map(\.item.tool.uiName))).sorted().joined(separator: ", ")
+    }
+
     private var tools: [ToolID] { Array(Set(executable.map(\.item.tool))).sorted { $0.uiName < $1.uiName } }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: ADKTheme.Spacing.md) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(contextLine.uppercased()).font(.caption.weight(.semibold)).foregroundStyle(.adkText3)
-                Text(CleanupCopy.titleBytes(plan.reclaimableBytes)).font(.title2.bold())
+                Text(hasTools ? CleanupCopy.titleClean(plan.reclaimableBytes) : CleanupCopy.titleBytes(plan.reclaimableBytes))
+                    .font(.title2.bold())
                 Text(CleanupCopy.dryRun).foregroundStyle(.adkText2)
             }
             if notice == .refreshedBecauseExpired {
                 Label(CleanupCopy.expiredNotice, systemImage: "arrow.clockwise")
+                    .padding(8).background(.adkReviewSoft, in: RoundedRectangle(cornerRadius: 6))
+            }
+            if hasTools {
+                Label(CleanupCopy.toolNotice(count: Formatting.count(toolEntries.count), tools: toolNames),
+                      systemImage: "exclamationmark.triangle")
                     .padding(8).background(.adkReviewSoft, in: RoundedRectangle(cornerRadius: 6))
             }
             CleanupSummaryTrio(plan: plan)
@@ -73,7 +85,8 @@ public struct CleanupReviewSheet: View {
                 Button(CleanupCopy.recheck, action: onRecheck)
                 Spacer()
                 validity
-                Button(CleanupCopy.confirm(plan.reclaimableBytes), action: onConfirm)
+                Button(hasTools ? CleanupCopy.confirmClean(plan.reclaimableBytes) : CleanupCopy.confirm(plan.reclaimableBytes),
+                       action: onConfirm)
                     .keyboardShortcut(CleanupSheetKeys.confirm)
                     .buttonStyle(.borderedProminent)
                     .tint(.adkAccent)
