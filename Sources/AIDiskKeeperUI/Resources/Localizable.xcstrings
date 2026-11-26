@@ -10565,6 +10565,38 @@
         }
       }
     },
+    "protected.why.shell.config" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "shell config"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "cấu hình shell"
+          }
+        }
+      }
+    },
+    "protected.why.shell.history" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "shell history"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "lịch sử shell"
+          }
+        }
+      }
+    },
     "protected.why.ssh.agent.socket.directory" : {
       "localizations" : {
         "en" : {
