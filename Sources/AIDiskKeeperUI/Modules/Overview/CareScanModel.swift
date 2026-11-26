@@ -155,6 +155,8 @@ final class CareScanModel {
                 if self.stopRequested { self.endWithoutResults(); return }
                 self.coordinator = coordinator
                 let stream = try await coordinator.scan()
+                // A Stop that landed while `scan()` was being awaited hit an idle coordinator and was ignored.
+                if self.stopRequested { await coordinator.cancel() }
                 for await event in stream { self.apply(event) }
                 if self.phase == .scanning { self.endWithoutResults() }
             } catch {

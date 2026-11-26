@@ -16,26 +16,44 @@ struct CarePhaseChips: View {
         }
     }
 
+    /// One drawn chip. The index stage has no module, so it gets its own entry after the rule-stage chips.
+    struct Entry: Equatable {
+        let title: String
+        let state: CareStageState
+        let failure: String?
+    }
+
+    static func entries(for model: CareScanModel, enabled: Set<ModuleID> = ModuleRegistry.enabledIDs) -> [Entry] {
+        let modules = model.visibleChips(enabled: enabled)
+        var result = modules.map {
+            Entry(title: OverviewTarget.chipTitle($0), state: model.chipState($0),
+                  failure: model.stageFailures[CareScanModel.stage(for: $0)]?.uiMessage)
+        }
+        if model.stages.contains(.index) {
+            let state = model.phase == .before ? CareStageState.pending : (model.stageState[.index] ?? .pending)
+            let at = modules.lastIndex { CareScanModel.stage(for: $0) == .rules }.map { $0 + 1 } ?? 0
+            result.insert(Entry(title: OverviewCopy.chipIndex, state: state,
+                                failure: model.stageFailures[.index]?.uiMessage), at: at)
+        }
+        return result
+    }
+
     var body: some View {
-        let chips = model.visibleChips()
+        let chips = Self.entries(for: model)
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: ADKTheme.Spacing.sm, alignment: .leading)],
                   alignment: .leading, spacing: ADKTheme.Spacing.sm) {
-            ForEach(chips, id: \.self) { module in
-                Chip(module: module, state: model.chipState(module), failure: failure(module), reduceMotion: reduceMotion)
+            ForEach(Array(chips.enumerated()), id: \.offset) { _, entry in
+                Chip(title: entry.title, state: entry.state, failure: entry.failure, reduceMotion: reduceMotion)
             }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(OverviewCopy.chipsA11y(chips.map {
-            OverviewCopy.chipA11y(OverviewTarget.chipTitle($0), Self.stateWord(model.chipState($0)))
+            OverviewCopy.chipA11y($0.title, Self.stateWord($0.state))
         }.joined(separator: ", ")))
     }
 
-    private func failure(_ module: CareModule) -> String? {
-        model.stageFailures[CareScanModel.stage(for: module)]?.uiMessage
-    }
-
     private struct Chip: View {
-        let module: CareModule
+        let title: String
         let state: CareStageState
         let failure: String?
         let reduceMotion: Bool
@@ -43,7 +61,7 @@ struct CarePhaseChips: View {
         var body: some View {
             HStack(spacing: 5) {
                 marker
-                Text(OverviewTarget.chipTitle(module)).lineLimit(1)
+                Text(title).lineLimit(1)
             }
             .font(.caption.weight(.medium))
             .foregroundStyle(state == .running(nil) || isRunning ? Color.adkAccent : Color.adkText2)

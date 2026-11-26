@@ -101,3 +101,29 @@ final class CareRig {
 
     func settle() async { try? await Task.sleep(nanoseconds: 60_000_000) }
 }
+
+/// Like the real coordinator, `cancel()` is ignored until `scan()` has returned; `scan()` waits for `open()`.
+actor GatedCareCoordinator: CareScanning {
+    private var gate: CheckedContinuation<Void, Never>?
+    private var opened = false
+    private var continuation: AsyncStream<CareScanEvent>.Continuation?
+    private(set) var cancelCalls = 0
+    private(set) var ignoredCancels = 0
+    private(set) var isWaiting = false
+
+    func scan() async throws -> AsyncStream<CareScanEvent> {
+        if !opened { isWaiting = true; await withCheckedContinuation { gate = $0 } }
+        let (stream, cont) = AsyncStream.makeStream(of: CareScanEvent.self, bufferingPolicy: .unbounded)
+        continuation = cont
+        return stream
+    }
+
+    func open() { opened = true; gate?.resume(); gate = nil }
+
+    func cancel() async {
+        cancelCalls += 1
+        guard let continuation else { ignoredCancels += 1; return }
+        continuation.yield(.cancelled(CareFix.report(cancelled: true)))
+        continuation.finish()
+    }
+}

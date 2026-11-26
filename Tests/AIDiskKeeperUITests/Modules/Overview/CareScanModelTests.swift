@@ -126,4 +126,68 @@ final class CareScanModelTests: XCTestCase {
         XCTAssertNotEqual(a, CareScanLive.fingerprint(scope: .unrestricted, index: .fullDisk))
         XCTAssertNotEqual(a, CareScanLive.fingerprint(scope: ScanScope(excludedPaths: [], disabledTools: [.claudeCode], projectRoots: []), index: .home))
     }
+
+    func testStopWhileScanIsStillBeingAwaitedStillCancels() async {
+        let gated = GatedCareCoordinator()
+        let scan = ScanViewModel(makeEngine: { FakeScanEngine(.scripted([])) })
+        let fake = FakeDiskIndexer()
+        let index = DiskIndexModel(makeIndexer: { fake }, fullDiskAccess: { false })
+        let model = CareScanModel(makeCoordinator: { _ in gated }, scan: scan, index: index,
+                                  duplicates: { nil }, largeOld: { nil }, announce: { _ in })
+        model.start()
+        for _ in 0..<800 { if await gated.isWaiting { break }; try? await Task.sleep(nanoseconds: 5_000_000) }
+        model.stop()
+        try? await Task.sleep(nanoseconds: 30_000_000)
+        await gated.open()
+        for _ in 0..<800 { if model.phase == .stopped { break }; try? await Task.sleep(nanoseconds: 5_000_000) }
+        XCTAssertEqual(model.phase, .stopped)
+        let ignored = await gated.ignoredCancels
+        XCTAssertEqual(ignored, 1, "the early Stop hit an idle coordinator")
+        let calls = await gated.cancelCalls
+        XCTAssertEqual(calls, 2, "and was re-sent once scan() returned")
+    }
+
+    func testSubtitleNamesTheNextStageBetweenStages() {
+        let stages = CareFix.allStages
+        var state = Dictionary(uniqueKeysWithValues: stages.map { ($0, CareStageState.pending) })
+        state[.rules] = .done
+        XCTAssertEqual(CareHero.currentStage(stages, state), .index)
+        state[.index] = .running(0.4)
+        XCTAssertEqual(CareHero.currentStage(stages, state), .index)
+        for s in stages { state[s] = .done }
+        XCTAssertEqual(CareHero.currentStage(stages, state), .startup)
+        XCTAssertEqual(CareHero.currentStage([], [:]), .rules)
+    }
+
+    func testIndexStageHasAChipAfterTheRuleChips() async {
+        let rig = CareRig()
+        await rig.begin()
+        await rig.send(CareFix.started(), .stageStarted(.rules), .stageFinished(.rules, []), .stageStarted(.index))
+        await rig.waitUntil { rig.model.stageState[.index] == .running(nil) }
+        let all = Set(ModuleID.allCases)
+        let entries = CarePhaseChips.entries(for: rig.model, enabled: all)
+        let titles = entries.map(\.title)
+        let at = titles.firstIndex(of: OverviewCopy.chipIndex)
+        XCTAssertNotNil(at)
+        XCTAssertEqual(titles[at! - 1], OverviewTarget.chipTitle(.systemJunk))
+        XCTAssertEqual(entries[at!].state, .running(nil))
+    }
+
+    func testStatusBarSpeaksForTheCareScanTotal() async {
+        let rig = CareRig()
+        XCTAssertNil(ScanStatusBar.careStatusText(rig.model))
+        await rig.begin()
+        await rig.send(CareFix.started(), .stageStarted(.rules))
+        XCTAssertEqual(ScanStatusBar.careStatusText(rig.model), OverviewCopy.found(Formatting.bytes(0)))
+        await rig.send(.finished(CareFix.report(safe: 800_000_000, review: 200_000_000)))
+        await rig.waitUntil { rig.model.phase == .results }
+        XCTAssertEqual(ScanStatusBar.careStatusText(rig.model),
+                       OverviewCopy.finishedAnnouncement(safe: Formatting.bytes(800_000_000), review: Formatting.bytes(200_000_000)))
+    }
+
+    func testTileCopyIsPluralAndMatchesTheLargeFileStage() {
+        XCTAssertTrue(OverviewCopy.tileItems(1).contains("1 item") && !OverviewCopy.tileItems(1).contains("items"))
+        XCTAssertTrue(OverviewCopy.tileAITools(names: "Xcode", more: 1, items: 1).contains("+1 tool "))
+        XCTAssertFalse(OverviewCopy.tileLargeOld(11).contains("500"))
+    }
 }

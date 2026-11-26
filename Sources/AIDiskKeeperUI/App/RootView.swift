@@ -46,7 +46,7 @@ public struct RootView: View {
             VStack(spacing: 0) {
                 content(ctx)
                 Divider()
-                ScanStatusBar(scan: scan)
+                ScanStatusBar(scan: scan, care: care)
             }
             .frame(minWidth: 560)
         }

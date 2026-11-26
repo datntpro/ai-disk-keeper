@@ -45,13 +45,18 @@ struct CareHero: View {
         switch model.phase {
         case .before: OverviewCopy.subtitleBefore
         case .scanning:
-            OverviewCopy.subtitleScanning(model.stages.first { if case .running = model.stageState[$0] { true } else { false } }
-                .map(Self.stageName) ?? OverviewCopy.eyebrowBefore)
+            OverviewCopy.subtitleScanning(Self.stageName(Self.currentStage(model.stages, model.stageState)))
         case .results, .stopped:
             OverviewCopy.subtitleResults(safe: Formatting.bytes(model.totals?.safeBytes ?? 0),
                                          review: Formatting.bytes(model.totals?.reviewBytes ?? 0),
                                          keep: Formatting.bytes(model.totals?.keepBytes ?? 0))
         }
+    }
+
+    /// The stage to name while scanning: the running one, else the next pending one (between stages), else the last.
+    static func currentStage(_ stages: [CareStage], _ state: [CareStage: CareStageState]) -> CareStage {
+        if let running = stages.first(where: { if case .running = state[$0] { true } else { false } }) { return running }
+        return stages.first { (state[$0] ?? .pending) == .pending } ?? stages.last ?? .rules
     }
 
     static func stageName(_ stage: CareStage) -> String {

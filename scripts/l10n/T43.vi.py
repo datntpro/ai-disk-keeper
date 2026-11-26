@@ -1,7 +1,7 @@
 PREFIXES = ("care.", "overview.")
 
 # Keys of the old Overview that this PR's rewrite no longer uses.
-REMOVE = ("empty.title", "overview.itemCount", "overview.largest", "overview.lastScan", "overview.partial", "overview.totalFound")
+REMOVE = ("care.tile.aiTools", "care.tile.aiToolsAll", "empty.title", "overview.itemCount", "overview.largest", "overview.lastScan", "overview.partial", "overview.totalFound")
 
 VI = {
     "overview.title": "Tổng quan",
@@ -30,6 +30,7 @@ VI = {
     "care.chip.largeOld": "Tệp lớn & cũ",
     "care.chip.duplicates": "Tệp trùng lặp",
     "care.chip.apps": "Ứng dụng",
+    "care.chip.index": "Chỉ mục tệp",
     "care.chip.startup": "Khởi động",
     "care.chips.a11y": "Đang quét: %@",
     "care.chip.a11y": "%@ %@",
@@ -44,14 +45,17 @@ VI = {
     "care.strata.used": "Đã dùng",
     "care.modules.title": "Mô-đun",
     "care.modules.caption": "Con số là dung lượng mỗi mô-đun có thể giải phóng",
-    "care.tile.aiTools": "%@ +%@ công cụ · %@ mục",
-    "care.tile.aiToolsAll": "%@ · %@ mục",
-    "care.tile.largeOld": "%@ tệp trên 500 MB, không mở từ 6 tháng trở lên",
-    "care.tile.duplicates": "%@ nhóm · không tính bản clone",
-    "care.tile.apps": "%@ tệp sót lại",
     "care.tile.systemJunk": "Cache, log, báo cáo sự cố, cache phát triển",
-    "care.tile.items": "%@ mục",
     "care.wins.title": "Giải phóng nhiều nhất",
     "care.wins.seeAll": "Xem tất cả",
     "care.announce.finished": "Đã quét tổng thể xong. %@ An toàn để chuyển vào Thùng rác; %@ Cần xem.",
+}
+
+# Plural keys (String Catalog `variations.plural`). Vietnamese has no plural forms, so only `other`.
+PLURALS = {
+    "care.tile.items": {"en": {"one": "%lld item", "other": "%lld items"}, "vi": {"other": "%lld mục"}},
+    "care.tile.moreTools": {"en": {"one": "+%lld tool", "other": "+%lld tools"}, "vi": {"other": "+%lld công cụ"}},
+    "care.tile.largeOld": {"en": {"one": "%lld large file in your home folder", "other": "%lld large files in your home folder"}, "vi": {"other": "%lld tệp lớn trong thư mục home của bạn"}},
+    "care.tile.duplicates": {"en": {"one": "%lld group · clones excluded", "other": "%lld groups · clones excluded"}, "vi": {"other": "%lld nhóm · không tính bản clone"}},
+    "care.tile.apps": {"en": {"one": "%lld leftover item", "other": "%lld leftover items"}, "vi": {"other": "%lld tệp sót lại"}},
 }

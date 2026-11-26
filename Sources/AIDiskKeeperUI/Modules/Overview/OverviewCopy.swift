@@ -46,17 +46,15 @@ enum OverviewCopy {
     static var modulesCaption: String { loc("care.modules.caption", "Numbers are what each module can reclaim") }
 
     static func tileAITools(names: String, more: Int, items: Int) -> String {
-        more > 0
-            ? loc("care.tile.aiTools", "\(names) +\(Formatting.count(more)) tools · \(Formatting.count(items)) items")
-            : loc("care.tile.aiToolsAll", "\(names) · \(Formatting.count(items)) items")
+        let head = more > 0 ? "\(names) \(loc("care.tile.moreTools", "+\(more) tools"))" : names
+        return "\(head) · \(tileItems(items))"
     }
-    static func tileLargeOld(_ count: Int) -> String {
-        loc("care.tile.largeOld", "\(Formatting.count(count)) files over 500 MB, unopened for 6+ months")
-    }
-    static func tileDuplicates(_ groups: Int) -> String { loc("care.tile.duplicates", "\(Formatting.count(groups)) groups · clones excluded") }
-    static func tileApps(_ count: Int) -> String { loc("care.tile.apps", "\(Formatting.count(count)) leftover items") }
+    static func tileLargeOld(_ count: Int) -> String { loc("care.tile.largeOld", "\(count) large files in your home folder") }
+    static func tileDuplicates(_ groups: Int) -> String { loc("care.tile.duplicates", "\(groups) groups · clones excluded") }
+    static func tileApps(_ count: Int) -> String { loc("care.tile.apps", "\(count) leftover items") }
     static var tileSystemJunk: String { loc("care.tile.systemJunk", "Caches, logs, crash reports, dev caches") }
-    static func tileItems(_ count: Int) -> String { loc("care.tile.items", "\(Formatting.count(count)) items") }
+    static func tileItems(_ count: Int) -> String { loc("care.tile.items", "\(count) items") }
+    static var chipIndex: String { loc("care.chip.index", "File index") }
 
     static var winsTitle: String { loc("care.wins.title", "Biggest wins") }
     static var winsSeeAll: String { loc("care.wins.seeAll", "See all") }
