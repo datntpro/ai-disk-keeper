@@ -26,16 +26,24 @@ import Testing
         #expect(m.phase == .ready)
     }
 
+    @Test func csvDataStartsWithUTF8BOM() async {
+        let m = await model([rec(UUID(), "trashed", bytes: 1)], exists: { _ in true })
+        #expect(Array(m.csvData().prefix(3)) == [0xEF, 0xBB, 0xBF])
+    }
+
     @Test func revealOnlyInsideTrashAndExisting() async {
         let a = UUID()
         let inTrash = rec(a, "trashed", bytes: 1, trash: "/Users/t/.Trash/x")
         let volTrash = rec(a, "trashed", bytes: 1, trash: "/.Trashes/501/x")
+        let otherVol = rec(a, "trashed", bytes: 1, trash: "/Volumes/Backup/.Trashes/501/x")
+        let wrongUID = rec(a, "trashed", bytes: 1, trash: "/Volumes/Backup/.Trashes/502/x")
         let outside = rec(a, "trashed", bytes: 1, trash: "/Users/t/Documents/x")
         let dotdot = rec(a, "trashed", bytes: 1, trash: "/Users/t/.Trash/../Documents/x")
         let none = rec(a, "skipped", bytes: 1)
         var present = true
         let m = await model([inTrash], exists: { _ in present })
-        #expect(m.canRevealInTrash(inTrash) && m.canRevealInTrash(volTrash))
+        #expect(m.canRevealInTrash(inTrash) && m.canRevealInTrash(volTrash) && m.canRevealInTrash(otherVol))
+        #expect(!m.canRevealInTrash(wrongUID))
         #expect(!m.canRevealInTrash(outside) && !m.canRevealInTrash(dotdot) && !m.canRevealInTrash(none))
         present = false
         let m2 = await model([inTrash], exists: { _ in false })

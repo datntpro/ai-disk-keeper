@@ -20,6 +20,7 @@ VI = {
     "history.col.reason": "Chi tiết",
     "history.col.actions": "Thao tác",
     "history.loadFailed.title": "Không đọc được lịch sử",
+    "history.exportFailed": "Không xuất được lịch sử",
     "history.csvName": "lich-su-don-dep",
     "history.result.trashed": "Đã chuyển vào Thùng rác",
     "history.result.deleted": "Đã xóa",
@@ -32,7 +33,7 @@ PLURALS = {
         "vi": {"other": "%lld mục"},
     },
     "history.unreadable": {
-        "en": {"one": "%lld entry couldn't be read", "other": "%lld entries couldn't be read"},
-        "vi": {"other": "%lld mục không đọc được"},
+        "en": {"one": "%lld entry couldn't be shown (damaged, or from a newer version)", "other": "%lld entries couldn't be shown (damaged, or from a newer version)"},
+        "vi": {"other": "%lld mục không hiển thị được (hỏng hoặc từ phiên bản mới hơn)"},
     },
 }

@@ -128,4 +128,31 @@ private func tempFile(_ s: String) throws -> URL {
         #expect(try Date(f[0], strategy: .iso8601.year().month().day().time(includingFractionalSeconds: true)).timeIntervalSince1970 == 1_700_000_000.25)
         #expect(rows[2][5] == "/plain" && rows[2][9] == "keepTier" && rows[2][13] == "")
     }
+
+    @Test func fieldNeutralisesFormulaLeadersInEveryColumn() {
+        for lead in ["=", "+", "-", "@", "\t", "\r", "\n"] {
+            let hostile = lead + "HYPERLINK(\"http://x\")"
+            let out = AuditCSV.field(hostile)
+            let inner = out.hasPrefix("\"") ? String(out.dropFirst().dropLast()).replacingOccurrences(of: "\"\"", with: "\"") : out
+            #expect(inner == "'" + hostile, "leader \(lead.debugDescription)")
+            #expect(AuditCSV.field("  " + hostile).contains("'  " + lead))
+        }
+        #expect(AuditCSV.field("-1") == "-1")          // numbers stay numbers
+        #expect(AuditCSV.field("/-etc/=x") == "/-etc/=x") // paths start with "/"
+        #expect(AuditCSV.field("say \"hi\"\nnow") == "\"say \"\"hi\"\"\nnow\"")
+    }
+
+    @Test func hostileBundleIDErrorAndPathsAreNeutralisedInExport() throws {
+        let run = UUID()
+        let r = AuditRecord(timestamp: Date(timeIntervalSince1970: 1_700_000_000), runID: run, itemID: "i", path: "/Apps/=cmd|' /C calc'!A1.app",
+                            bytes: 1, action: .trash, result: "failed", trashPath: nil, ruleID: "r", tool: "npm", reasons: [],
+                            error: "+SUM(1)", bundleID: "=HYPERLINK(\"http://evil\",\"x\")", command: ["@evil"], exitStatus: -1)
+        let rows = Self.parse(AuditCSV.export(AuditHistoryReader.parse(Data((try line(r) + "\n").utf8))))
+        let f = rows[1]
+        #expect(f[5] == r.path)                    // absolute path, safe as is
+        #expect(f[10] == "'+SUM(1)")
+        #expect(f[11] == "'=HYPERLINK(\"http://evil\",\"x\")")
+        #expect(f[12] == "'@evil")
+        #expect(f[13] == "-1")
+    }
 }

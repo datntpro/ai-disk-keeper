@@ -6469,6 +6469,22 @@
         }
       }
     },
+    "history.exportFailed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't export the history"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không xuất được lịch sử"
+          }
+        }
+      }
+    },
     "history.failed" : {
       "localizations" : {
         "en" : {
@@ -6735,13 +6751,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld entry couldn't be read"
+                  "value" : "%lld entry couldn't be shown (damaged, or from a newer version)"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld entries couldn't be read"
+                  "value" : "%lld entries couldn't be shown (damaged, or from a newer version)"
                 }
               }
             }
@@ -6753,7 +6769,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "needs_review",
-                  "value" : "%lld mục không đọc được"
+                  "value" : "%lld mục không hiển thị được (hỏng hoặc từ phiên bản mới hơn)"
                 }
               }
             }

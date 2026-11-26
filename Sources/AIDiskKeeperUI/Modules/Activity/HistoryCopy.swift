@@ -5,7 +5,7 @@ import Foundation
 enum HistoryCopy {
     static var lifetime: String { loc("history.lifetime", "Lifetime reclaimed") }
     static func items(_ n: Int) -> String { loc("history.items", "\(n) items") }
-    static func entriesUnreadable(_ n: Int) -> String { loc("history.unreadable", "\(n) entries couldn't be read") }
+    static func entriesUnreadable(_ n: Int) -> String { loc("history.unreadable", "\(n) entries couldn't be shown (damaged, or from a newer version)") }
     static var truncated: String { loc("history.truncated", "Only the most recent part of a very large log is shown.") }
     static var reclaimed: String { loc("history.reclaimed", "Reclaimed") }
     static var skipped: String { loc("history.skipped", "Skipped") }
@@ -23,6 +23,7 @@ enum HistoryCopy {
     static var colResult: String { loc("history.col.result", "Result") }
     static var colReason: String { loc("history.col.reason", "Details") }
     static var loadFailedTitle: String { loc("history.loadFailed.title", "Couldn't read the history") }
+    static var exportFailed: String { loc("history.exportFailed", "Couldn't export the history") }
     static var csvName: String { loc("history.csvName", "cleanup-history") }
     static func failedCount(_ n: Int) -> String { "\(failed): \(Formatting.count(n))" }
     static var colActions: String { loc("history.col.actions", "Actions") }

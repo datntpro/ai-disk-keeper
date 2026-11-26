@@ -149,7 +149,15 @@ public enum AuditCSV {
 
     static func stamp(_ d: Date) -> String { d.formatted(Date.ISO8601FormatStyle(includingFractionalSeconds: true)) }
 
-    static func field(_ s: String) -> String {
+    /// First characters that make a spreadsheet read a cell as a formula (also after leading spaces).
+    private static let formulaLeaders: Set<Character> = ["=", "+", "-", "@", "\t", "\r", "\n"]
+
+    /// One CSV cell: neutralises formula-leading text with a single quote, then RFC 4180 quoting.
+    /// Plain integers (bytes, exit status) are left alone so negative numbers stay numbers.
+    static func field(_ raw: String) -> String {
+        var s = raw
+        let isInteger = Int(raw).map(String.init) == raw
+        if !isInteger, let first = raw.drop(while: { $0 == " " }).first, formulaLeaders.contains(first) { s = "'" + raw }
         guard s.contains(where: { $0 == "," || $0 == "\"" || $0 == "\n" || $0 == "\r" }) else { return s }
         return "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\""
     }

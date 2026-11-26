@@ -13,6 +13,7 @@ final class HistoryModel {
     var finder: any FinderRevealing = SystemFinder()
 
     let logURL: URL
+    private let uid: uid_t
     private let trashRoots: [String]
     @ObservationIgnored private let exists: (String) -> Bool
     @ObservationIgnored private let load: @Sendable (URL) throws -> AuditHistory
@@ -21,6 +22,7 @@ final class HistoryModel {
          exists: @escaping (String) -> Bool = HistoryModel.lstatExists,
          load: @escaping @Sendable (URL) throws -> AuditHistory = { try AuditHistoryReader.read($0) }) {
         self.logURL = logURL
+        self.uid = uid
         self.trashRoots = [home + "/.Trash", "/.Trashes/\(uid)"]
         self.exists = exists
         self.load = load
@@ -51,7 +53,10 @@ final class HistoryModel {
 
     func isInsideTrash(_ path: String) -> Bool {
         guard path.hasPrefix("/"), !path.split(separator: "/").contains("..") else { return false }
-        return trashRoots.contains { path.hasPrefix($0 + "/") }
+        if trashRoots.contains(where: { path.hasPrefix($0 + "/") }) { return true }
+        // Other volumes: /Volumes/<name>/.Trashes/<uid>/…
+        let parts = path.split(separator: "/", omittingEmptySubsequences: true).map(String.init)
+        return parts.count > 4 && parts[0] == "Volumes" && parts[2] == ".Trashes" && parts[3] == String(uid)
     }
 
     func revealInTrash(_ record: AuditRecord) {
@@ -62,6 +67,8 @@ final class HistoryModel {
     func revealLog() { finder.reveal(logURL) }
 
     func csv() -> String { AuditCSV.export(history) }
+    /// UTF-8 with a BOM, so Excel reads non-ASCII paths correctly (Numbers ignores it).
+    func csvData() -> Data { Data(("\u{FEFF}" + csv()).utf8) }
 
     nonisolated static func lstatExists(_ path: String) -> Bool {
         var st = stat()

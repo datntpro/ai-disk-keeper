@@ -44,8 +44,8 @@ struct HistoryView: View {
             StateView(kind: .blockingError, symbol: "exclamationmark.triangle", title: HistoryCopy.loadFailedTitle, message: reason)
         case .ready:
             VStack(spacing: 0) {
-                if model.history.malformedLines > 0 {
-                    Label(HistoryCopy.entriesUnreadable(model.history.malformedLines), systemImage: "exclamationmark.triangle")
+                if model.history.malformedLines + model.history.unknownLines > 0 {
+                    Label(HistoryCopy.entriesUnreadable(model.history.malformedLines + model.history.unknownLines), systemImage: "exclamationmark.triangle")
                         .font(.callout).foregroundStyle(.adkReviewInk)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, ADKTheme.Spacing.lg).padding(.vertical, ADKTheme.Spacing.sm)
@@ -113,7 +113,13 @@ struct HistoryView: View {
         panel.allowedContentTypes = [.commaSeparatedText]
         panel.nameFieldStringValue = HistoryCopy.csvName + ".csv"
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        try? Data(model.csv().utf8).write(to: url, options: .atomic)
+        do { try model.csvData().write(to: url, options: .atomic) } catch {
+            let alert = NSAlert()
+            alert.alertStyle = .warning
+            alert.messageText = HistoryCopy.exportFailed
+            alert.informativeText = error.localizedDescription
+            alert.runModal()
+        }
     }
 }
 
