@@ -98,4 +98,19 @@ final class CareHistoryStoreTests: XCTestCase {
         XCTAssertEqual(CareHistoryStore.defaultFileURL(environment: env).path,
                        "/Users/x/Library/Application Support/AIDiskKeeper/care-history.json")
     }
+
+    func testKeepsNewerSchemaEntriesAndTightensExistingDirectory() throws {
+        let (h, _) = try store()
+        let dir = h.fileURL.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true,
+                                                attributes: [.posixPermissions: 0o755])
+        let newer = #"[{"schemaVersion":2,"finishedAt":"2026-01-01T00:00:00.000Z","scopeFingerprint":"x","perTool":{},"perModule":{}}]"#
+        try Data(newer.utf8).write(to: h.fileURL)
+        try h.append(CareSnapshot(finishedAt: Date(), scopeFingerprint: "x", perTool: [:], perModule: [:]))
+        XCTAssertEqual(h.load().map(\.schemaVersion), [2, 1])
+        let attrs = try FileManager.default.attributesOfItem(atPath: dir.path)
+        XCTAssertEqual((attrs[.posixPermissions] as? NSNumber)?.intValue, 0o700)
+        let leftovers = try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0.hasSuffix(".tmp") }
+        XCTAssertTrue(leftovers.isEmpty)
+    }
 }

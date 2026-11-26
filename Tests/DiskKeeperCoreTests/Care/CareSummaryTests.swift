@@ -91,4 +91,20 @@ final class CareSummaryTests: XCTestCase {
         XCTAssertEqual(report.summaries[.apps]?.reviewBytes, 7)
         XCTAssertEqual(report.totals.safeBytes, 0)
     }
+
+    /// A later stage's item that CONTAINS an earlier-counted item: the union is counted once.
+    func testParentAfterChildCountsOnlyTheRemainder() async throws {
+        let events = try await CareKit.run([
+            FakeStage.spec(.rules, modules: [.systemJunk], items: [
+                CareKit.item("/f/Logs/Claude/a.log", tier: .safe, size: 300, category: .systemJunk)]),
+            FakeStage.spec(.apps, modules: [.apps], items: [
+                CareKit.item("/f/Logs/Claude", tier: .review, size: 1_000, category: .appLeftover),
+                CareKit.item("/f/Logs/Claude/other.log", tier: .review, size: 50, category: .appLeftover)]),
+        ])
+        let report = try XCTUnwrap(CareKit.report(events))
+        XCTAssertEqual(report.totals.totalBytes, 1_000)
+        XCTAssertEqual(report.totals.safeBytes, 300)
+        XCTAssertEqual(report.totals.reviewBytes, 700, "parent minus the child already counted; a later item inside the parent adds nothing")
+        XCTAssertEqual(report.summaries[.apps]?.reviewBytes, 1_050, "module summaries stay undeduplicated")
+    }
 }

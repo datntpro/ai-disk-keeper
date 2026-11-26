@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 /// Totals of one completed Care Scan. No paths and no item lists (privacy): only bytes per tool and per module.
@@ -32,11 +33,12 @@ public struct CareHistoryStore: Sendable {
         URL(fileURLWithPath: environment.applicationSupport + "/AIDiskKeeper/care-history.json")
     }
 
-    /// Missing or corrupt file → `[]`. Never throws.
+    /// Missing or corrupt file → `[]`. Never throws. Entries of a newer schema are returned too (and kept when
+    /// appending); callers that compare totals use only `schemaVersion == 1`.
     public func load() -> [CareSnapshot] {
         guard let data = try? Data(contentsOf: fileURL),
               let all = try? DiskKeeperJSON.makeDecoder().decode([CareSnapshot].self, from: data) else { return [] }
-        return all.filter { $0.schemaVersion == 1 }
+        return all
     }
 
     /// Appends, keeps the newest 20, writes atomically (directory 0700, file 0600). A corrupt file is replaced.
@@ -45,8 +47,28 @@ public struct CareHistoryStore: Sendable {
         let dir = fileURL.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true,
                                                 attributes: [.posixPermissions: 0o700])
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: dir.path)
         let data = try DiskKeeperJSON.makeEncoder(pretty: true).encode(kept)
-        try data.write(to: fileURL, options: .atomic)
-        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
+        // Create the temp file 0600 from the start (no window where it is world-readable), then rename over the target.
+        let tmp = dir.appendingPathComponent(".care-history-\(UUID().uuidString).tmp")
+        let fd = open(tmp.path, O_WRONLY | O_CREAT | O_EXCL, 0o600)
+        guard fd >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
+        do {
+            try data.withUnsafeBytes { raw in
+                var offset = 0
+                while offset < raw.count {
+                    let n = write(fd, raw.baseAddress! + offset, raw.count - offset)
+                    if n < 0 { if errno == EINTR { continue }; throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
+                    offset += n
+                }
+            }
+            fsync(fd)
+            close(fd)
+            guard rename(tmp.path, fileURL.path) == 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
+        } catch {
+            close(fd)
+            remove(tmp.path)   // our own half-written temp file
+            throw error
+        }
     }
 }

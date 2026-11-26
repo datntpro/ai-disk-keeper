@@ -31,7 +31,7 @@ public actor CareScanCoordinator {
 
     /// `stages` may be given in any order; they always run in `CareStage.allCases` order.
     public init(stages: [CareStageSpec], history: CareHistoryStore?, scopeFingerprint: String,
-                clock: @escaping @Sendable () -> Date = Date.init) {
+                clock: @escaping @Sendable () -> Date = { Date() }) {
         var byStage: [CareStage: CareStageSpec] = [:]
         for s in stages where byStage[s.stage] == nil { byStage[s.stage] = s }
         self.specs = CareStage.allCases.compactMap { byStage[$0] }
@@ -177,7 +177,7 @@ public actor CareScanCoordinator {
             let perModule = Dictionary(uniqueKeysWithValues: tally.summaries.map { ($0.key.rawValue, $0.value.totalBytes) })
             let snapshot = CareSnapshot(finishedAt: finishedAt, scopeFingerprint: scopeFingerprint,
                                         perTool: tally.perTool, perModule: perModule)
-            if let previous = history.load().last(where: { $0.scopeFingerprint == scopeFingerprint }) {
+            if let previous = history.load().last(where: { $0.schemaVersion == 1 && $0.scopeFingerprint == scopeFingerprint }) {
                 growth = Self.growth(from: previous, to: snapshot)
             }
             do { try history.append(snapshot) } catch {

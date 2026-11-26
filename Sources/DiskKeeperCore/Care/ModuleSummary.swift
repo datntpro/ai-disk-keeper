@@ -88,7 +88,7 @@ enum CareCounting {
 
 /// Accumulates one scan: per-stage module summaries, physically deduplicated totals, per-tool AI bytes.
 struct CareTally {
-    private var claims = PathClaimSet()
+    private var claims = CareByteTrie()
     private(set) var summaries: [CareModule: ModuleSummary] = [:]
     private(set) var totals = CareTotals()
     private(set) var perTool: [String: Int64] = [:]
@@ -103,23 +103,57 @@ struct CareTally {
     /// `physical` is the item's physical path. The first stage to deliver a path wins the totals.
     mutating func add(_ item: ScanItem, physical: String, stage: CareStage) {
         let (bytes, counted) = CareCounting.contribution(of: item)
-        let owned = claims.claim(physical) == nil
+        // Claim even a 0-byte or keeper member, so what sits inside it is not counted again.
+        let net = claims.claim(physical, bytes: counted ? bytes : 0)
         guard counted else { return }
         let module = CareModule(category: item.category)
         stageSummaries[stage, default: [:]][module, default: ModuleSummary(module: module)]
             .add(bytes: bytes, tier: item.tier)
         summaries[module, default: ModuleSummary(module: module)].add(bytes: bytes, tier: item.tier)
-        guard owned else { return }
+        guard let net else { return }
         switch item.tier {
-        case .safe: totals.safeBytes += bytes
-        case .review: totals.reviewBytes += bytes
-        case .keep: totals.keepBytes += bytes
+        case .safe: totals.safeBytes += net
+        case .review: totals.reviewBytes += net
+        case .keep: totals.keepBytes += net
         }
         totals.itemCount += 1
-        if item.category == .aiToolData { perTool[item.tool.rawValue, default: 0] += bytes }
+        if item.category == .aiToolData { perTool[item.tool.rawValue, default: 0] += net }
     }
 
     func stageSummary(_ stage: CareStage) -> [ModuleSummary] {
         CareModule.allCases.compactMap { stageSummaries[stage]?[$0] }
+    }
+}
+
+/// Physical paths already counted in the totals, with the bytes counted under each subtree.
+/// `claim` returns nil when the path is equal to or inside a counted path (nothing to add). When the new path
+/// *contains* counted paths it returns its bytes minus what is already counted below it, so a parent that arrives
+/// after its child (an app-leftover folder after a rule's log file) counts only the remainder.
+struct CareByteTrie: Sendable {
+    private struct Node: Sendable {
+        var children: [String: Int] = [:]
+        var counted = false
+        var subtree: Int64 = 0   // bytes counted at or below this node
+    }
+    private var nodes: [Node] = [Node()]
+
+    mutating func claim(_ path: String, bytes: Int64) -> Int64? {
+        var trail = [0]
+        for component in PathCanonicalizer.key(path).components {
+            if nodes[trail.last!].counted { return nil }
+            if let next = nodes[trail.last!].children[component] {
+                trail.append(next)
+            } else {
+                nodes.append(Node())
+                nodes[trail.last!].children[component] = nodes.count - 1
+                trail.append(nodes.count - 1)
+            }
+        }
+        let last = trail.last!
+        if nodes[last].counted { return nil }
+        let net = max(0, bytes - nodes[last].subtree)
+        nodes[last].counted = true
+        for i in trail { nodes[i].subtree += net }
+        return net
     }
 }

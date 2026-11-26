@@ -23,8 +23,9 @@ items already delivered are kept and later stages never start.
 ## Numbers
 
 - **Module summary**: the items of that module's own stage, split by tier. Not deduplicated across stages.
-- **Totals** (`CareReport.totals`): every physical byte once. First stage in order wins; an item nested inside or equal
-  to an already-counted path is still delivered in `.item` but not added to totals.
+- **Totals** (`CareReport.totals`): every physical byte once. First stage in order wins; an item equal to or inside an
+  already-counted path is still delivered in `.item` but not added to totals; an item that *contains* already-counted
+  paths (a leftover folder after a rule's log file) adds only its bytes minus what is counted below it.
 - Duplicates: the suggested keeper is not counted (it frees nothing); a member with `sharedStorage` counts 0 bytes.
 - Apps: only uninstallable bundles are listed; view-only ones (Apple, system) have nothing to reclaim.
 - Tiers always come from the item. The coordinator never pre-selects: "Clean Safe only" is the UI's job, through the dry-run sheet.
