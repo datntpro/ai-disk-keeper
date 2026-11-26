@@ -38,8 +38,15 @@ public actor CleanupEngine {
 
     // MARK: Plan (dry run)
 
-    /// Dry run. Never mutates anything. Records the plan id as issued.
+    /// Dry run. Never mutates anything. Records the plan id as issued. Duplicate items are blocked
+    /// (`duplicateGroupUnknown`) because no groups were passed: use ``plan(_:duplicateGroups:)``.
     public func plan(_ items: [ScanItem]) async -> CleanupPlan {
+        await plan(items, duplicateGroups: [:])
+    }
+
+    /// Dry run with the duplicate groups the items came from (keyed by `ScanItem.groupID`). Enforces the
+    /// keep-one invariant: at least one unselected copy must still exist and hold the same content.
+    public func plan(_ items: [ScanItem], duplicateGroups: [String: DuplicateGroup]) async -> CleanupPlan {
         let action: CleanupAction = options.requestPermanentDelete ? .deletePermanently : .trash
         var blockers: [[CleanupBlocker]] = []
         var fingerprints: [ItemFingerprint?] = []
@@ -90,8 +97,12 @@ public actor CleanupEngine {
         }
         for (index, extra) in checked { blockers[index] += extra }
 
+        var survivorSets: [Int: DuplicateSurvivorSet] = [:]
+        await applyKeepOne(items: items, groups: duplicateGroups, blockers: &blockers, survivors: &survivorSets)
+
         let entries = items.indices.map {
-            CleanupPlanEntry(item: items[$0], action: action, blockers: blockers[$0], fingerprint: fingerprints[$0])
+            CleanupPlanEntry(item: items[$0], action: action, blockers: blockers[$0], fingerprint: fingerprints[$0],
+                             survivors: survivorSets[$0])
         }
         let plan = CleanupPlan(createdAt: now(), entries: entries)
         issued[plan.id] = Issued(plan: plan, monotonic: ContinuousClock.now)
@@ -134,6 +145,8 @@ public actor CleanupEngine {
         var results: [CleanupItemResult] = []
         var wasCancelled = false
         var auditFailure: String?
+        var trashedKeys: Set<PathKey> = []
+        let claimed = plan.entries.map { PathCanonicalizer.key($0.item.path) }
         let total = plan.entries.count
 
         for (index, entry) in plan.entries.enumerated() {
@@ -146,7 +159,11 @@ public actor CleanupEngine {
                 results.append(result(entry, .notAttempted))
                 continue
             }
-            let (outcome, trashPath) = await run(entry)
+            let (outcome, trashPath) = await run(entry, trashedKeys: trashedKeys, claimed: claimed)
+            switch outcome {
+            case .trashed, .deleted: trashedKeys.insert(PathCanonicalizer.key(entry.item.path))
+            default: break
+            }
             results.append(result(entry, outcome))
             do {
                 try await auditLog.append(record(entry, outcome, runID: plan.id, trashPath: trashPath))
@@ -169,7 +186,7 @@ public actor CleanupEngine {
         if waiters.isEmpty { isExecuting = false } else { waiters.removeFirst().resume() }
     }
 
-    private func run(_ entry: CleanupPlanEntry) async -> (CleanupOutcome, String?) {
+    private func run(_ entry: CleanupPlanEntry, trashedKeys: Set<PathKey>, claimed: [PathKey]) async -> (CleanupOutcome, String?) {
         if !entry.blockers.isEmpty { return (.skipped(entry.blockers), nil) }
         let item = entry.item
 
@@ -178,6 +195,7 @@ public actor CleanupEngine {
         blockers += await validator.changeCheck(item)
         blockers += validator.fastChecks(item, expected: entry.fingerprint).blockers
         if !blockers.isEmpty { return (.skipped(blockers), nil) }
+        if let gate = await keepOneGate(entry, trashedKeys: trashedKeys, claimed: claimed) { return (.skipped([gate]), nil) }
 
         switch entry.action {
         case .trash:

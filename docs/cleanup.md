@@ -35,6 +35,17 @@ Per-item failures never abort the batch. Cancellation is honoured between items,
 | `duplicate` | Same item id selected twice. |
 | `permanentDeleteDisabled` | Permanent delete requested but the Settings switch is off. |
 | `sizingFailed` | Re-measuring failed. |
+| `wouldRemoveAllCopies` | No copy would be left: every copy of a duplicate group is selected (or lies under another selected item, of any category, e.g. a folder), or none of the unselected copies still holds the group's content. Keep at least one. |
+| `survivorChanged` | Execute time: none of the copies that were to stay passes the survivor check any more (deleted, replaced, edited, or already trashed in this run). |
+| `duplicateGroupUnknown` | A duplicate item without its group (`plan(_:)`, or an unknown `groupID`, or a path that is not a member of the group). Fails closed. |
+
+## Duplicate groups (keep-one)
+
+PLAN invariant 13, decision N6. `plan(_:)` keeps its signature and treats every duplicate item (category `duplicate` or a `dup:` group id) as unknown, so it blocks them with `duplicateGroupUnknown`. A UI that offers duplicates calls `plan(_:duplicateGroups:)` with the `DuplicateGroup`s it got from `DuplicateFinder`, keyed by `ScanItem.groupID`. The check needs the whole selection, so it lives in the engine and not in `ItemValidator`, which sees one item.
+
+At plan time, per group: the *unselected* members (compared with `PathCanonicalizer.key`) are verified with `lstat` (same device and inode, regular file, same size, mtime within 2 s) and a **partial digest** (SHA-256 of size ‖ first 64 KiB ‖ last 64 KiB, 128 KiB read) equal to the group's. A copy that equals, or lies below, the path of **any** item in the plan (any category, folders included) is not a survivor either, and neither is a copy sharing the inode of a selected one (forged groups); the same claim is re-checked at execute time, so the result does not depend on item order. A hard-link name of a selected member is the same inode and never counts as a survivor. If no member survives, every selected member of the group gets `wouldRemoveAllCopies`; otherwise each selected entry carries the same `DuplicateSurvivorSet` (`entry.survivors`).
+
+At execute time, right before the move, at least one survivor must pass the same check and must not have been trashed earlier in this run. Otherwise the entry is skipped with `survivorChanged`. This closes the race where the keeper is deleted in Finder between plan and execute, and the one where two selected members name each other as survivors. There is **no full re-hash** at execute (cost): partial digest + identity + mtime is the documented trade-off. **Residual risks (accepted):** an edit in the middle of a survivor that keeps its size and mtime passes the execute gate (no full re-hash, see above); the engine trusts the `DuplicateGroup` it is given beyond the inode check; media files outside the protected library packages (e.g. `~/Music/Music/Media.localized`) are in scope for the finder. `survivors` is part of the plan, so tampering with it gives `planModified`. Design notes: [duplicates.md](duplicates.md).
 
 ## Re-validation order at execute time
 

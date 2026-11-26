@@ -68,6 +68,12 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
     case duplicate
     case permanentDeleteDisabled
     case sizingFailed(String)
+    /// Every copy of a duplicate group is selected: at least one must stay.
+    case wouldRemoveAllCopies(groupID: String)
+    /// The copy that was to be kept changed or disappeared between plan and execute.
+    case survivorChanged(groupID: String)
+    /// A duplicate item without its group (plan(_:) without groups): fail closed.
+    case duplicateGroupUnknown(groupID: String)
 
     /// Stable machine code used in audit lines and tests.
     public var code: String {
@@ -88,6 +94,9 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
         case .duplicate: "duplicate"
         case .permanentDeleteDisabled: "permanentDeleteDisabled"
         case .sizingFailed: "sizingFailed"
+        case .wouldRemoveAllCopies: "wouldRemoveAllCopies"
+        case .survivorChanged: "survivorChanged"
+        case .duplicateGroupUnknown: "duplicateGroupUnknown"
         }
     }
 
@@ -110,6 +119,9 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
         case .duplicate: "The item was selected more than once."
         case .permanentDeleteDisabled: "Permanent delete is turned off in Settings."
         case .sizingFailed(let e): "Could not re-measure the item: \(e)"
+        case .wouldRemoveAllCopies: "No copy of this duplicate group would be left. Keep at least one."
+        case .survivorChanged: "The copy you're keeping changed or disappeared. Rescan before deleting this duplicate."
+        case .duplicateGroupUnknown: "Duplicate details are missing. Rescan and review the group."
         }
     }
 }
