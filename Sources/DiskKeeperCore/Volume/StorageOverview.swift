@@ -3,7 +3,7 @@ import Foundation
 public struct StorageOverview: Sendable, Hashable {
     /// `/System/Volumes/Data` (falls back to `/` when missing).
     public let dataVolume: VolumeInfo
-    /// `/` (sealed system); nil when it is the same device as the data volume.
+    /// `/` (sealed system); nil when it is the the same file system as the data volume.
     public let systemVolume: VolumeInfo?
     public let snapshots: SnapshotListing
     public let trash: TrashInfo
@@ -64,7 +64,7 @@ public struct StorageOverviewService: Sendable {
         } catch {
             return (root, nil)
         }
-        if let a = data.deviceID, let b = root.deviceID, a == b { return (data, nil) }
+        if let a = data.fileSystemID, let b = root.fileSystemID, a == b { return (data, nil) }
         return (data, root)
     }
 }

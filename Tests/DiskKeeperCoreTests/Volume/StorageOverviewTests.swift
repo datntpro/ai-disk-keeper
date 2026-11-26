@@ -8,7 +8,7 @@ private struct FakeVolumes: VolumeInfoProviding {
     func info(forPath path: String) async throws -> VolumeInfo {
         try await Task.sleep(for: delay)
         if missing.contains(path) { throw VolumeInfoError.unavailable(path: path, reason: "missing") }
-        return VolumeInfo(mountPath: path, totalBytes: 1000, availableBytes: 100, usedBytesThisVolume: 300, deviceID: devices[path])
+        return VolumeInfo(mountPath: path, totalBytes: 1000, availableBytes: 100, usedBytesThisVolume: 300, fileSystemID: devices[path])
     }
 }
 

@@ -58,3 +58,51 @@ final class VolumeInfoTests: XCTestCase {
         }
     }
 }
+
+/// Live checks against this Mac's real volumes. Skipped unless the boot volume is APFS with a separate Data volume.
+final class VolumeLiveSanityTests: XCTestCase {
+    private func diskutilCapacityInUse(_ path: String) throws -> Int64? {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/sbin/diskutil")
+        p.arguments = ["info", "-plist", path]
+        let pipe = Pipe()
+        p.standardOutput = pipe
+        p.standardError = FileHandle.nullDevice
+        try p.run()
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        p.waitUntilExit()
+        guard p.terminationStatus == 0,
+              let plist = try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
+        else { return nil }
+        return (plist["CapacityInUse"] as? NSNumber)?.int64Value
+    }
+
+    func testPerVolumeUsedMatchesDiskutilAndVolumesAreDistinct() async throws {
+        let provider = LiveVolumeInfoProvider()
+        let root = try await provider.info(forPath: "/")
+        try XCTSkipUnless(root.fileSystem == "apfs", "boot volume is not APFS")
+        let dataPath = "/System/Volumes/Data"
+        try XCTSkipUnless(FileManager.default.fileExists(atPath: dataPath), "no separate Data volume")
+        let data = try await provider.info(forPath: dataPath)
+
+        XCTAssertNotNil(root.fileSystemID)
+        XCTAssertNotEqual(root.fileSystemID, data.fileSystemID, "/ and Data must be told apart (st_dev can't)")
+
+        let rootUsed = try XCTUnwrap(root.usedBytesThisVolume)
+        let dataUsed = try XCTUnwrap(data.usedBytesThisVolume)
+        XCTAssertNotEqual(rootUsed, dataUsed, "used must be per volume, not container-wide")
+        XCTAssertLessThanOrEqual(rootUsed + dataUsed, data.totalBytes - data.availableBytes)
+
+        // The Data volume changes while we run (caches, logs): allow 1 GiB of drift. The sealed system volume is stable.
+        for (info, path, slack) in [(root, "/", Int64(64 << 20)), (data, dataPath, Int64(1 << 30))] {
+            guard let expected = try diskutilCapacityInUse(path) else { throw XCTSkip("diskutil unavailable") }
+            XCTAssertLessThan(abs(info.usedBytesThisVolume! - expected), slack, "\(path) used vs diskutil")
+        }
+
+        let overview = try await StorageOverviewService(
+            environment: .current(), snapshots: LocalSnapshotLister(executable: URL(fileURLWithPath: "/nonexistent/tmutil")),
+            trash: TrashSizer(environment: .current()) { _ in throw FileSizerError.rootNotFound(path: "x") }).overview()
+        XCTAssertNotNil(overview.systemVolume)
+        XCTAssertNotNil(overview.otherVolumesAndSnapshotsBytes)
+    }
+}

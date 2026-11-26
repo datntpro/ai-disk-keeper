@@ -11,10 +11,11 @@ public struct VolumeInfo: Sendable, Hashable, Codable {
     public let availableBytes: Int64
     public let availableForImportantUsage: Int64?
     public let availableForOpportunisticUsage: Int64?
-    /// Bytes used by THIS volume only (`statfs`: `(f_blocks - f_bfree) * f_bsize`).
+    /// Bytes used by THIS volume only (`getattrlist` `ATTR_VOL_SPACEUSED`). Not `statfs`: on APFS its free count is
+    /// the whole container's, so every volume would read the container's total usage.
     public let usedBytesThisVolume: Int64?
-    /// `st_dev` of the mount point; two paths on the same device share it.
-    public let deviceID: Int64?
+    /// `statfs` `f_fsid` of the volume. `st_dev` is NOT usable: `/` and `/System/Volumes/Data` share it (firmlinked volume group).
+    public let fileSystemID: Int64?
     public let isInternal: Bool?
     public let isEncrypted: Bool?
     public let isReadOnly: Bool?
@@ -24,7 +25,7 @@ public struct VolumeInfo: Sendable, Hashable, Codable {
         mountPath: String, name: String? = nil, fileSystem: String? = nil,
         totalBytes: Int64, availableBytes: Int64,
         availableForImportantUsage: Int64? = nil, availableForOpportunisticUsage: Int64? = nil,
-        usedBytesThisVolume: Int64? = nil, deviceID: Int64? = nil,
+        usedBytesThisVolume: Int64? = nil, fileSystemID: Int64? = nil,
         isInternal: Bool? = nil, isEncrypted: Bool? = nil, isReadOnly: Bool? = nil, supportsClones: Bool? = nil
     ) {
         self.mountPath = mountPath
@@ -35,7 +36,7 @@ public struct VolumeInfo: Sendable, Hashable, Codable {
         self.availableForImportantUsage = availableForImportantUsage
         self.availableForOpportunisticUsage = availableForOpportunisticUsage
         self.usedBytesThisVolume = usedBytesThisVolume
-        self.deviceID = deviceID
+        self.fileSystemID = fileSystemID
         self.isInternal = isInternal
         self.isEncrypted = isEncrypted
         self.isReadOnly = isReadOnly
@@ -90,22 +91,31 @@ public struct LiveVolumeInfoProvider: VolumeInfoProviding {
         }
         var fs = statfs()
         var fsName: String?
-        var used: Int64?
+        var fsid: Int64?
         if statfs(path, &fs) == 0 {
             fsName = withUnsafePointer(to: &fs.f_fstypename) {
                 $0.withMemoryRebound(to: CChar.self, capacity: Int(MFSTYPENAMELEN)) { String(cString: $0) }
             }
-            used = (Int64(fs.f_blocks) - Int64(fs.f_bfree)) * Int64(fs.f_bsize)
+            fsid = Int64(fs.f_fsid.val.0) << 32 | Int64(UInt32(bitPattern: fs.f_fsid.val.1))
         }
-        var st = stat()
-        let dev: Int64? = stat(path, &st) == 0 ? Int64(st.st_dev) : nil
         return VolumeInfo(
             mountPath: path, name: v.volumeLocalizedName, fileSystem: fsName,
             totalBytes: Int64(total), availableBytes: Int64(available),
             availableForImportantUsage: v.volumeAvailableCapacityForImportantUsage,
             availableForOpportunisticUsage: v.volumeAvailableCapacityForOpportunisticUsage,
-            usedBytesThisVolume: used, deviceID: dev,
+            usedBytesThisVolume: spaceUsed(path: path), fileSystemID: fsid,
             isInternal: v.volumeIsInternal, isEncrypted: v.volumeIsEncrypted, isReadOnly: v.volumeIsReadOnly,
             supportsClones: v.volumeSupportsFileCloning)
+    }
+
+    /// Bytes this volume uses, from `ATTR_VOL_SPACEUSED`; nil when the file system doesn't report it.
+    static func spaceUsed(path: String) -> Int64? {
+        var list = attrlist()
+        list.bitmapcount = UInt16(ATTR_BIT_MAP_COUNT)
+        list.volattr = attrgroup_t(ATTR_VOL_INFO) | attrgroup_t(ATTR_VOL_SPACEUSED)
+        var buf = [UInt8](repeating: 0, count: 4 + MemoryLayout<off_t>.size)
+        guard getattrlist(path, &list, &buf, buf.count, 0) == 0 else { return nil }
+        let value = buf.withUnsafeBytes { $0.loadUnaligned(fromByteOffset: 4, as: off_t.self) }
+        return value >= 0 ? Int64(value) : nil
     }
 }
