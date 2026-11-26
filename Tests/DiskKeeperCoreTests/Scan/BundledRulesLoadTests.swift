@@ -8,5 +8,6 @@ final class BundledRulesLoadTests: XCTestCase {
         let fixture = try FixtureHome()
         let result = RuleHarness.loadAllBundled(fixture: fixture)
         XCTAssertEqual(result.errors, [], "\(result.errors.map(\.description).joined(separator: "\n"))")
+        XCTAssertEqual(result.warnings, [], "\(result.warnings.map(\.description).joined(separator: "\n"))")
     }
 }
