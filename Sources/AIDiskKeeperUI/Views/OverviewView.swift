@@ -19,6 +19,11 @@ struct OverviewView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: ADKTheme.Spacing.lg) {
                     header
+                    if care.startFailed {
+                        StateView(kind: .error, symbol: "exclamationmark.triangle", title: StateCopy.errorScan, message: "",
+                                  actions: [StateAction(title: StateCopy.retry) { care.start() }])
+                            .frame(maxWidth: .infinity)
+                    }
                     CareHero(model: care, storage: storage, showFirstRunNote: care.phase == .before && care.lastFinishedAt == nil && care.index.tree == nil,
                              onReview: { withAnimation { proxy.scrollTo(tilesAnchor, anchor: .top) } },
                              onCleanSafe: { care.cleanSafeOnly(using: cleanup, selection: selection) })
@@ -29,10 +34,8 @@ struct OverviewView: View {
                                         seeAll: { if let target = BiggestWins.destination(for: care.biggestWins) { open(target) } },
                                         inspect: inspect)
                     }
-                    if !care.warnings.isEmpty, care.phase == .results || care.phase == .stopped {
-                        Button(action: showWarnings) {
-                            Label(OverviewCopy.unreadable(care.warnings.count), systemImage: "exclamationmark.circle")
-                        }.buttonStyle(.link)
+                    if !care.startFailed, !care.warnings.isEmpty, care.phase == .results || care.phase == .stopped {
+                        partialBanner
                     }
                     if care.phase == .before { EmptyStateView() }
                 }
@@ -40,6 +43,22 @@ struct OverviewView: View {
             }
         }
         .task { storage.refresh() }
+    }
+
+    /// `state.partial.*`: the scan finished but some folders couldn't be read.
+    private var partialBanner: some View {
+        HStack(alignment: .top, spacing: ADKTheme.Spacing.md) {
+            Image(systemName: "exclamationmark.circle").foregroundStyle(.adkReviewInk).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(StateCopy.partialTitle(care.warnings.count)).font(.callout.weight(.semibold))
+                Text(StateCopy.partialBody).font(.caption).foregroundStyle(.adkText2)
+            }
+            Spacer()
+            Button(StateCopy.partialShow, action: showWarnings)
+        }
+        .padding(ADKTheme.Spacing.md)
+        .background(.adkReviewSoft, in: RoundedRectangle(cornerRadius: ADKTheme.Radius.lg))
+        .accessibilityElement(children: .contain)
     }
 
     private var header: some View {

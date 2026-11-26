@@ -37,6 +37,21 @@ final class OverviewStateTests: XCTestCase {
         XCTAssertEqual(m.summaries[.aiTools]?.itemCount, 4)
     }
 
+    func testStartFailureSetsErrorStateAndRetryClearsIt() async {
+        struct Boom: Error {}
+        let rig = CareRig()
+        let model = CareScanModel(makeCoordinator: { _ in throw Boom() }, scan: rig.scan, index: rig.index,
+                                  duplicates: { nil }, largeOld: { nil }, announce: { _ in })
+        model.start()
+        await rig.waitUntil { model.startFailed }
+        XCTAssertTrue(model.startFailed)
+        XCTAssertEqual(model.phase, .stopped)
+        model.start()   // Retry
+        XCTAssertFalse(model.startFailed)
+        await rig.waitUntil { model.startFailed }
+        XCTAssertTrue(model.startFailed)
+    }
+
     func testCancelledEndsStoppedWithPartialResults() async {
         let rig = CareRig()
         await rig.begin()

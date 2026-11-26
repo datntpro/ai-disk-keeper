@@ -105,7 +105,8 @@ public actor CareScanCoordinator {
             item: { [self] item in
                 // Path resolution runs on the stage's task, not on the actor.
                 let physical = await resolver.physical(item.path)
-                await self.accept(item, physical: physical, stage: stage, generation: gen)
+                let link = HardLinkIdentity.key(of: physical)
+                await self.accept(item, physical: physical, link: link, stage: stage, generation: gen)
             },
             warning: { [self] w in await self.accept(w, stage: stage, generation: gen) },
             progress: { [self] p in await self.progress(p, stage: stage, generation: gen) },
@@ -135,9 +136,9 @@ public actor CareScanCoordinator {
         continuation?.yield(event)
     }
 
-    private func accept(_ item: ScanItem, physical: String, stage: CareStage, generation gen: Int) {
+    private func accept(_ item: ScanItem, physical: String, link: InodeKey?, stage: CareStage, generation gen: Int) {
         guard isOpen(gen) else { return }
-        tally.add(item, physical: physical, stage: stage)
+        tally.add(item, physical: physical, link: link, stage: stage)
         yield(.item(stage, item), gen)
     }
 
