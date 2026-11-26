@@ -32,19 +32,14 @@ public struct DuplicateScanner: Scanner {
         progress.candidatesFound = report.groups.reduce(0) { $0 + $1.members.count }
         await sink.progress(progress)
 
+        let built = Self.itemsAndDrops(for: report, rule: options.keeperRule, pathGuard: context.pathGuard,
+                                       userID: context.userID)
+        progress.guardDropped = built.guardDropped
+        progress.ownerDropped = built.ownerDropped
         for group in report.groups {
             try Task.checkCancellation()
-            var allowed: [DuplicateMember] = []
-            for m in group.members {
-                if context.pathGuard.check(m.path).denial != nil { progress.guardDropped += 1; continue }
-                var st = stat()
-                if lstat(m.path, &st) == 0, st.st_uid != context.userID { progress.ownerDropped += 1; continue }
-                allowed.append(m)
-            }
-            guard allowed.count >= 2 else { continue }
-            let keeper = group.keeper
-            for m in allowed {
-                let item = Self.makeItem(m, group: group, keeper: keeper, rule: options.keeperRule)
+            guard let items = built.items[group.id] else { continue }
+            for item in items {
                 progress.candidatesSized += 1
                 progress.bytesFound += item.sizeAllocated
                 await sink.item(item)
@@ -53,7 +48,35 @@ public struct DuplicateScanner: Scanner {
         }
     }
 
-    static func makeItem(_ m: DuplicateMember, group: DuplicateGroup, keeper: DuplicateMember,
+    /// One `ScanItem` per member (the keeper included, flagged `suggestedKeeper`), keyed by group id. Members the
+    /// scan guard denies or that another user owns are dropped; a group left with fewer than two members is
+    /// dropped whole. The UI calls this again after it re-orders a group, so the keeper flag follows.
+    public static func items(for report: DuplicateReport, rule: KeeperRule, pathGuard: ScanGuard,
+                             userID: uid_t) -> [String: [ScanItem]] {
+        itemsAndDrops(for: report, rule: rule, pathGuard: pathGuard, userID: userID).items
+    }
+
+    private static func itemsAndDrops(for report: DuplicateReport, rule: KeeperRule, pathGuard: ScanGuard,
+                                      userID: uid_t) -> (items: [String: [ScanItem]], guardDropped: Int, ownerDropped: Int) {
+        var out: [String: [ScanItem]] = [:]
+        var guardDropped = 0, ownerDropped = 0
+        for group in report.groups {
+            var allowed: [DuplicateMember] = []
+            for m in group.members {
+                if pathGuard.check(m.path).denial != nil { guardDropped += 1; continue }
+                var st = stat()
+                if lstat(m.path, &st) == 0, st.st_uid != userID { ownerDropped += 1; continue }
+                allowed.append(m)
+            }
+            guard allowed.count >= 2 else { continue }
+            let keeper = group.keeper
+            out[group.id] = allowed.map { makeItem($0, group: group, keeper: keeper, rule: rule) }
+        }
+        return (out, guardDropped, ownerDropped)
+    }
+
+    /// The `ScanItem` for one member of `group`. `keeper` decides the `suggestedKeeper` flag and the explanation.
+    public static func makeItem(_ m: DuplicateMember, group: DuplicateGroup, keeper: DuplicateMember,
                          rule: KeeperRule) -> ScanItem {
         var flags: Set<ItemFlag> = []
         var method: CleanupMethod = .trash

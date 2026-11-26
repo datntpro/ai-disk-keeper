@@ -2001,6 +2001,982 @@
         }
       }
     },
+    "dup.a11y.checkbox" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select this copy"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chọn bản này"
+          }
+        }
+      }
+    },
+    "dup.a11y.clone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "copy, shares storage, can't be selected"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "bản sao, dùng chung bộ nhớ, không thể chọn"
+          }
+        }
+      }
+    },
+    "dup.a11y.copy" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "copy, not selected"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "bản sao, chưa chọn"
+          }
+        }
+      }
+    },
+    "dup.a11y.copySelected" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "copy, selected"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "bản sao, đã chọn"
+          }
+        }
+      }
+    },
+    "dup.a11y.header" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@, %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@, %@, %@"
+          }
+        }
+      }
+    },
+    "dup.a11y.keeperCheckbox" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kept copy, can't be selected"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bản được giữ, không thể chọn"
+          }
+        }
+      }
+    },
+    "dup.a11y.keeperRefused" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The kept copy can't be selected"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không thể chọn bản được giữ"
+          }
+        }
+      }
+    },
+    "dup.a11y.kept" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "kept copy"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "bản được giữ"
+          }
+        }
+      }
+    },
+    "dup.a11y.row" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ in %@, %@, %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ trong %@, %@, %@"
+          }
+        }
+      }
+    },
+    "dup.action.copyPath" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy path"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sao chép đường dẫn"
+          }
+        }
+      }
+    },
+    "dup.action.keepInstead" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep this one instead"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Giữ bản này thay thế"
+          }
+        }
+      }
+    },
+    "dup.action.quickLook" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Look"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Xem nhanh"
+          }
+        }
+      }
+    },
+    "dup.action.review" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review cleanup…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Xem lại trước khi dọn dẹp…"
+          }
+        }
+      }
+    },
+    "dup.empty.body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No identical files of %@ or more in your Home folder."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không có tệp giống hệt nào từ %@ trở lên trong thư mục Home."
+          }
+        }
+      }
+    },
+    "dup.empty.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No duplicates found"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không tìm thấy tệp trùng lặp"
+          }
+        }
+      }
+    },
+    "dup.explain.clone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This copy shares all of its storage with another file (APFS clone or hard link). Deleting it frees nothing, so it can't be selected."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bản này dùng chung toàn bộ bộ nhớ với một tệp khác (APFS clone hoặc hard link). Xóa nó không giải phóng gì, nên không thể chọn."
+          }
+        }
+      }
+    },
+    "dup.explain.copy" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Identical to %@ (SHA-256 checked). Moving this copy to the Trash keeps %@."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Giống hệt %@ (đã kiểm tra SHA-256). Chuyển bản này vào Thùng rác vẫn giữ lại %@."
+          }
+        }
+      }
+    },
+    "dup.explain.keeper" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is the copy that stays. The other %@ copies are identical (SHA-256 checked)."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đây là bản được giữ lại. %@ bản còn lại giống hệt nó (đã kiểm tra SHA-256)."
+          }
+        }
+      }
+    },
+    "dup.failed.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't compare files"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không thể so sánh tệp"
+          }
+        }
+      }
+    },
+    "dup.group.copies" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ copies"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ bản"
+          }
+        }
+      }
+    },
+    "dup.group.identical" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "identical content (SHA-256)"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "nội dung giống hệt (SHA-256)"
+          }
+        }
+      }
+    },
+    "dup.group.saves" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "saves %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "tiết kiệm %@"
+          }
+        }
+      }
+    },
+    "dup.inspector.created" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Created %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tạo lúc %@"
+          }
+        }
+      }
+    },
+    "dup.inspector.dates" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dates"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ngày"
+          }
+        }
+      }
+    },
+    "dup.inspector.empty" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select a copy to see why it's listed."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chọn một bản để xem vì sao nó được liệt kê."
+          }
+        }
+      }
+    },
+    "dup.inspector.links" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other names (hard links)"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tên khác (hard link)"
+          }
+        }
+      }
+    },
+    "dup.inspector.logical" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ apparent"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ theo kích thước tệp"
+          }
+        }
+      }
+    },
+    "dup.inspector.modified" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modified %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sửa lúc %@"
+          }
+        }
+      }
+    },
+    "dup.inspector.path" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Path"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đường dẫn"
+          }
+        }
+      }
+    },
+    "dup.inspector.storage" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Storage"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bộ nhớ"
+          }
+        }
+      }
+    },
+    "dup.keeper.git" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "in a git repo"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "trong kho git"
+          }
+        }
+      }
+    },
+    "dup.keeper.manual" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "chosen by you"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "do bạn chọn"
+          }
+        }
+      }
+    },
+    "dup.keeper.oldest" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "oldest"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "cũ nhất"
+          }
+        }
+      }
+    },
+    "dup.keeper.shortest" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "shortest path"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "đường dẫn ngắn nhất"
+          }
+        }
+      }
+    },
+    "dup.mayFreeLess" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some copies may free less (shared or unknown storage)"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Một số bản có thể giải phóng ít hơn (bộ nhớ dùng chung hoặc không rõ)"
+          }
+        }
+      }
+    },
+    "dup.notice" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One copy in every group is always kept. Copies that are APFS clones or hard links share storage, so removing them frees nothing — they're listed but not counted."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mỗi nhóm luôn giữ lại một bản. Các bản là APFS clone hoặc hard link dùng chung bộ nhớ, nên xóa chúng không giải phóng gì — chúng vẫn được liệt kê nhưng không được tính."
+          }
+        }
+      }
+    },
+    "dup.progress" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comparing files… %@ of %@ checked"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đang so sánh tệp… đã kiểm tra %@/%@"
+          }
+        }
+      }
+    },
+    "dup.progress.start" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Looking for identical files…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đang tìm các tệp giống hệt nhau…"
+          }
+        }
+      }
+    },
+    "dup.reason.added" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "added %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "thêm vào %@"
+          }
+        }
+      }
+    },
+    "dup.reason.cloneOfKept" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "clone of the kept copy — deleting frees nothing"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "bản clone của bản được giữ — xóa không giải phóng gì"
+          }
+        }
+      }
+    },
+    "dup.reason.copyInName" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“copy” in name"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "tên có chữ “copy”"
+          }
+        }
+      }
+    },
+    "dup.reason.hardLinks" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ other names (hard links)"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ tên khác (hard link)"
+          }
+        }
+      }
+    },
+    "dup.reason.inDownloads" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "in Downloads"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "trong Tải về"
+          }
+        }
+      }
+    },
+    "dup.reason.oldFolder" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "in an old/backup folder"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "trong thư mục cũ/sao lưu"
+          }
+        }
+      }
+    },
+    "dup.reason.onDesktop" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "on Desktop"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "trên Màn hình nền"
+          }
+        }
+      }
+    },
+    "dup.reason.partlyShared" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "shares some storage — may free less"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "dùng chung một phần bộ nhớ — có thể giải phóng ít hơn"
+          }
+        }
+      }
+    },
+    "dup.recheck" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Re-check"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kiểm tra lại"
+          }
+        }
+      }
+    },
+    "dup.rule.git" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In a git repo"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Trong kho git"
+          }
+        }
+      }
+    },
+    "dup.rule.label" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep rule:"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quy tắc giữ:"
+          }
+        }
+      }
+    },
+    "dup.rule.oldest" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oldest"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cũ nhất"
+          }
+        }
+      }
+    },
+    "dup.rule.shortest" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shortest path"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đường dẫn ngắn nhất"
+          }
+        }
+      }
+    },
+    "dup.selectedCount" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ copies selected · each group keeps one"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã chọn %@ bản · mỗi nhóm giữ lại một bản"
+          }
+        }
+      }
+    },
+    "dup.selectedCountOne" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 copy selected · each group keeps one"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã chọn 1 bản · mỗi nhóm giữ lại một bản"
+          }
+        }
+      }
+    },
+    "dup.stopped" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stopped — results may be incomplete"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã dừng — kết quả có thể chưa đầy đủ"
+          }
+        }
+      }
+    },
+    "dup.storage.all" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All of its storage is shared with another file (APFS clone or hard link). Deleting it frees nothing."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Toàn bộ bộ nhớ của bản này dùng chung với một tệp khác (APFS clone hoặc hard link). Xóa nó không giải phóng gì."
+          }
+        }
+      }
+    },
+    "dup.storage.own" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Its own storage: deleting it frees its full size."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bộ nhớ riêng: xóa sẽ giải phóng toàn bộ dung lượng."
+          }
+        }
+      }
+    },
+    "dup.storage.partial" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some storage is shared or unknown, so deleting it may free less than its size."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Một phần bộ nhớ dùng chung hoặc không rõ, nên xóa có thể giải phóng ít hơn dung lượng của tệp."
+          }
+        }
+      }
+    },
+    "dup.subtitle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ groups · %@ in extra copies"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ nhóm · %@ ở các bản thừa"
+          }
+        }
+      }
+    },
+    "dup.subtitleOne" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 group · %@ in extra copies"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "1 nhóm · %@ ở các bản thừa"
+          }
+        }
+      }
+    },
+    "dup.threshold" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ or larger"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Từ %@ trở lên"
+          }
+        }
+      }
+    },
+    "dup.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duplicates"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tệp trùng lặp"
+          }
+        }
+      }
+    },
     "empty.readOnlyNote" : {
       "localizations" : {
         "en" : {
