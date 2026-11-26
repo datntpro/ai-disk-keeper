@@ -76,6 +76,15 @@ public struct ApplicationBundlePolicy: Sendable {
         return nil
     }
 
+    /// Apple's team ids for Apple-published Mac App Store apps.
+    static let appleTeamIDs: Set<String> = ["59GAB85EFG", "74J34U3R6X"]
+
+    static func isAppleIdentity(bundleID: String, teamID: String?) -> Bool {
+        if PathCanonicalizer.fold(bundleID).hasPrefix("com.apple.") { return true }
+        if let teamID, appleTeamIDs.contains(teamID.uppercased()) { return true }
+        return false
+    }
+
     private static func isAppName(_ s: String) -> Bool { s.lowercased().hasSuffix(".app") }
 
     /// The ONLY guard waiver: `systemLocation` for a path whose lexical parent is exactly the system
@@ -121,14 +130,18 @@ public struct ApplicationBundlePolicy: Sendable {
         }
 
         // Sealed system volume (nil = unknown, fail closed).
-        if resolved.hasPrefix("/System/") || probe.isOnSealedSystemVolume(path) != false {
+        if PathCanonicalizer.key(resolved).components.first == "system" || probe.isOnSealedSystemVolume(path) != false {
             add(.appBundleRefused(.appleOrSystem))
         }
-        switch probe.signatureSource(path) {
+        let source = probe.signatureSource(path)
+        switch source {
         case .apple: add(.appBundleRefused(.appleOrSystem))
         case .unknown: add(.appBundleRefused(.signatureUnreadable))
         case .developerID, .appStore, .unsigned: break
         }
+        // Apple's own App Store apps (Xcode, Pages, ...) are signed by "Apple Mac OS Application Signing",
+        // not `anchor apple`: refuse any Apple team id or `com.apple.` bundle id, whoever owns the bundle.
+        if Self.isAppleIdentity(bundleID: bundleID, teamID: source.teamID) { add(.appBundleRefused(.appleOrSystem)) }
 
         if st.uid != userID { add(.requiresAdmin(bundleID: bundleID)) }
 
@@ -136,6 +149,7 @@ public struct ApplicationBundlePolicy: Sendable {
         switch probe.readInfoPlist(bundle: path) {
         case .ok(let id, let plist):
             if id != bundleID { add(.appBundleRefused(.bundleIDMismatch)) }
+            if Self.isAppleIdentity(bundleID: id, teamID: nil) { add(.appBundleRefused(.appleOrSystem)) }
             fingerprint = AppBundleFingerprint(
                 bundleDevice: st.device, bundleInode: st.inode, infoPlistDevice: plist.device,
                 infoPlistInode: plist.inode, infoPlistSize: plist.size, infoPlistModified: plist.modified,
@@ -155,9 +169,15 @@ public struct ApplicationBundlePolicy: Sendable {
         case .some(false): break
         }
 
-        if let denial = pathGuard.check(path).denial, !Self.waives(denial, path: path, roots: roots) {
-            add(.protectedPath(denial.reason, message: denial.message, pattern: denial.matchedPattern,
-                               whyID: denial.whyID))
+        if let denial = pathGuard.check(path).denial {
+            if !Self.waives(denial, path: path, roots: roots) {
+                add(.protectedPath(denial.reason, message: denial.message, pattern: denial.matchedPattern,
+                                   whyID: denial.whyID))
+            } else if let pattern = pathGuard.anchoredPatternDenial(path) {
+                // The waiver lifts `systemLocation` only; a protect pattern on the bundle always wins.
+                add(.protectedPath(pattern.reason, message: pattern.message, pattern: pattern.matchedPattern,
+                                   whyID: pattern.whyID))
+            }
         }
 
         if let expected, let fingerprint, expected != fingerprint { add(.identityChanged) }

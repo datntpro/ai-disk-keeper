@@ -17,8 +17,10 @@ public struct WorkspaceRunningApps: RunningAppChecking {
             guard let p = url?.resolvingSymlinksInPath().path.lowercased() else { return false }
             return p == root || p.hasPrefix(root + "/")
         }
-        return NSWorkspace.shared.runningApplications.contains {
+        if NSWorkspace.shared.runningApplications.contains(where: {
             !$0.isTerminated && (inside($0.bundleURL) || inside($0.executableURL))
-        }
+        }) { return true }
+        // Daemons, XPC helpers and CLI tools are not LaunchServices apps: look at every process.
+        return LiveProcessScanner.isAnyProcessRunning(insideBundleAt: path)
     }
 }

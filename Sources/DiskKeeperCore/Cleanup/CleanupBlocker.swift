@@ -49,6 +49,15 @@ public struct ChangeDetail: Codable, Sendable, Hashable {
     }
 }
 
+extension Array where Element == CleanupBlocker {
+    /// Same blockers once, first occurrence wins (policy + validator can both report one).
+    func uniqued() -> [CleanupBlocker] {
+        var seen: [CleanupBlocker] = []
+        for b in self where !seen.contains(b) { seen.append(b) }
+        return seen
+    }
+}
+
 /// A reason an item will not be cleaned.
 public enum CleanupBlocker: Codable, Sendable, Hashable {
     case keepTier

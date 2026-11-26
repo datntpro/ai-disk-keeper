@@ -72,7 +72,7 @@ public actor CleanupEngine {
             } else {
                 fast = validator.fastChecks(item, expected: nil)
             }
-            b += fast.blockers
+            b = (b + fast.blockers).uniqued()
             if b.isEmpty {
                 let key = PathCanonicalizer.key(item.path)
                 if let other = accepted.first(where: { Self.overlaps($0.key, key) }) {
@@ -216,6 +216,7 @@ public actor CleanupEngine {
         } else {
             blockers += validator.fastChecks(item, expected: entry.fingerprint).blockers
         }
+        blockers = blockers.uniqued()
         if !blockers.isEmpty { return (.skipped(blockers), nil) }
         if let gate = await keepOneGate(entry, trashedKeys: trashedKeys, claimed: claimed) { return (.skipped([gate]), nil) }
 

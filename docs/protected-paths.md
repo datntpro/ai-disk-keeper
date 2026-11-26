@@ -89,9 +89,9 @@ privileged helper (D3).
 | 5 | `/Applications/Foo.app/Contents/…` or any path inside a bundle | denied | `appBundleRefused(insideBundle)` |
 | 6 | `/Applications/Foo.app` that is a symlink (e.g. Safari → cryptex) | denied | `appBundleRefused(symlink)` |
 | 7 | resolved path differs from lexical (symlinked parent, firmlink games) | denied | `appBundleRefused(resolvedElsewhere)` (+ `symlinkInParentChain`) |
-| 8 | Apple-signed (anchor apple) or under `/System`, or on a sealed volume | denied | `appBundleRefused(appleOrSystem)`; an unreadable signature is `signatureUnreadable` (fail closed) |
+| 8 | Apple-signed (anchor apple) or under `/System`, or on a sealed volume | denied | `appBundleRefused(appleOrSystem)`; an unreadable signature is `signatureUnreadable` (fail closed). Also refused: any `com.apple.*` bundle id or Apple team id (`59GAB85EFG`, `74J34U3R6X`: Apple's Mac App Store apps are not `anchor apple`), whoever owns the bundle |
 | 9 | owned by root/another user (typical App Store install) | denied; UI shows "Move to Trash in Finder" guidance | `requiresAdmin` |
-| 10 | running (`RunningAppChecking` true) or unknown (nil) | denied (fail closed); also any process running from inside the bundle | `appRunning` / `appStateUnknown` |
+| 10 | running (`RunningAppChecking` true) or unknown (nil) | denied (fail closed); also any process running from inside the bundle (all processes via `proc_listallpids` + `proc_pidpath`, plus `NSRunningApplication`) | `appRunning` / `appStateUnknown` |
 | 11 | name not ending in `.app` (case-insensitive), or `.app` with no `Contents/Info.plist` | denied | `appBundleRefused(notAnAppBundle)` / `missingInfoPlist` |
 | 12 | `CFBundleIdentifier` differs from the item's `trashApplication(bundleID:)` | denied | `appBundleRefused(bundleIDMismatch)`; changed between plan and execute: `identityChanged` |
 | 13 | any action other than Trash (permanent delete requested) | denied, whatever the Settings say | `appBundleRefused(permanentDelete)` |
@@ -106,6 +106,8 @@ Implementation notes (T36):
 - Checked at plan time and again at execute time: the policy runs, then the bundle + `Info.plist` fingerprint
   (dev/ino, size, mtime, bundle id, owner) is compared with the plan's, then the Trash move happens. The bundle is
   not re-sized at execute time.
+- A protect pattern on the bundle path always wins: when the `systemLocation` waiver applies, the guard's anchored
+  patterns are still checked (`ProtectedPaths.anchoredPatternDenial`; `check` is unchanged).
 - Sealed volume: `statfs` with `MNT_SNAPSHOT`/`MNT_RDONLY` or mount point `/`; unknown = refused. Measured on
   macOS 27.2: `/Applications` is on `/System/Volumes/Data` (rw); `/System/Applications` and `/` are on `/`
   (snapshot, read-only).
