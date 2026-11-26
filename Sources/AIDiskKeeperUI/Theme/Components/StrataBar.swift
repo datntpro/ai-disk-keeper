@@ -6,6 +6,8 @@ struct StrataBar: View {
     let segments: [StrataSegment]
     let total: Int64
     var free: Int64?
+    /// Layers whose size could not be read: not drawn, but named "unknown" for VoiceOver.
+    var unknownLabels: [String] = []
     var height: CGFloat = 34
 
     @Environment(\.adkIncreasedContrast) private var increasedContrast
@@ -49,16 +51,18 @@ struct StrataBar: View {
         }
         .strataAnimation(m.bars.map(\.end))
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(loc("strata.bar.a11y", "Disk usage: \(Self.summary(m, top: 3))"))
+        .accessibilityLabel(loc("strata.bar.a11y", "Disk usage: \(Self.summary(m, top: 3, unknown: unknownLabels))"))
         .accessibilityChartDescriptor(StrataBarDescriptor(model: m))
     }
 
     /// "Label, size, N percent" for the largest `top` layers.
-    static func summary(_ m: StrataBarModel, top: Int) -> String {
-        m.bars.sorted { ($0.end - $0.start) > ($1.end - $1.start) }.prefix(top).map { bar in
+    static func summary(_ m: StrataBarModel, top: Int, unknown: [String] = []) -> String {
+        let known = m.bars.sorted { ($0.end - $0.start) > ($1.end - $1.start) }.prefix(top).map { bar in
             let bytes = bar.end - bar.start
             return loc("strata.bar.segment", "\(bar.segment.label), \(Formatting.bytes(bytes)), \(Formatting.count(m.percent(bytes))) percent")
-        }.joined(separator: "; ")
+        }
+        let unknownParts = unknown.map { "\($0), \(loc("storage.unknown", "unknown"))" }
+        return (known + unknownParts).joined(separator: "; ")
     }
 }
 
