@@ -13,11 +13,10 @@ struct SelectionActionBar: View {
         HStack(spacing: ADKTheme.Spacing.md) {
             SizeText(bytes, qualifier: .upTo).font(.headline)
             Text(countLabel).foregroundStyle(.adkText2)
-            if let hint { Text(hint).foregroundStyle(.adkText3).lineLimit(1) }
+            if let hint { Text(hint).foregroundStyle(.adkText2).lineLimit(1) }
             Spacer()
             Button(primaryTitle, action: action)
-                .buttonStyle(.borderedProminent)
-                .tint(.adkAccent)
+                .adkProminentButton()
                 .disabled(count == 0)
         }
         .font(.callout)

@@ -31,7 +31,7 @@ struct IndexGateView<Content: View>: View {
     private var gateMessage: String {
         let intro = loc("index.gate.message", "AI Disk Keeper reads folder sizes only, never file contents. macOS may ask for access to Desktop, Documents and Downloads; if you decline, those folders are shown as locked.")
         if case .failed(let reason) = index.phase {
-            return loc("index.failed", "Couldn't map the disk: \(reason)") + "\n\n" + intro
+            return reason + "\n\n" + intro
         }
         return intro
     }

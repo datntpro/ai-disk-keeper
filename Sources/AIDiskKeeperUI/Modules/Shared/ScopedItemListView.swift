@@ -19,6 +19,11 @@ struct ScopedItemListView: View {
         } else if !scan.isScanning, state == .empty {
             StateView(kind: .empty, symbol: "checkmark.circle", title: scopeName.map(StateCopy.emptyModule) ?? StateCopy.emptyNothing,
                       message: loc("module.noItems.message", "The last scan found nothing here."))
+        } else if !scan.isScanning, ctx.list.rows.isEmpty, ctx.list.scopeCount > 0,
+                  ctx.query.wrappedValue.tiers != Set(RiskTier.allCases) {
+            StateView(kind: .filteredEmpty, symbol: "line.3.horizontal.decrease.circle", title: StateCopy.filteredTiersTitle,
+                      message: StateCopy.filteredTiersBody,
+                      actions: [StateAction(title: StateCopy.filteredShowAll) { ctx.query.wrappedValue.tiers = Set(RiskTier.allCases) }])
         } else {
             VStack(spacing: 0) {
                 if let count = ModuleStateResolver.fdaBanner(warnings: scan.warnings, fdaGranted: false) {

@@ -7,7 +7,6 @@ VI = {
     "age.older": "Trên 3 năm",
     "age.unknown": "Không rõ thời gian",
     "pill.estimate": "Ước tính",
-    "pill.keeps": "Giữ lại",
     "pill.protected": "Được bảo vệ",
     "pill.sharedStorage": "Dùng chung bộ nhớ",
     "size.estimate": "khoảng %@",
