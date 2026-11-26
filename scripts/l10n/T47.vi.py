@@ -1,0 +1,27 @@
+PREFIXES = ("menubar.", "settings.menubar.")
+
+VI = {
+    "menubar.free": "Còn trống %@",
+    "menubar.usedPercent": "%@ %%",
+    "menubar.safe": "+%@ An toàn để giải phóng",
+    "menubar.scanned": "quét %@",
+    "menubar.notScanned": "Chưa quét",
+    "menubar.growth": "Công cụ AI tăng so với lần quét trước +%@",
+    "menubar.growthDown": "Công cụ AI giảm so với lần quét trước %@",
+    "menubar.topModule": "%@ · %@ An toàn",
+    "menubar.topTools": "Công cụ AI dùng nhiều nhất",
+    "menubar.nextScan": "Lần quét tổng thể tiếp theo: %@",
+    "menubar.reviewInApp": "Xem lại trong ứng dụng",
+    "menubar.scanNow": "Quét ngay",
+    "menubar.scanning": "Đang quét…",
+    "menubar.quit": "Thoát AI Disk Keeper",
+    "menubar.label.a11y": "AI Disk Keeper, còn trống %@",
+    "menubar.lowSpace.title": "Ổ đĩa của bạn sắp đầy",
+    "menubar.lowSpace.body": "Còn trống %@ (%@ %%). Mở AI Disk Keeper để xem những gì có thể xóa an toàn.",
+    "settings.menubar.section": "Thanh menu",
+    "settings.menubar.show": "Hiển thị trên thanh menu",
+    "settings.menubar.freeText": "Hiển thị dung lượng trống cạnh biểu tượng",
+    "settings.menubar.lowSpace": "Báo khi dung lượng trống thấp",
+    "settings.menubar.threshold": "Dưới %@ %%",
+    "settings.menubar.thresholdHelp": "Một thông báo mỗi lần dung lượng trống xuống dưới mức này.",
+}

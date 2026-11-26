@@ -86,6 +86,12 @@ public final class SettingsModel {
         if l == .system { defaults.removeObject(forKey: "AppleLanguages") } else { defaults.set([l.rawValue], forKey: "AppleLanguages") }
     }
 
+    public func setShowMenuBarItem(_ on: Bool) { mutate { $0.showMenuBarItem = on } }
+    public func setMenuBarShowsFreeSpace(_ on: Bool) { mutate { $0.menuBarShowsFreeSpace = on } }
+    public func setLowSpaceAlertEnabled(_ on: Bool) { mutate { $0.lowSpaceAlertEnabled = on } }
+    /// Clamped to 1…50.
+    public func setLowSpaceThresholdPercent(_ percent: Int) { mutate { $0.setLowSpaceThreshold(percent: percent) } }
+
     public func setOnboardingCompleted(_ done: Bool) { mutate { $0.hasCompletedOnboarding = done } }
 
     /// Applies `change` to a copy; on failure the settings stay unchanged and `lastError` explains why.
