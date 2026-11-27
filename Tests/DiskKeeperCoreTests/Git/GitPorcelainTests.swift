@@ -139,4 +139,17 @@ final class GitPorcelainTests: XCTestCase {
         XCTAssertTrue(GitPorcelain.isVersionSupported((2, 36, 0)))
         XCTAssertTrue(GitPorcelain.isVersionSupported((3, 0, 0)))
     }
+
+    func testPreciousDirNamesOnlyOutsideRegenerableTrees() {
+        XCTAssertFalse(GitPorcelain.isPrecious("node_modules/x/data/a.json"))
+        XCTAssertTrue(GitPorcelain.isPrecious("data/prod.db"))
+        XCTAssertTrue(GitPorcelain.isPrecious("data/a.json"))
+        XCTAssertTrue(GitPorcelain.isPrecious("node_modules/pkg/.env"))
+        XCTAssertTrue(GitPorcelain.isPrecious("dist/prod.pem"))
+        XCTAssertFalse(GitPorcelain.isPrecious("Pods/Foo/uploads/x.txt"))
+        let c = GitPorcelain.classifyIgnored(["data/", "node_modules/"])
+        XCTAssertEqual(c.precious, ["data/"])
+        XCTAssertEqual(GitPorcelain.mergePrecious([], ["node_modules/x/data/a.json", "node_modules/p/.env"]),
+                       ["node_modules/p/.env"])
+    }
 }

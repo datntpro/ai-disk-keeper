@@ -228,10 +228,23 @@ enum GitPorcelain {
     static let preciousPathspecs: [String] =
         preciousPatterns.map { ":(glob,icase)**/\($0)" } + preciousDirNames.sorted().map { ":(glob,icase)**/\($0)/**" }
 
+    /// Precious file patterns match anywhere. Precious directory names (`data`, `db`, ...) match only
+    /// OUTSIDE regenerable trees, so `node_modules/x/data/a.json` is not precious but `data/prod.db` is.
+    static func isPrecious(_ path: String) -> Bool {
+        let comps = path.split(separator: "/").map(String.init)
+        let firstRegenerable = comps.firstIndex { matches($0, regenerable) } ?? comps.count
+        for (i, c) in comps.enumerated() {
+            if matches(c, preciousPatterns, casefold: true) { return true }
+            if i < firstRegenerable, preciousDirNames.contains(c.lowercased()) { return true }
+        }
+        return false
+    }
+
     /// Merge precious paths found by the pathspec probe, de-duplicated and capped.
+    /// Probe hits under regenerable trees are kept only when `isPrecious` agrees.
     static func mergePrecious(_ base: [String], _ extra: [String], cap: Int = 100) -> [String] {
         var out = base
-        for e in extra where out.count < cap && !out.contains(e) { out.append(e) }
+        for e in extra where isPrecious(e) && out.count < cap && !out.contains(e) { out.append(e) }
         return out
     }
 
@@ -241,8 +254,7 @@ enum GitPorcelain {
         var other: [String] = []
         for p in paths {
             let comps = p.split(separator: "/").map(String.init)
-            let isPrecious = comps.contains { matches($0, preciousPatterns, casefold: true) || preciousDirNames.contains($0.lowercased()) }
-            if isPrecious {
+            if isPrecious(p) {
                 if precious.count < cap { precious.append(p) }
             } else if !comps.contains(where: { matches($0, regenerable) }) {
                 if other.count < cap { other.append(p) }

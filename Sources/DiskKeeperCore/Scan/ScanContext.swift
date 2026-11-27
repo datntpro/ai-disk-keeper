@@ -25,10 +25,10 @@ public struct ScanContext: Sendable {
     }
 
     /// Sizes one root under the shared limiter.
-    public func size(_ url: URL) async throws -> SizeReport {
+    public func size(_ url: URL, progress: (@Sendable (SizeProgress) -> Void)? = nil) async throws -> SizeReport {
         try await sizingLimiter.acquire()
         do {
-            let report = try await FileSizer(options: sizerOptions).size(of: url)
+            let report = try await FileSizer(options: sizerOptions).size(of: url, progress: progress)
             await sizingLimiter.release()
             return report
         } catch {
