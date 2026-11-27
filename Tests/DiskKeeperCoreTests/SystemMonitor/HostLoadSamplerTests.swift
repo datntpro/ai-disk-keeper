@@ -121,6 +121,19 @@ final class HostLoadSamplerTests: XCTestCase {
         XCTAssertEqual(s.unattributedWriteBytesPerSec, 0)
     }
 
+    func testMemoryPressureComesFromTheInjectedSource() async {
+        for level in [MemoryPressure.normal, .warning, .critical] {
+            let sampler = HostLoadSampler(table: FakeTable([]), disk: FakeDisk([]), attribution: WorktreeAttribution(home: tmp.url.path),
+                                          memoryPressure: { level })
+            let s = await sampler.tick()
+            XCTAssertEqual(s.memoryPressure, level)
+        }
+        let none = HostLoadSampler(table: FakeTable([]), disk: FakeDisk([]), attribution: WorktreeAttribution(home: tmp.url.path),
+                                   memoryPressure: { nil })
+        let snapshot = await none.tick()
+        XCTAssertNil(snapshot.memoryPressure)
+    }
+
     func testNoDiskReadingMeansNoUnattributed() async {
         let sampler = HostLoadSampler(table: FakeTable([]), disk: FakeDisk([]), attribution: WorktreeAttribution(home: tmp.url.path))
         let s = await sampler.tick()

@@ -41,6 +41,7 @@ public struct HostLoadSnapshot: Sendable {
     public let unattributedWriteBytesPerSec: Double?
     public let loadAverage: (Double, Double, Double)
     public let cpuCount: Int
+    public let memoryPressure: MemoryPressure?
     public let freeSpace: FreeSpaceStatus?
 }
 
@@ -54,12 +55,15 @@ public actor HostLoadSampler {
     private var attribution: WorktreeAttribution
     private let clock: @Sendable () -> ContinuousClock.Instant
     private let freeSpace: @Sendable () -> FreeSpaceStatus?
+    private let memoryPressure: @Sendable () -> MemoryPressure?
     private var rates = IORateTracker()
     private var diskTracker = DiskActivityTracker()
 
     public init(table: any ProcessTableReading = LibprocProcessTable(), disk: any DiskStatisticsReading = LiveDiskStatisticsReader(),
                 attribution: WorktreeAttribution, clock: @escaping @Sendable () -> ContinuousClock.Instant = { .now },
-                freeSpace: @escaping @Sendable () -> FreeSpaceStatus? = { nil }) {
+                freeSpace: @escaping @Sendable () -> FreeSpaceStatus? = { nil },
+                memoryPressure: @escaping @Sendable () -> MemoryPressure? = { LiveMemorySampler.pressure() }) {
+        self.memoryPressure = memoryPressure
         self.table = table
         self.disk = disk
         self.attribution = attribution
@@ -94,7 +98,8 @@ public actor HostLoadSampler {
                 .prefix(Self.processLimit)),
             byWorktree: Self.byWorktree(active), byAgent: Self.byAgent(active),
             unattributedWriteBytesPerSec: diskActivity.map { max(0, $0.writeBytesPerSec - attributed) },
-            loadAverage: (load[0], load[1], load[2]), cpuCount: ProcessInfo.processInfo.activeProcessorCount, freeSpace: freeSpace())
+            loadAverage: (load[0], load[1], load[2]), cpuCount: ProcessInfo.processInfo.activeProcessorCount,
+            memoryPressure: memoryPressure(), freeSpace: freeSpace())
     }
 
     private static func ancestors(of r: ProcessRecord, in byPID: [pid_t: ProcessRecord]) -> [ProcessRecord] {
