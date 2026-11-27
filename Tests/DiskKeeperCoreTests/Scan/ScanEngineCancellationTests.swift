@@ -70,6 +70,52 @@ final class ScanEngineCancellationTests: XCTestCase {
         XCTAssertTrue(stopped, "scan must stop within 2 s after the consumer goes away")
     }
 
+    /// #75 FU2: cancelling while a slow sizer is mid-walk stops promptly and emits no item.
+    func testCancelDuringSizeStopsPromptlyWithNoItem() async throws {
+        for i in 0..<200 { try fixture.file(".t/c/f\(i)", bytes: 10) }
+        let rules = RuleFixtures.file(tool: "t", rules: [RuleFixtures.rule(id: "t.r", paths: #"["~/.t/c"]"#, match: #"{"kind":"self"}"#, tier: "safe", extra: "")])
+        let loaded = try RuleHarness.loadRules(json: rules, fixture: fixture)
+        var options = FileSizer.Options()
+        options._entryHook = { usleep(20_000) }
+        let context = ScanContext(environment: fixture.env, pathGuard: try ScanGuard(environment: fixture.env, protectPatterns: []),
+                                  sizerOptions: options, maxConcurrentSizing: 1)
+        let engine = ScanEngine(context: context, scanners: [RuleScanner(loadResult: loaded)])
+        let stream = try await engine.scan()
+        let collector = Task { () -> [ScanEvent] in var out: [ScanEvent] = []; for await e in stream { out.append(e) }; return out }
+        try await Task.sleep(nanoseconds: 300_000_000)
+        let start = Date()
+        await engine.cancel()
+        let events = await collector.value
+        XCTAssertLessThan(Date().timeIntervalSince(start), 2.0, "cancel must not wait for the 4 s walk")
+        XCTAssertFalse(events.contains { if case .itemFound = $0 { return true } else { return false } })
+        guard case .cancelled? = events.last else { return XCTFail("last must be cancelled") }
+    }
+
+    /// #75 FU1 at the engine level: bytes a scanner reports while still sizing reach `ScanProgress`
+    /// (monotonic), and the last progress before the terminal event is exact (accepted items only).
+    func testLiveScannerBytesReachScanProgress() async throws {
+        let scanner = ClosureScanner(id: "live") { _, sink in
+            await sink.progress(ScannerProgress(candidatesFound: 1, candidatesSized: 0, bytesFound: 500))
+            try await Task.sleep(nanoseconds: 400_000_000)
+            await sink.progress(ScannerProgress(candidatesFound: 1, candidatesSized: 0, bytesFound: 900))
+            try await Task.sleep(nanoseconds: 400_000_000)
+            await sink.item(EngineKit.item(self.fixture.abs(".g/x"), size: 700))
+        }
+        let (engine, _) = try engine([scanner])
+        var events: [ScanEvent] = []
+        for await e in try await engine.scan() { events.append(e) }
+        var seenItem = false
+        var live: [Int64] = []
+        for e in events {
+            if case .itemFound = e { seenItem = true }
+            if case .progress(let p) = e, !seenItem { live.append(p.bytesFound) }
+        }
+        XCTAssertTrue(live.contains { $0 >= 500 }, "live scanner bytes must show before any item: \(live)")
+        XCTAssertEqual(live, live.sorted(), "bytesFound must never decrease")
+        let progresses = events.compactMap { e -> ScanProgress? in if case .progress(let p) = e { return p } else { return nil } }
+        XCTAssertEqual(progresses.last?.bytesFound, 700)
+    }
+
     func testCancelBeforeAnyItem() async throws {
         let (engine, context) = try engine([ClosureScanner(id: "idle") { _, _ in
             while true { try await Task.sleep(nanoseconds: 5_000_000) }

@@ -83,7 +83,7 @@ final class CatalogLintTests: XCTestCase {
         XCTAssertEqual(byKey["category.worktree"], "Worktree")
         // Old-style tone placement ("xoá", "hoà") must not appear: the glossary uses the new style.
         for (k, v) in byKey {
-            for old in ["xoá", "Xoá", "hoà", "Hoà", "thuỷ", "khoẻ"] { XCTAssertFalse(v.contains(old), "\(k) uses old-style spelling \(old)") }
+            for old in Self.oldSpellings where Self.containsWholeWord(v, old) { XCTFail("\(k) uses old-style spelling \(old)") }
         }
     }
 
@@ -102,6 +102,32 @@ final class CatalogLintTests: XCTestCase {
         // protected.why.* keys are written in CoreCopy as literals too, so they are covered by the scan.
         XCTAssertEqual(used.subtracting(catalog).sorted(), [], "keys used in code but missing from the catalog (run scripts/l10n-extract.py --sync)")
         XCTAssertEqual(catalog.subtracting(used).sorted(), [], "catalog keys no code uses")
+    }
+
+    static let oldSpellings = ["xoá", "hoà", "thuỷ", "khoẻ"]
+
+    /// Whole-word, case-insensitive match (Unicode word boundary), so "hoàn" does not trip "hoà".
+    private static let oldSpellingRegexes: [String: NSRegularExpression] = Dictionary(
+        uniqueKeysWithValues: oldSpellings.map { word in
+            let w = NSRegularExpression.escapedPattern(for: word.precomposedStringWithCanonicalMapping)
+            return (word, try! NSRegularExpression(
+                pattern: "(?<![\\p{L}\\p{M}\\p{N}_])\(w)(?![\\p{L}\\p{M}\\p{N}_])", options: [.caseInsensitive]))
+        })
+
+    static func containsWholeWord(_ text: String, _ word: String) -> Bool {
+        let t = text.precomposedStringWithCanonicalMapping
+        let re = oldSpellingRegexes[word] ?? (try? NSRegularExpression(
+            pattern: "(?<![\\p{L}\\p{M}\\p{N}_])\(NSRegularExpression.escapedPattern(for: word.precomposedStringWithCanonicalMapping))(?![\\p{L}\\p{M}\\p{N}_])",
+            options: [.caseInsensitive]))
+        return re?.firstMatch(in: t, range: NSRange(t.startIndex..., in: t)) != nil
+    }
+
+    func testOldSpellingCheckIsWholeWord() {
+        XCTAssertFalse(Self.containsWholeWord("Hoàn tất", "hoà"))
+        XCTAssertFalse(Self.containsWholeWord("hoàn thành", "hoà"))
+        XCTAssertTrue(Self.containsWholeWord("Đã hoà vốn", "hoà"))
+        XCTAssertTrue(Self.containsWholeWord("Xoá tệp", "xoá"))
+        XCTAssertFalse(Self.containsWholeWord("Xóa tệp", "xoá"))
     }
 
     func testPlaceholderParser() {

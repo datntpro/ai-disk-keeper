@@ -184,6 +184,26 @@ final class RuleScannerTests: XCTestCase {
         XCTAssertLessThan(count, 20)
     }
 
+    /// #75 FU1: one long walk still reports growing bytes while the candidate is being sized.
+    func testProgressDuringSingleCandidateWalk() async throws {
+        for i in 0..<30 { try fixture.file(".t/c/f\(i)", bytes: 4096) }
+        let loaded = try RuleHarness.loadRules(json: file(rule()), fixture: fixture)
+        var options = FileSizer.Options(progressInterval: 1)
+        options._entryHook = { usleep(40_000) }
+        let context = try RuleHarness.context(fixture, loaded: loaded, sizerOptions: options, maxConcurrentSizing: 1)
+        let seen = Box2List()
+        let sink = ScanSink(item: { _ in }, warning: { _ in }, progress: { await seen.add($0) })
+        let started = Date()
+        try await RuleScanner(loadResult: loaded).scan(context: context, sink: sink)
+        let elapsed = Date().timeIntervalSince(started)
+        let all = await seen.values
+        let live = all.filter { $0.candidatesSized == 0 && $0.bytesFound > 0 }
+        XCTAssertGreaterThanOrEqual(live.count, 2, "expected live progress before the candidate finished")
+        XCTAssertLessThanOrEqual(Double(live.count), elapsed * 4 + 2, "progress must be throttled (≤ 4/s)")
+        XCTAssertEqual(all.last?.candidatesSized, 1)
+        XCTAssertEqual(all.map(\.bytesFound), all.map(\.bytesFound).sorted())
+    }
+
     func testOtherUsersFilesSkipped() async throws {
         try fixture.file(".t/c/f")
         let r = try await run(file(rule(), rule(id: "t.k", paths: #"["~/.t/c"]"#, match: #"{"kind":"children"}"#)),
@@ -243,6 +263,11 @@ final class RuleScannerTests: XCTestCase {
             context: RuleHarness.context(fixture, loaded: loaded, userID: getuid() + 1), sink: sink2)
         let q = await other.value
         XCTAssertEqual(q?.ownerDropped, 1)
+    }
+
+    private actor Box2List {
+        var values: [ScannerProgress] = []
+        func add(_ p: ScannerProgress) { values.append(p) }
     }
 
     private actor Box2 {

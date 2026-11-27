@@ -104,17 +104,73 @@ public struct RuleScanner: Scanner {
 
     // MARK: Phase 2: size (sliding window)
 
+    /// Throttled (≤ 4/s) live progress while single candidates are walked (#75 FU1). Called on walker
+    /// threads; events go through an ordered stream so a stale one can't land after the final report.
+    private final class LiveProgress: @unchecked Sendable {
+        private let lock = NSLock()
+        private let base: ScannerProgress
+        private let continuation: AsyncStream<ScannerProgress>.Continuation
+        private var completedBytes: Int64 = 0
+        private var sized = 0
+        private var inflight: [Int: Int64] = [:]
+        private var lastEmit = Date.distantPast
+        static let minInterval: TimeInterval = 0.25
+
+        init(base: ScannerProgress, continuation: AsyncStream<ScannerProgress>.Continuation) {
+            self.base = base
+            self.continuation = continuation
+        }
+
+        func walked(index: Int, bytes: Int64) {
+            lock.lock(); defer { lock.unlock() }
+            inflight[index] = bytes
+            let now = Date()
+            guard now.timeIntervalSince(lastEmit) >= Self.minInterval else { return }
+            lastEmit = now
+            continuation.yield(snapshot())
+        }
+
+        /// A candidate finished (or failed): move its bytes from in-flight to completed.
+        func done(index: Int, bytes: Int64) {
+            lock.lock(); defer { lock.unlock() }
+            inflight[index] = nil
+            completedBytes += bytes
+        }
+
+        /// Also emits (same ≤ 4/s gate) so progress keeps flowing when candidates are small and fast.
+        func setSized(_ n: Int) {
+            lock.lock(); defer { lock.unlock() }
+            sized = n
+            let now = Date()
+            guard now.timeIntervalSince(lastEmit) >= Self.minInterval else { return }
+            lastEmit = now
+            continuation.yield(snapshot())
+        }
+
+        private func snapshot() -> ScannerProgress {
+            var p = base
+            p.candidatesSized = sized
+            p.bytesFound = completedBytes + inflight.values.reduce(0, +)
+            return p
+        }
+    }
+
     private func size(_ planned: [Planned], base: ScannerProgress, context: ScanContext, sink: ScanSink) async throws {
         var sized = 0
         var emitted = 0
         var bytes: Int64 = 0
+        let (stream, continuation) = AsyncStream<ScannerProgress>.makeStream(bufferingPolicy: .bufferingNewest(1))
+        let live = LiveProgress(base: base, continuation: continuation)
+        let pump = Task { for await p in stream { await sink.progress(p) } }
+        defer { continuation.finish() }
         try await withThrowingTaskGroup(of: Outcome.self) { group in
             var next = 0
             func startNext() {
                 guard next < planned.count else { return }
                 let p = planned[next]
+                let index = next
                 next += 1
-                group.addTask { try await Self.sizeOne(p, context: context) }
+                group.addTask { try await Self.sizeOne(p, context: context, index: index, live: live) }
             }
             for _ in 0..<min(context.maxConcurrentSizing, planned.count) { startNext() }
             while let outcome = try await group.next() {
@@ -130,22 +186,19 @@ public struct RuleScanner: Scanner {
                 case .skipped:
                     break
                 }
-                if sized % 64 == 0 {
-                    var p = base
-                    p.candidatesSized = sized
-                    p.bytesFound = bytes
-                    await sink.progress(p)
-                }
+                live.setSized(sized)
                 startNext()
             }
         }
+        continuation.finish()
+        await pump.value
         var final = base
         final.candidatesSized = sized
         final.bytesFound = bytes
         await sink.progress(final)
     }
 
-    private static func sizeOne(_ p: Planned, context: ScanContext) async throws -> Outcome {
+    private static func sizeOne(_ p: Planned, context: ScanContext, index: Int, live: LiveProgress) async throws -> Outcome {
         let path = p.candidate.path
         // `{name}`: the entry's own name is the bundle id of the app to quit. Anything else is not emitted.
         var appQuit = p.rule.rule.cleanup.requiresAppQuit
@@ -156,17 +209,21 @@ public struct RuleScanner: Scanner {
         }
         let report: SizeReport
         do {
-            report = try await context.size(URL(fileURLWithPath: path))
+            report = try await context.size(URL(fileURLWithPath: path)) { live.walked(index: index, bytes: $0.allocatedBytesSoFar) }
+            live.done(index: index, bytes: report.allocatedBytes)
         } catch is CancellationError {
             throw CancellationError()
         } catch FileSizerError.rootNotFound {
+            live.done(index: index, bytes: 0)
             return .skipped
         } catch FileSizerError.rootInaccessible(_, let code) {
+            live.done(index: index, bytes: 0)
             let kind: ScanWarning.Kind = code == EPERM ? .needsFullDiskAccess : .permissionDenied
             return .warning(ScanWarning(kind: kind, path: path, ruleID: p.rule.rule.id,
                                         message: "cannot size \(path): \(String(cString: strerror(code)))",
                                         code: .cannotSize(errno: code)))
         } catch {
+            live.done(index: index, bytes: 0)
             return .warning(ScanWarning(kind: .permissionDenied, path: path, ruleID: p.rule.rule.id,
                                         message: "cannot size \(path): \(error)", code: .cannotSize(errno: nil)))
         }
