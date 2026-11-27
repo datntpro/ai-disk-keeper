@@ -5,7 +5,7 @@ import Testing
 
 // Everything here runs against a fake table and a fake signaler: no real process is ever signalled.
 
-final class FakeTable: ProcessTableReading, @unchecked Sendable {
+final class PCFakeTable: ProcessTableReading, @unchecked Sendable {
     private let lock = NSLock()
     private var _records: [ProcessRecord]
     init(_ records: [ProcessRecord]) { _records = records }
@@ -16,7 +16,7 @@ final class FakeTable: ProcessTableReading, @unchecked Sendable {
     func snapshot() -> ProcessTableSnapshot? { ProcessTableSnapshot(at: .now, wall: Date(), records: records) }
 }
 
-final class FakeSignaler: ProcessSignaling, @unchecked Sendable {
+final class PCFakeSignaler: ProcessSignaling, @unchecked Sendable {
     struct Call: Equatable { let kind: String; let pid: pid_t; let value: Int32 }
     private let lock = NSLock()
     private var _calls: [Call] = []
@@ -26,117 +26,117 @@ final class FakeSignaler: ProcessSignaling, @unchecked Sendable {
     func signal(_ pid: pid_t, _ sig: Int32) -> Int32 { lock.withLock { _calls.append(Call(kind: "sig", pid: pid, value: sig)) }; return failWith }
 }
 
-final class Clock: @unchecked Sendable {
+final class PCClock: @unchecked Sendable {
     private let lock = NSLock()
     private var t = Date(timeIntervalSince1970: 1_800_000_000)
     var now: Date { lock.withLock { t } }
     func advance(_ s: TimeInterval) { lock.withLock { t = t.addingTimeInterval(s) } }
 }
 
-final class AuditSink: @unchecked Sendable {
+final class PCAuditSink: @unchecked Sendable {
     private let lock = NSLock()
     private var _lines: [ProcessControlAuditRecord] = []
     var lines: [ProcessControlAuditRecord] { lock.withLock { _lines } }
     func add(_ r: ProcessControlAuditRecord) { lock.withLock { _lines.append(r) } }
 }
 
-private let me = getuid()
-private let ownPID: pid_t = 5000
+private let pcMe = getuid()
+private let pcOwnPID: pid_t = 5000
 
-private func rec(_ pid: pid_t, _ ppid: pid_t = 100, name: String = "worker", path: String? = "/Users/x/bin/worker", start: UInt64? = nil,
-                 uid: uid_t = me, status: UInt32 = 2) -> ProcessRecord {
+private func pcRec(_ pid: pid_t, _ ppid: pid_t = 100, name: String = "worker", path: String? = "/Users/x/bin/worker", start: UInt64? = nil,
+                 uid: uid_t = pcMe, status: UInt32 = 2) -> ProcessRecord {
     ProcessRecord(pid: pid, ppid: ppid, uid: uid, name: name, executablePath: path, startID: start ?? UInt64(pid) * 10, status: status)
 }
 
-private func target(_ r: ProcessRecord) -> ProcessTarget { ProcessTarget(pid: r.pid, startID: r.startID, name: r.name) }
+private func pcTarget(_ r: ProcessRecord) -> ProcessTarget { ProcessTarget(pid: r.pid, startID: r.startID, name: r.name) }
 
-private struct Rig {
-    let table: FakeTable, signaler = FakeSignaler(), clock = Clock(), sink = AuditSink(), dir: TemporaryDirectory
+private struct PCRig {
+    let table: PCFakeTable, signaler = PCFakeSignaler(), clock = PCClock(), sink = PCAuditSink(), dir: TemporaryDirectory
     let controller: ProcessController
     var storeURL: URL { dir.url.appendingPathComponent("paused.json") }
 
     init(_ records: [ProcessRecord], gui: Set<pid_t> = [], minutes: Int = 15) throws {
         dir = try TemporaryDirectory()
-        table = FakeTable(records)
+        table = PCFakeTable(records)
         let s = signaler, c = clock, k = sink
         controller = ProcessController(
             table: table, signaler: s, store: PausedProcessStore(fileURL: dir.url.appendingPathComponent("paused.json")),
-            isGUIApp: { gui.contains($0) }, ownPID: ownPID, ownUID: me, now: { c.now }, autoResumeMinutes: minutes,
+            isGUIApp: { gui.contains($0) }, ownPID: pcOwnPID, ownUID: pcMe, now: { c.now }, autoResumeMinutes: minutes,
             audit: { k.add($0) })
     }
 }
 
 /// App (5000) <- launchd (1); user processes hang off 100.
-private let base = [rec(1, 0, name: "launchd", path: "/sbin/launchd", uid: 0), rec(100, 1, name: "zsh", path: "/bin/zsh"),
-                    rec(ownPID, 100, name: "AIDiskKeeper", path: "/Applications/AIDiskKeeper.app/Contents/MacOS/AIDiskKeeper")]
+private let pcBase = [pcRec(1, 0, name: "launchd", path: "/sbin/launchd", uid: 0), pcRec(100, 1, name: "zsh", path: "/bin/zsh"),
+                    pcRec(pcOwnPID, 100, name: "AIDiskKeeper", path: "/Applications/AIDiskKeeper.app/Contents/MacOS/AIDiskKeeper")]
 
 @Suite struct ProcessControlPolicyTests {
     private func refusal(_ r: ProcessRecord, _ a: ProcessAction, gui: Bool = false, ancestors: Set<pid_t> = [100]) -> ProcessRefusal? {
-        ProcessControlPolicy.refusal(r, action: a, ownPID: ownPID, ownAncestors: ancestors, isGUIApp: gui, ownUID: me)
+        ProcessControlPolicy.refusal(r, action: a, ownPID: pcOwnPID, ownAncestors: ancestors, isGUIApp: gui, ownUID: pcMe)
     }
 
     @Test func allowsAnOrdinaryOwnProcess() {
-        for a in [ProcessAction.background, .pause, .resume, .restorePriority] { #expect(refusal(rec(200), a) == nil) }
+        for a in [ProcessAction.background, .pause, .resume, .restorePriority] { #expect(refusal(pcRec(200), a) == nil) }
     }
     @Test func otherUserAndLaunchd() {
-        #expect(refusal(rec(200, uid: me &+ 1), .pause) == .otherUser)
-        #expect(refusal(rec(1), .pause) == .launchd)
-        #expect(refusal(rec(0), .background) == .launchd)
+        #expect(refusal(pcRec(200, uid: pcMe &+ 1), .pause) == .otherUser)
+        #expect(refusal(pcRec(1), .pause) == .launchd)
+        #expect(refusal(pcRec(0), .background) == .launchd)
     }
     @Test func ownProcessAndAncestors() {
-        #expect(refusal(rec(ownPID), .pause) == .ownProcessOrAncestor)
-        #expect(refusal(rec(100), .background) == .ownProcessOrAncestor)
+        #expect(refusal(pcRec(pcOwnPID), .pause) == .ownProcessOrAncestor)
+        #expect(refusal(pcRec(100), .background) == .ownProcessOrAncestor)
     }
     @Test func systemPaths() {
         for p in ["/System/Library/x", "/usr/bin/ssh", "/usr/libexec/y", "/sbin/z", "/bin/ls", "/Library/Apple/System/q"] {
-            #expect(refusal(rec(200, path: p), .pause) == .systemProcess, "\(p)")
+            #expect(refusal(pcRec(200, path: p), .pause) == .systemProcess, "\(p)")
         }
-        #expect(refusal(rec(200, path: "/usr/local/bin/node"), .pause) == nil)
-        #expect(refusal(rec(200, path: "/opt/homebrew/bin/node"), .pause) == nil)
+        #expect(refusal(pcRec(200, path: "/usr/local/bin/node"), .pause) == nil)
+        #expect(refusal(pcRec(200, path: "/opt/homebrew/bin/node"), .pause) == nil)
     }
-    @Test func unreadablePathIsRefused() { #expect(refusal(rec(200, path: nil), .pause) == .unreadablePath) }
+    @Test func unreadablePathIsRefused() { #expect(refusal(pcRec(200, path: nil), .pause) == .unreadablePath) }
     @Test func denylist() {
         for n in ["WindowServer", "loginwindow", "Finder", "Dock", "SystemUIServer", "ControlCenter", "coreaudiod", "launchservicesd"] {
-            #expect(refusal(rec(200, name: n), .pause) == .denylisted(n))
-            #expect(refusal(rec(200, name: n), .background) == .denylisted(n))
+            #expect(refusal(pcRec(200, name: n), .pause) == .denylisted(n))
+            #expect(refusal(pcRec(200, name: n), .background) == .denylisted(n))
         }
     }
     @Test func guiAppCanBeBackgroundedButNotPaused() {
-        #expect(refusal(rec(200), .pause, gui: true) == .guiAppPause)
-        #expect(refusal(rec(200), .background, gui: true) == nil)
+        #expect(refusal(pcRec(200), .pause, gui: true) == .guiAppPause)
+        #expect(refusal(pcRec(200), .background, gui: true) == nil)
     }
     @Test func resumeIsNeverBlockedByPolicyChanges() {
         // Something we paused must always be resumable: only another user's process or pid <= 1 are refused.
-        #expect(refusal(rec(200, name: "Finder", path: "/System/Library/CoreServices/Finder.app/x"), .resume, gui: true) == nil)
-        #expect(refusal(rec(200, uid: me &+ 1), .resume) == .otherUser)
+        #expect(refusal(pcRec(200, name: "Finder", path: "/System/Library/CoreServices/Finder.app/x"), .resume, gui: true) == nil)
+        #expect(refusal(pcRec(200, uid: pcMe &+ 1), .resume) == .otherUser)
     }
 }
 
 @Suite struct ProcessTreeOrderTests {
     // 200 -> 201 -> 203 ; 200 -> 202
-    private let tree = base + [rec(200), rec(201, 200), rec(202, 200), rec(203, 201)]
+    private let tree = pcBase + [pcRec(200), pcRec(201, 200), pcRec(202, 200), pcRec(203, 201)]
 
-    @Test func pauseParentFirstThenChildrenBFS() throws {
-        let rig = try Rig(tree)
-        let plan = rig.controller.plan([target(rec(200))], includeDescendants: true, action: .pause)
+    @Test func pauseParentFirstThenChildrenBFS() async throws {
+        let rig = try PCRig(tree)
+        let plan = await rig.controller.plan([pcTarget(pcRec(200))], includeDescendants: true, action: .pause)
         #expect(plan.rows.map(\.target.pid) == [200, 201, 202, 203])
         #expect(plan.rows.first?.isRoot == true)
     }
     @Test func resumeChildrenFirst() async throws {
-        let rig = try Rig(tree)
-        let plan = await rig.controller.plan([target(rec(200))], includeDescendants: true, action: .resume)
+        let rig = try PCRig(tree)
+        let plan = await rig.controller.plan([pcTarget(pcRec(200))], includeDescendants: true, action: .resume)
         #expect(plan.rows.map(\.target.pid) == [203, 202, 201, 200])
     }
     @Test func cycleSafe() async throws {
-        let cyc = base + [rec(200, 201), rec(201, 200)]
-        let rig = try Rig(cyc)
-        let plan = await rig.controller.plan([target(rec(200, 201))], includeDescendants: true, action: .pause)
+        let cyc = pcBase + [pcRec(200, 201), pcRec(201, 200)]
+        let rig = try PCRig(cyc)
+        let plan = await rig.controller.plan([pcTarget(pcRec(200, 201))], includeDescendants: true, action: .pause)
         #expect(plan.rows.map(\.target.pid) == [200, 201])
     }
     @Test func policyIsEvaluatedPerMember() async throws {
-        let mixed = base + [rec(200), rec(201, 200, name: "Finder"), rec(202, 200, path: "/usr/bin/ssh"), rec(203, 200)]
-        let rig = try Rig(mixed, gui: [203])
-        let plan = await rig.controller.plan([target(rec(200))], includeDescendants: true, action: .pause)
+        let mixed = pcBase + [pcRec(200), pcRec(201, 200, name: "Finder"), pcRec(202, 200, path: "/usr/bin/ssh"), pcRec(203, 200)]
+        let rig = try PCRig(mixed, gui: [203])
+        let plan = await rig.controller.plan([pcTarget(pcRec(200))], includeDescendants: true, action: .pause)
         let by = Dictionary(uniqueKeysWithValues: plan.rows.map { ($0.target.pid, $0.refusal) })
         #expect(by[200] == .some(nil))
         #expect(by[201] == .denylisted("Finder"))
@@ -147,8 +147,8 @@ private let base = [rec(1, 0, name: "launchd", path: "/sbin/launchd", uid: 0), r
         #expect(results.count == 4)
     }
     @Test func pauseSendsOnlySIGSTOPAndResumeOnlySIGCONT() async throws {
-        let rig = try Rig(tree)
-        _ = await rig.controller.execute(await rig.controller.plan([target(rec(200))], includeDescendants: true, action: .pause))
+        let rig = try PCRig(tree)
+        _ = await rig.controller.execute(await rig.controller.plan([pcTarget(pcRec(200))], includeDescendants: true, action: .pause))
         #expect(rig.signaler.calls.allSatisfy { $0.kind == "sig" && $0.value == SIGSTOP })
         _ = await rig.controller.resumeAll()
         let conts = rig.signaler.calls.filter { $0.value == SIGCONT }
@@ -160,38 +160,38 @@ private let base = [rec(1, 0, name: "launchd", path: "/sbin/launchd", uid: 0), r
 
 @Suite struct IdentityGuardTests {
     @Test func reusedPidIsNotSignalled() async throws {
-        let rig = try Rig(base + [rec(200)])
-        let plan = await rig.controller.plan([target(rec(200))], includeDescendants: false, action: .pause)
-        rig.table.records = base + [rec(200, start: 99_999)]   // same pid, new process
+        let rig = try PCRig(pcBase + [pcRec(200)])
+        let plan = await rig.controller.plan([pcTarget(pcRec(200))], includeDescendants: false, action: .pause)
+        rig.table.records = pcBase + [pcRec(200, start: 99_999)]   // same pid, new process
         let results = await rig.controller.execute(plan)
         #expect(results.first?.outcome == .refused(.identityChanged))
         #expect(rig.signaler.calls.isEmpty)
     }
     @Test func planWithStaleTargetIsRefused() async throws {
-        let rig = try Rig(base + [rec(200, start: 77)])
-        let plan = await rig.controller.plan([target(rec(200))], includeDescendants: false, action: .background)
+        let rig = try PCRig(pcBase + [pcRec(200, start: 77)])
+        let plan = await rig.controller.plan([pcTarget(pcRec(200))], includeDescendants: false, action: .background)
         #expect(plan.rows.first?.refusal == .identityChanged)
         #expect(await rig.controller.execute(plan).first?.outcome == .refused(.identityChanged))
         #expect(rig.signaler.calls.isEmpty)
     }
     @Test func vanishedProcessIsNotSignalled() async throws {
-        let rig = try Rig(base + [rec(200)])
-        let plan = await rig.controller.plan([target(rec(200))], includeDescendants: false, action: .pause)
-        rig.table.records = base
+        let rig = try PCRig(pcBase + [pcRec(200)])
+        let plan = await rig.controller.plan([pcTarget(pcRec(200))], includeDescendants: false, action: .pause)
+        rig.table.records = pcBase
         #expect(await rig.controller.execute(plan).first?.outcome == .refused(.vanished))
         #expect(rig.signaler.calls.isEmpty)
     }
     @Test func failedSignalLeavesNothingPaused() async throws {
-        let rig = try Rig(base + [rec(200)])
+        let rig = try PCRig(pcBase + [pcRec(200)])
         rig.signaler.failWith = EPERM
-        let r = await rig.controller.execute(await rig.controller.plan([target(rec(200))], includeDescendants: false, action: .pause))
+        let r = await rig.controller.execute(await rig.controller.plan([pcTarget(pcRec(200))], includeDescendants: false, action: .pause))
         #expect(r.first?.outcome == .failed(errno: EPERM))
         #expect(await rig.controller.state().paused.isEmpty)
         #expect(PausedProcessStore(fileURL: rig.storeURL).load().isEmpty)
     }
     @Test func everyProcessGetsOneAuditLine() async throws {
-        let rig = try Rig(base + [rec(200), rec(201, 200, name: "Finder")])
-        _ = await rig.controller.execute(await rig.controller.plan([target(rec(200))], includeDescendants: true, action: .pause))
+        let rig = try PCRig(pcBase + [pcRec(200), pcRec(201, 200, name: "Finder")])
+        _ = await rig.controller.execute(await rig.controller.plan([pcTarget(pcRec(200))], includeDescendants: true, action: .pause))
         #expect(rig.sink.lines.count == 2)
         #expect(rig.sink.lines.map(\.result) == ["done", "refused:denylisted"])
         #expect(rig.sink.lines[1].root == "worker")
@@ -200,11 +200,11 @@ private let base = [rec(1, 0, name: "launchd", path: "/sbin/launchd", uid: 0), r
 }
 
 @Suite struct AutoResumeTests {
-    private func pause(_ rig: Rig) async {
-        _ = await rig.controller.execute(await rig.controller.plan([target(rec(200))], includeDescendants: false, action: .pause))
+    private func pause(_ rig: PCRig) async {
+        _ = await rig.controller.execute(await rig.controller.plan([pcTarget(pcRec(200))], includeDescendants: false, action: .pause))
     }
     @Test func resumesAtResumeAtNotBefore() async throws {
-        let rig = try Rig(base + [rec(200)], minutes: 15)
+        let rig = try PCRig(pcBase + [pcRec(200)], minutes: 15)
         await pause(rig)
         rig.clock.advance(14 * 60)
         #expect(await rig.controller.resumeDue().isEmpty)
@@ -216,28 +216,28 @@ private let base = [rec(1, 0, name: "launchd", path: "/sbin/launchd", uid: 0), r
         #expect(PausedProcessStore(fileURL: rig.storeURL).load().isEmpty)
     }
     @Test func autoResumeMinutesAreClamped() async throws {
-        let rig = try Rig(base + [rec(200)], minutes: 100_000)
+        let rig = try PCRig(pcBase + [pcRec(200)], minutes: 100_000)
         await pause(rig)
         let e = await rig.controller.state().paused[0]
         #expect(e.resumeAt.timeIntervalSince(e.pausedAt) == 60 * 60, "never longer than 60 min, never forever")
     }
     @Test func pausedEntryIsPersistedBeforeAnySignal() async throws {
-        let rig = try Rig(base + [rec(200)])
+        let rig = try PCRig(pcBase + [pcRec(200)])
         await pause(rig)
         #expect(PausedProcessStore(fileURL: rig.storeURL).load().map(\.pid) == [200])
         var st = stat(); #expect(stat(rig.storeURL.path, &st) == 0); #expect(st.st_mode & 0o777 == 0o600)
     }
     @Test func quitResumesAll() async throws {
-        let rig = try Rig(base + [rec(200), rec(201, 200)])
-        _ = await rig.controller.execute(await rig.controller.plan([target(rec(200))], includeDescendants: true, action: .pause))
+        let rig = try PCRig(pcBase + [pcRec(200), pcRec(201, 200)])
+        _ = await rig.controller.execute(await rig.controller.plan([pcTarget(pcRec(200))], includeDescendants: true, action: .pause))
         _ = await rig.controller.resumeAll()
         #expect(rig.signaler.calls.filter { $0.value == SIGCONT }.map(\.pid) == [201, 200])
         #expect(await rig.controller.state().paused.isEmpty)
     }
     @Test func resumeAfterPidReuseSendsNothing() async throws {
-        let rig = try Rig(base + [rec(200)])
+        let rig = try PCRig(pcBase + [pcRec(200)])
         await pause(rig)
-        rig.table.records = base + [rec(200, start: 424_242)]
+        rig.table.records = pcBase + [pcRec(200, start: 424_242)]
         let r = await rig.controller.resumeAll()
         #expect(r.first?.outcome == .refused(.identityChanged))
         #expect(rig.signaler.calls.filter { $0.value == SIGCONT }.isEmpty)
@@ -249,19 +249,19 @@ private let base = [rec(1, 0, name: "launchd", path: "/sbin/launchd", uid: 0), r
         let t = Date(timeIntervalSince1970: 1_800_000_000)
         let mk = { (pid: pid_t, start: UInt64) in PausedProcess(pid: pid, startID: start, name: "p\(pid)", pausedAt: t, resumeAt: t.addingTimeInterval(900)) }
         try store.save([mk(200, 2000), mk(201, 2010), mk(202, 2020), mk(203, 2030)])
-        let table = FakeTable(base + [
-            rec(200, start: 2000, status: UInt32(SSTOP)),      // still stopped, same process: offered
-            rec(201, start: 2010, status: 2),                   // running again: dropped
-            rec(202, start: 9999, status: UInt32(SSTOP)),       // pid reused: dropped
+        let table = PCFakeTable(pcBase + [
+            pcRec(200, start: 2000, status: UInt32(SSTOP)),      // still stopped, same process: offered
+            pcRec(201, start: 2010, status: 2),                   // running again: dropped
+            pcRec(202, start: 9999, status: UInt32(SSTOP)),       // pid reused: dropped
         ])                                                      // 203 gone: dropped
-        let signaler = FakeSignaler()
-        let c = ProcessController(table: table, signaler: signaler, store: store, isGUIApp: { _ in false }, ownPID: ownPID, ownUID: me)
+        let signaler = PCFakeSignaler()
+        let c = ProcessController(table: table, signaler: signaler, store: store, isGUIApp: { _ in false }, ownPID: pcOwnPID, ownUID: pcMe)
         #expect(await c.recoveryCandidates().map(\.pid) == [200])
         #expect(store.load().map(\.pid) == [200])
         #expect(signaler.calls.isEmpty, "recovery itself never signals")
     }
     @Test func leavePausedRestartsTheClock() async throws {
-        let rig = try Rig(base + [rec(200)], minutes: 10)
+        let rig = try PCRig(pcBase + [pcRec(200)], minutes: 10)
         await pause(rig)
         rig.clock.advance(9 * 60)
         await rig.controller.rearmAll()
@@ -274,10 +274,10 @@ private let base = [rec(1, 0, name: "launchd", path: "/sbin/launchd", uid: 0), r
 
 @Suite struct KeepChildrenInBackgroundTests {
     @Test func newDescendantIsBackgroundedOnce() async throws {
-        let rig = try Rig(base + [rec(200)])
-        await rig.controller.setKeepChildrenInBackground([target(rec(200))], on: true)
+        let rig = try PCRig(pcBase + [pcRec(200)])
+        await rig.controller.setKeepChildrenInBackground([pcTarget(pcRec(200))], on: true)
         #expect(await rig.controller.tickKeepChildren().isEmpty)
-        rig.table.records = base + [rec(200), rec(300, 200), rec(301, 300)]
+        rig.table.records = pcBase + [pcRec(200), pcRec(300, 200), pcRec(301, 300)]
         let first = await rig.controller.tickKeepChildren()
         #expect(first.map(\.target.pid) == [300, 301])
         #expect(await rig.controller.tickKeepChildren().isEmpty, "audited and applied once per pid")
@@ -286,18 +286,18 @@ private let base = [rec(1, 0, name: "launchd", path: "/sbin/launchd", uid: 0), r
         #expect(rig.sink.lines.count == 2)
     }
     @Test func lapsesWhenTheRootExits() async throws {
-        let rig = try Rig(base + [rec(200)])
-        await rig.controller.setKeepChildrenInBackground([target(rec(200))], on: true)
-        rig.table.records = base
+        let rig = try PCRig(pcBase + [pcRec(200)])
+        await rig.controller.setKeepChildrenInBackground([pcTarget(pcRec(200))], on: true)
+        rig.table.records = pcBase
         _ = await rig.controller.tickKeepChildren()
         #expect(await rig.controller.state().keepingChildren.isEmpty)
-        rig.table.records = base + [rec(200), rec(300, 200)]
+        rig.table.records = pcBase + [pcRec(200), pcRec(300, 200)]
         #expect(await rig.controller.tickKeepChildren().isEmpty)
     }
     @Test func childrenStillGoThroughThePolicy() async throws {
-        let rig = try Rig(base + [rec(200)])
-        await rig.controller.setKeepChildrenInBackground([target(rec(200))], on: true)
-        rig.table.records = base + [rec(200), rec(300, 200, name: "Dock")]
+        let rig = try PCRig(pcBase + [pcRec(200)])
+        await rig.controller.setKeepChildrenInBackground([pcTarget(pcRec(200))], on: true)
+        rig.table.records = pcBase + [pcRec(200), pcRec(300, 200, name: "Dock")]
         let r = await rig.controller.tickKeepChildren()
         #expect(r.first?.outcome == .refused(.denylisted("Dock")))
         #expect(rig.signaler.calls.isEmpty)
@@ -347,11 +347,34 @@ private let base = [rec(1, 0, name: "launchd", path: "/sbin/launchd", uid: 0), r
     }
 }
 
-/// The ONLY live test: it spawns its own child (a copy of `sleep`, because system paths are refused by policy) and
-/// signals nothing else. The child is always SIGKILLed by test code in `defer`.
+/// Reads the real table but reports the test's own child as living under the temp dir: `/bin/sleep` itself is a
+/// system path that the policy (rightly) refuses, and a copied platform binary may not launch.
+private struct ChildRelabelingTable: ProcessTableReading {
+    let base = LibprocProcessTable()
+    let pid: pid_t, path: String
+    func snapshot() -> ProcessTableSnapshot? {
+        guard let s = base.snapshot() else { return nil }
+        let records = s.records.map { r -> ProcessRecord in
+            guard r.pid == pid else { return r }
+            return ProcessRecord(pid: r.pid, ppid: r.ppid, uid: r.uid, name: r.name, executablePath: path, cwd: r.cwd,
+                                 startID: r.startID, status: r.status)
+        }
+        return ProcessTableSnapshot(at: s.at, wall: s.wall, records: records)
+    }
+}
+
+/// The ONLY live test: it spawns its own child (`/bin/sleep 60`) and signals nothing else (real `ProcessSignaling`).
+/// The child is always SIGKILLed by test code in `defer`.
 @Suite(.serialized) struct LiveChildProcessTests {
     private func status(_ pid: pid_t) -> UInt32? {
         LibprocProcessTable().snapshot()?.records.first { $0.pid == pid }?.status
+    }
+    /// `getpriority(PRIO_DARWIN_PROCESS)` reads 0 for another process on this macOS; `pbi_flags` bit 0x10000 is the
+    /// Darwin background state (observed to toggle with `setpriority(PRIO_DARWIN_BG)`).
+    private func isDarwinBackground(_ pid: pid_t) -> Bool {
+        var b = proc_bsdinfo()
+        guard proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &b, Int32(MemoryLayout<proc_bsdinfo>.size)) > 0 else { return false }
+        return b.pbi_flags & 0x10000 != 0
     }
     private func wait(_ pid: pid_t, until predicate: (UInt32) -> Bool) async -> Bool {
         for _ in 0..<40 {
@@ -363,28 +386,28 @@ private let base = [rec(1, 0, name: "launchd", path: "/sbin/launchd", uid: 0), r
 
     @Test func backgroundPauseResumeOnItsOwnChild() async throws {
         let dir = try TemporaryDirectory()
-        let exe = dir.path("sleepcopy")
-        try FileManager.default.copyItem(atPath: "/bin/sleep", toPath: exe)
         let child = Process()
-        child.executableURL = URL(fileURLWithPath: exe)
+        child.executableURL = URL(fileURLWithPath: "/bin/sleep")
         child.arguments = ["60"]
         child.currentDirectoryURL = dir.url
         try child.run()
         let pid = child.processIdentifier
         defer { kill(pid, SIGKILL); child.waitUntilExit() }   // test code only, own child only
 
-        let table = LibprocProcessTable()
+        let table = ChildRelabelingTable(pid: pid, path: dir.path("fixture/sleep"))
         let rec = try #require(table.snapshot()?.records.first { $0.pid == pid })
         let t = ProcessTarget(pid: pid, startID: rec.startID, name: rec.name)
         let store = PausedProcessStore(fileURL: dir.url.appendingPathComponent("paused.json"))
         let c = ProcessController(table: table, signaler: LiveProcessSignaling(), store: store, isGUIApp: { _ in false })
 
-        _ = await c.execute(await c.plan([t], includeDescendants: false, action: .background))
-        #expect(getpriority(PRIO_DARWIN_PROCESS, id_t(pid)) == 1, "PRIO_DARWIN_BG reads back as 1")
+        let bg = await c.execute(await c.plan([t], includeDescendants: false, action: .background))
+        #expect(bg.map(\.outcome) == [.done])
+        #expect(isDarwinBackground(pid), "pbi_flags shows the Darwin background bit")
         _ = await c.execute(await c.plan([t], includeDescendants: false, action: .restorePriority))
-        #expect(getpriority(PRIO_DARWIN_PROCESS, id_t(pid)) == 0)
+        #expect(!isDarwinBackground(pid))
 
-        _ = await c.execute(await c.plan([t], includeDescendants: false, action: .pause))
+        let paused = await c.execute(await c.plan([t], includeDescendants: false, action: .pause))
+        #expect(paused.map(\.outcome) == [.done])
         #expect(await wait(pid) { $0 == UInt32(SSTOP) })
         #expect(store.load().map(\.pid) == [pid])
 

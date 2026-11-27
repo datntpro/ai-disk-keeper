@@ -97,4 +97,4 @@ struct ProcessRecoverySheet: View {
     }
 }
 
-extension ProcessControlPlanRow: @retroactive Identifiable { public var id: ProcessTarget { target } }
+extension ProcessControlPlanRow: Identifiable { public var id: ProcessTarget { target } }

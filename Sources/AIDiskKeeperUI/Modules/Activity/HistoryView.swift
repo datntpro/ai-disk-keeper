@@ -143,6 +143,6 @@ extension AuditRecord: @retroactive Identifiable {
     public var id: String { "\(runID)|\(timestamp.timeIntervalSince1970)|\(path)|\(result)" }
 }
 
-extension ProcessControlAuditRecord: @retroactive Identifiable {
+extension ProcessControlAuditRecord: Identifiable {
     public var id: String { "\(flowID)|\(pid)|\(timestamp.timeIntervalSince1970)|\(action)" }
 }
