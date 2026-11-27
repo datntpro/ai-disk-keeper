@@ -28,10 +28,10 @@ struct ScheduleSettingsView: View {
                 Text(ScheduleCopy.note).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 if s.scanFrequency != .off {
                     Stepper(value: Binding(get: { s.scheduledSafeAlertGB }, set: { model.setScheduledSafeAlertGB($0) }), in: 1...500) {
-                        Text("\(ScheduleCopy.safeThreshold): \(Formatting.count(s.scheduledSafeAlertGB))")
+                        Text(ScheduleCopy.safeThreshold(Formatting.count(s.scheduledSafeAlertGB)))
                     }
                     Stepper(value: Binding(get: { s.scheduledGrowthAlertGB }, set: { model.setScheduledGrowthAlertGB($0) }), in: 1...500) {
-                        Text("\(ScheduleCopy.growthThreshold): \(Formatting.count(s.scheduledGrowthAlertGB))")
+                        Text(ScheduleCopy.growthThreshold(Formatting.count(s.scheduledGrowthAlertGB)))
                     }
                     Toggle(ScheduleCopy.skipOnBattery, isOn: Binding(get: { s.scheduledSkipOnBattery }, set: { model.setScheduledSkipOnBattery($0) }))
                 }

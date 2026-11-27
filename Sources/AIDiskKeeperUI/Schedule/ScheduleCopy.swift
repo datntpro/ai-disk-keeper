@@ -9,8 +9,8 @@ enum ScheduleCopy {
     static var note: String {
         loc("settings.schedule.note", "A scheduled scan only looks: it never selects or cleans anything. Open the app to review what it found.")
     }
-    static var safeThreshold: String { loc("settings.schedule.safeThreshold", "Notify when Safe items reach (GB)") }
-    static var growthThreshold: String { loc("settings.schedule.growthThreshold", "Notify when AI tools grow by (GB)") }
+    static func safeThreshold(_ gb: String) -> String { loc("settings.schedule.safeThreshold", "Notify when Safe items reach: \(gb) GB") }
+    static func growthThreshold(_ gb: String) -> String { loc("settings.schedule.growthThreshold", "Notify when AI tools grow by: \(gb) GB") }
     static var skipOnBattery: String { loc("settings.schedule.skipOnBattery", "Skip on battery and in Low Power Mode") }
     static var loginItem: String { loc("settings.schedule.loginItem", "Open at login (keeps scheduled scans running)") }
     static var loginNeedsApproval: String { loc("settings.schedule.loginNeedsApproval", "Needs approval in System Settings › Login Items.") }
