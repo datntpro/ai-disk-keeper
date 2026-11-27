@@ -34,6 +34,7 @@ enum HistoryCopy {
         case "ran": loc("history.result.ran", "Removed by its tool")
         case "skipped": skipped
         case "failed": failed
+        case "intent": loc("history.result.intent", "Started, no result recorded")
         default: raw
         }
     }

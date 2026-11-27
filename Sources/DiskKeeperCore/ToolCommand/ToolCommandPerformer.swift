@@ -15,9 +15,12 @@ public struct ToolCommandPerformer: Sendable {
     public let registry: ToolCommandRegistry
     public let context: ToolCommandContext
     public let resolver: ToolExecutableResolver
+    /// When set, an `intent` line is written (and fsynced) before each command runs; the engine's outcome line follows.
+    public let intentLog: AuditLog?
 
     public init(registry: ToolCommandRegistry, context: ToolCommandContext,
-                resolver: ToolExecutableResolver = ToolExecutableResolver()) {
+                resolver: ToolExecutableResolver = ToolExecutableResolver(), intentLog: AuditLog? = nil) {
+        self.intentLog = intentLog
         self.registry = registry
         self.context = context
         self.resolver = resolver
@@ -25,7 +28,8 @@ public struct ToolCommandPerformer: Sendable {
 
     public static func live(environment: PathEnvironment) -> ToolCommandPerformer {
         ToolCommandPerformer(registry: .builtIn,
-                             context: ToolCommandContext(environment: environment, runner: ToolCommandRunner()))
+                             context: ToolCommandContext(environment: environment, runner: ToolCommandRunner()),
+                             intentLog: AuditLog(fileURL: AuditLog.defaultURL(environment: environment)))
     }
 
     // MARK: Plan
@@ -67,6 +71,15 @@ public struct ToolCommandPerformer: Sendable {
             }
             guard expected == p.snapshot else { return .blocked([.identityChanged], record(expected, result: nil)) }
             let tool = p.spec.command
+            if let intentLog {
+                let intent = AuditRecord(timestamp: Date(), runID: UUID(), itemID: item.id, path: item.path, bytes: item.sizeAllocated,
+                                         action: .deletePermanently, result: AuditRecord.intentResult, trashPath: nil, ruleID: item.ruleID,
+                                         tool: item.tool, reasons: [], error: nil, command: p.snapshot.command,
+                                         toolTarget: p.snapshot.targetLabel)
+                do { try await intentLog.appendStandalone(intent) } catch {
+                    return .ran(.failed("couldn't write the audit intent line: \(error)"), record(p.snapshot, result: nil))
+                }
+            }
             let result: ToolCommandResult
             do {
                 result = try await context.runner.run(executable: p.executable, arguments: p.argv, environment: p.environment,
@@ -112,7 +125,7 @@ public struct ToolCommandPerformer: Sendable {
         }
         let spec = match.spec
         let exe: URL
-        switch resolver.resolve(candidates: spec.executable(context, item).candidates) {
+        switch resolver.resolve(candidates: spec.executable(context, item).candidates, toolName: spec.command) {
         case .failure: return .blocked([.toolUnavailable(tool: spec.command)])
         case .success(let url): exe = url
         }
@@ -122,8 +135,9 @@ public struct ToolCommandPerformer: Sendable {
         }
         let extra = await spec.revalidate(context, item)
         guard extra.isEmpty else { return .blocked(extra) }
+        guard let identity = ExecutableIdentity.of(path: exe.path) else { return .blocked([.toolUnavailable(tool: spec.command)]) }
         let snapshot = ToolCommandSnapshot(specID: spec.id, executablePath: exe.path, argv: match.argv,
-                                           environmentDisplay: env, targetLabel: virtual?.target)
+                                           environmentDisplay: env, targetLabel: virtual?.target, executableIdentity: identity)
         return .ready(Prepared(spec: spec, executable: exe, argv: match.argv, environment: env, snapshot: snapshot))
     }
 

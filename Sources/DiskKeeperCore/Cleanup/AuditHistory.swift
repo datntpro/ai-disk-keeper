@@ -92,10 +92,27 @@ public enum AuditHistoryReader {
                 malformed += 1
             }
         }
-        let runs = group(entries)
+        let runs = group(settleIntents(entries))
         let lifetime = runs.reduce(Int64(0)) { $0 + $1.bytesReclaimed }
         return AuditHistory(entries: entries, runs: runs, malformedLines: malformed, unknownLines: unknown,
                             truncatedHead: truncatedHead, lifetimeReclaimed: lifetime)
+    }
+
+    /// An `intent` line is superseded by a later outcome line for the same item and command; one with no outcome
+    /// (crash between intent and outcome) stays visible as its own entry and counts as nothing.
+    static func settleIntents(_ entries: [AuditEntry]) -> [AuditEntry] {
+        var settled = Set<String>()
+        var out: [AuditEntry] = []
+        for e in entries.reversed() {
+            if case .cleanup(let r) = e {
+                let key = r.itemID + "\u{0}" + (r.command ?? []).joined(separator: " ")
+                if r.result == AuditRecord.intentResult {
+                    if settled.contains(key) { continue }
+                } else if r.command != nil { settled.insert(key) }
+            }
+            out.append(e)
+        }
+        return out.reversed()
     }
 
     static func group(_ entries: [AuditEntry]) -> [AuditRun] {
