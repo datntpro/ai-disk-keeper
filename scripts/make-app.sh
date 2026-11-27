@@ -100,6 +100,8 @@ mv "$STAGE" "$OUTPUT/"
 
 if [ "$SIGN" = 1 ]; then
   echo "==> Ad-hoc signing"
+  # Nested code first (adk), then the bundle: a bundle seal refuses an unsigned nested executable.
+  codesign --force --sign - --timestamp=none --identifier "$BUNDLE_ID.adk" "$APP/Contents/MacOS/adk" || die "codesign adk failed"
   codesign --force --sign - --timestamp=none --identifier "$BUNDLE_ID" "$APP" || die "codesign failed"
   codesign --verify --strict --verbose=2 "$APP" || die "codesign verification failed"
 fi
