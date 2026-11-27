@@ -22,7 +22,7 @@ public enum HostStatusCLI {
         """
 
     public static func run(args: [String], statusURL: URL, now: Date,
-                           processAlive: (Int32) -> Bool = { $0 <= 0 || kill($0, 0) == 0 || errno != ESRCH }) -> Output {
+                           processAlive: (Int32) -> Bool = { $0 <= 0 || getpgid($0) != -1 || errno != ESRCH }   // getpgid, not kill: nothing here may signal a process) -> Output {
         var json = false, quiet = false, worktree: String?, maxAge = defaultMaxAge
         var rest = args[...]
         guard let command = rest.popFirst() else { return Output(stdout: "", stderr: usage, exitCode: 2) }
