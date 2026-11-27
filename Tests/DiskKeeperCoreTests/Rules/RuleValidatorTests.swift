@@ -148,6 +148,32 @@ final class RuleValidatorTests: XCTestCase {
         XCTAssertEqual(r.protectPatterns, [env.home + "/.shared/**"])
     }
 
+    func testWildcardishAndContainerProtectPatternsRejected() throws {
+        for pattern in ["~/[a-z]*", "~/[!.]*", "~/{a,b}*", "$APP_SUPPORT/**", "$APP_SUPPORT/*", "$APP_SUPPORT",
+                        "$CACHES/**", "~/Library/**", "$TMPDIR/[a-z]*", "$APP_SUPPORT/[!.]*"] {
+            let file = RuleFixtures.file(protect: #"["\#(pattern)"]"#, rules: [RuleFixtures.rule()])
+            expectOne(try load([file]), .invalidProtectPattern, path: "protect[0]")
+            try? FileManager.default.removeItem(at: tmp.url.appendingPathComponent("user"))
+        }
+        for pattern in ["$APP_SUPPORT/Cursor/**", "$APP_SUPPORT/Cursor*", "~/[a-z]x", "~/.[a-b]*"] {
+            let file = RuleFixtures.file(protect: #"["\#(pattern)"]"#, rules: [RuleFixtures.rule()])
+            let r = try load([file])
+            XCTAssertTrue(r.errors.isEmpty, "\(pattern): \(r.errors)")
+            try? FileManager.default.removeItem(at: tmp.url.appendingPathComponent("user"))
+        }
+    }
+
+    func testVariableNamesAreCaseSensitive() throws {
+        let file = RuleFixtures.file(protect: #"["${home}/.foo/**"]"#, rules: [RuleFixtures.rule()])
+        let r = try load([file], variables: ["home": env.home, "HOME": env.home])
+        XCTAssertFalse(r.errors.isEmpty, "lowercase variable names must be rejected")
+    }
+
+    func testIsWildcardish() {
+        for c in ["*", "**", "?", "[a-z]*", "[!.]*", "{a,b}*", "[]a]*"] { XCTAssertTrue(RuleValidator.isWildcardish(c), c) }
+        for c in ["keep-*", ".[ab]x", "a*", "[a", "x[a-z]", "*.json"] { XCTAssertFalse(RuleValidator.isWildcardish(c), c) }
+    }
+
     func testOverbroadProtectPatternsRejected() throws {
         for pattern in ["~", "~/**", "~/*", "$HOME/*", "$TMPDIR", "$TMPDIR/**", "/private/tmp", "/tmp/**", "/tmp",
                         "${X}/**"] {

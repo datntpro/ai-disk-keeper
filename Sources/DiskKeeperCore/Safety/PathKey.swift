@@ -19,8 +19,23 @@ enum PathCanonicalizer {
         return PathKey(components: comps)
     }
 
+    /// Case/Unicode folding the way a case-insensitive APFS volume compares names: *simple* (one scalar to one
+    /// scalar) case folding plus canonical equivalence. Foundation's `.caseInsensitive` uses *full* folding, which
+    /// turns `ß` into `ss`; APFS does not (`Straße` and `STRASSE` are two different files), so a multi-scalar
+    /// result falls back to the scalar's single-scalar lowercase (`ẞ` -> `ß`) or stays as is.
     static func fold(_ s: String) -> String {
-        s.folding(options: [.caseInsensitive], locale: nil).precomposedStringWithCanonicalMapping
+        var out = String.UnicodeScalarView()
+        for sc in s.precomposedStringWithCanonicalMapping.unicodeScalars {
+            let one = String(sc)
+            let full = one.folding(options: [.caseInsensitive], locale: nil).unicodeScalars
+            if full.count == 1 {
+                out.append(full.first!)
+            } else {
+                let lower = one.lowercased().unicodeScalars
+                out.append(lower.count == 1 ? lower.first! : sc)
+            }
+        }
+        return String(out).precomposedStringWithCanonicalMapping
     }
 }
 

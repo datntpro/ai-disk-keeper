@@ -20,6 +20,15 @@ final class PathKeyTests: XCTestCase {
         XCTAssertEqual(PathCanonicalizer.key("/x/Caf\u{E9}"), PathCanonicalizer.key("/x/CAFE\u{301}"))
     }
 
+    /// APFS (case-insensitive) compares with simple case folding: `ß` is not `ss`, but `ẞ` is `ß`.
+    func testFoldingFollowsApfsNotFullCaseFolding() {
+        XCTAssertNotEqual(PathCanonicalizer.fold("Straße"), PathCanonicalizer.fold("STRASSE"))
+        XCTAssertEqual(PathCanonicalizer.fold("Straße"), PathCanonicalizer.fold("STRAßE"))
+        XCTAssertEqual(PathCanonicalizer.fold("Stra\u{1E9E}e"), PathCanonicalizer.fold("Straße"))
+        XCTAssertEqual(PathCanonicalizer.fold("ÄB"), PathCanonicalizer.fold("a\u{308}b"))
+        XCTAssertNotEqual(PathCanonicalizer.key("/Users/Straße").components, PathCanonicalizer.key("/users/strasse").components)
+    }
+
     func testGlob() {
         func m(_ p: String, _ c: String) -> Bool { GlobMatcher.matches(pattern: p, component: c) }
         XCTAssertTrue(m("*.pem", "a.pem"))

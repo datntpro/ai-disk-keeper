@@ -12,17 +12,20 @@ public enum RuleValidator {
         }
 
         let roots = allowedRoots(env)
+        let containers = ([env.home + "/Library", env.applicationSupport, env.caches, env.logs, env.containers,
+                           env.groupContainers] + roots).map(aliasNormalized)
         // A protect pattern whose literal prefix is a root (or above one) would protect everything under it
         // (`~/**`, `~/*`, `$TMPDIR/**`, `/private/tmp`, ...) and, being a global union, disable other rules.
         for (j, t) in file.protect.enumerated() {
             guard let (prefix, nextGlob) = t.literalPrefix(in: env) else { continue }
             let norm = aliasNormalized(prefix)
-            // Above a root: any glob below could cover it. At a root: only a wildcard-only component
-            // (`*`, `**`, `?`) or no component at all covers everything; `keep-*` or `.[ab]x` do not.
-            let wildcardOnly = nextGlob.map { $0.allSatisfy { "*?".contains($0) } } ?? true
+            // Above a root: any glob below could cover it. At a root or a container (`~/Library`,
+            // `$APP_SUPPORT`, ...): only a wildcard-ish component (`*`, `**`, `?`, `[a-z]*`, `[!.]*`, `{a,b}*`)
+            // or no component at all covers everything; `keep-*` or `.[ab]x` do not.
+            let wildcardish = nextGlob.map(isWildcardish) ?? true
             let above = roots.contains(where: { hasScalarPrefix($0, norm + "/") })
-            let atRoot = roots.contains(norm)
-            if above || (atRoot && wildcardOnly) {
+            let broadBase = containers.contains(norm)
+            if above || (broadBase && wildcardish) {
                 return err(.invalidProtectPattern, "protect[\(j)]",
                            "'\(t.raw)' is too broad: it would protect everything under \(prefix)")
             }
@@ -70,6 +73,31 @@ public enum RuleValidator {
             }
         }
         return nil
+    }
+
+    /// A glob component with no literal character: only `*`, `?`, `[...]` classes and `{a,b}` groups, so it can
+    /// match any name (`[a-z]*`, `[!.]*`, `{a,b}*`) or a very wide set of them.
+    static func isWildcardish(_ comp: String) -> Bool {
+        var scalars = Array(comp.unicodeScalars)[...]
+        while let c = scalars.first {
+            switch c {
+            case "*", "?":
+                scalars = scalars.dropFirst()
+            case "[", "{":
+                let close: Unicode.Scalar = c == "[" ? "]" : "}"
+                // `]` right after `[` / `[!` / `[^` is a member, not the end.
+                var i = scalars.startIndex + 1
+                if c == "[" {
+                    if i < scalars.endIndex, scalars[i] == "!" || scalars[i] == "^" { i += 1 }
+                    if i < scalars.endIndex, scalars[i] == "]" { i += 1 }
+                }
+                guard let end = scalars[i...].firstIndex(of: close) else { return false }  // literal bracket
+                scalars = scalars[(end + 1)...]
+            default:
+                return false
+            }
+        }
+        return true
     }
 
     /// `^<tool>\.[a-z0-9]+([.-][a-z0-9]+)*$`, at most 96 characters; nil if fine.
