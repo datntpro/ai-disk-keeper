@@ -13082,7 +13082,6 @@
       }
     },
     "settings.cache.clear" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -13099,7 +13098,6 @@
       }
     },
     "settings.cache.cleared" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -13116,7 +13114,6 @@
       }
     },
     "settings.cache.toggle" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
