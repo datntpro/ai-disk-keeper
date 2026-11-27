@@ -5,6 +5,7 @@ import SwiftUI
 struct StorageView: View {
     let model: StorageModel
     let trashURL: URL
+    @State private var ssd = SSDHealthModel()
 
     static let timeMachineSettingsURL = URL(string: "x-apple.systempreferences:com.apple.Time-Machine-Settings.extension")!
 
@@ -52,6 +53,7 @@ struct StorageView: View {
                             .font(.caption).foregroundStyle(.adkReviewInk)
                     }
                     StorageCapacityCard(model: model)
+                    StorageSSDCard(model: ssd)
                     StorageExplainCard()
                     StorageSnapshotsCard(listing: overview.snapshots, openTimeMachine: {
                         NSWorkspace.shared.open(Self.timeMachineSettingsURL)

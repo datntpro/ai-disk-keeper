@@ -12,9 +12,12 @@ let package = Package(
         .executable(name: "adk", targets: ["adk"]),
     ],
     targets: [
+        // Read-only NVMe SMART page through Apple's public IOKit plug-in (H9). C because the plug-in is a COM vtable.
+        .target(name: "CNVMeSMART", linkerSettings: [.linkedFramework("IOKit"), .linkedFramework("CoreFoundation")]),
         // Scan engine, scanner rules, safety policy, cleanup engine. No UI code.
         .target(
             name: "DiskKeeperCore",
+            dependencies: ["CNVMeSMART"],
             resources: [.copy("Resources/Rules")],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
