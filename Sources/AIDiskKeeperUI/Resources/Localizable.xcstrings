@@ -3213,6 +3213,22 @@
         }
       }
     },
+    "cleanup.blocker.auditIntentNotWritten" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The command was not run: the audit log couldn't record it first. Nothing was changed."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lệnh chưa được chạy: không ghi trước được vào nhật ký thao tác. Không có gì bị thay đổi."
+          }
+        }
+      }
+    },
     "cleanup.blocker.changed" : {
       "localizations" : {
         "en" : {

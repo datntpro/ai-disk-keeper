@@ -29,12 +29,15 @@ public struct AuditRecord: Codable, Sendable, Hashable {
     public let stderrTail: String?
     /// For example the container runtime the command ran against.
     public let toolTarget: String?
+    /// Pairs an `intent` line with the outcome line of the same command run (additive; nil on old lines).
+    public let intentID: UUID?
 
     public init(schemaVersion: Int = 1, timestamp: Date, runID: UUID, itemID: String, path: String,
                 bytes: Int64, action: CleanupAction, result: String, trashPath: String?, ruleID: String,
                 tool: ToolID, reasons: [String], error: String?, bundleID: String? = nil,
                 command: [String]? = nil, exitStatus: Int32? = nil, durationMs: Int? = nil,
-                stderrTail: String? = nil, toolTarget: String? = nil) {
+                stderrTail: String? = nil, toolTarget: String? = nil, intentID: UUID? = nil) {
+        self.intentID = intentID
         self.command = command
         self.exitStatus = exitStatus
         self.durationMs = durationMs

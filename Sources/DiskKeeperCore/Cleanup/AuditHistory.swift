@@ -98,17 +98,23 @@ public enum AuditHistoryReader {
                             truncatedHead: truncatedHead, lifetimeReclaimed: lifetime)
     }
 
-    /// An outcome line (`ran`, `failed`, `deleted`, `trashed`; never `skipped`, which has no intent) settles at most
+    /// An outcome line carrying an `intentID` settles exactly that intent. Without one (older lines), an outcome line (`ran`, `failed`, `deleted`, `trashed`; never `skipped`, which has no intent) settles at most
     /// one earlier intent for the same item and command: the nearest unmatched one. Unmatched intents (a crash between
     /// intent and outcome) stay visible and count as nothing.
     static func settleIntents(_ entries: [AuditEntry]) -> [AuditEntry] {
         func key(_ r: AuditRecord) -> String { r.itemID + "\u{0}" + (r.command ?? []).joined(separator: " ") }
-        var open: [String: [Int]] = [:]            // key -> indices of unmatched intents, oldest first
+        var open: [String: [Int]] = [:]            // key -> indices of unmatched legacy intents (no intentID), oldest first
+        var byID: [UUID: Int] = [:]                // intentID -> index of its intent line
         var drop = Set<Int>()
         for (i, e) in entries.enumerated() {
             guard case .cleanup(let r) = e, r.command != nil else { continue }
-            if r.result == AuditRecord.intentResult { open[key(r), default: []].append(i) }
-            else if r.result != "skipped", let j = open[key(r)]?.popLast() { drop.insert(j) }
+            if r.result == AuditRecord.intentResult {
+                if let id = r.intentID { byID[id] = i } else { open[key(r), default: []].append(i) }
+            } else if let id = r.intentID {
+                // Exact pairing: any outcome that carries the intent's id settles exactly that intent (a `skipped`
+                // after the intent was written, e.g. the executable changed during the write, included).
+                if let j = byID.removeValue(forKey: id) { drop.insert(j) }
+            } else if r.result != "skipped", let j = open[key(r)]?.popLast() { drop.insert(j) }
         }
         return entries.enumerated().filter { !drop.contains($0.offset) }.map(\.element)
     }

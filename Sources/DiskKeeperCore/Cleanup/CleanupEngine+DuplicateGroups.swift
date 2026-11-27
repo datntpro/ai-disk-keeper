@@ -13,7 +13,7 @@ extension CleanupEngine {
                       blockers: inout [[CleanupBlocker]], survivors: inout [Int: DuplicateSurvivorSet]) async {
         // Every plan item claims its path and everything below it, whatever its category: a survivor that
         // another item (or a folder item) would trash is not a survivor.
-        let claimed = items.map { PathCanonicalizer.key($0.path) }
+        let claimed = ClaimSet(paths: items.map(\.path))
         var byGroup: [String: [Int]] = [:]
         for i in items.indices where Self.isDuplicateItem(items[i]) { byGroup[items[i].groupID ?? "", default: []].append(i) }
         for (groupID, indices) in byGroup.sorted(by: { $0.key < $1.key }) {
@@ -31,7 +31,7 @@ extension CleanupEngine {
                 .map { InodeKey(device: $0.device, inode: $0.inode) })
             let unselected = group.members.filter { m in
                 let k = PathCanonicalizer.key(m.path)
-                return !Self.isClaimed(k, by: claimed) && !selectedInodes.contains(InodeKey(device: m.device, inode: m.inode))
+                return !claimed.claims(path: m.path, key: k) && !selectedInodes.contains(InodeKey(device: m.device, inode: m.inode))
             }
             var verified: [SurvivorFingerprint] = []
             for m in unselected where await Self.survivorIsValid(
@@ -50,14 +50,15 @@ extension CleanupEngine {
     }
 
     /// Execute time: re-verify the survivors right before the move. `nil` = go ahead.
-    /// `claimed`: the keys of every entry of the plan (any category); `trashedKeys` is a subset, kept for clarity.
-    func keepOneGate(_ entry: CleanupPlanEntry, trashedKeys: Set<PathKey>, claimed: [PathKey]) async -> CleanupBlocker? {
+    /// `claimed`: every entry of the plan (any category), by lexical key, physical key and inode, built at execute
+    /// time; `trashedKeys` is a subset, kept for clarity.
+    func keepOneGate(_ entry: CleanupPlanEntry, trashedKeys: Set<PathKey>, claimed: ClaimSet) async -> CleanupBlocker? {
         guard Self.isDuplicateItem(entry.item) else { return nil }
         let groupID = entry.item.groupID ?? ""
         guard let set = entry.survivors, set.groupID == groupID else { return .duplicateGroupUnknown(groupID: groupID) }
         for s in set.survivors {
             let key = PathCanonicalizer.key(s.path)
-            if trashedKeys.contains(key) || Self.isClaimed(key, by: claimed) { continue }
+            if trashedKeys.contains(key) || claimed.claims(path: s.path, key: key) { continue }
             if let fp = entry.fingerprint, fp.device == s.device, fp.inode == s.inode { continue }
             if await Self.survivorIsValid(path: s.path, device: s.device, inode: s.inode, modified: s.modified,
                                           logicalBytes: set.logicalBytes, partialDigest: set.partialDigest) {
@@ -88,5 +89,54 @@ extension CleanupEngine {
         guard let outcome = try? await ContentHasher.partialDigest(path: path, identity: identity),
               case .digest(let digest, _) = outcome else { return false }
         return digest == partialDigest
+    }
+}
+
+/// What the plan's items would take with them, by every identity the filesystem offers: the lexical key, the
+/// physical key (real parent directory + name, so a symlinked or renamed ancestor cannot hide a claim) and the
+/// `(device, inode)` of each item (lstat at construction time). A survivor counts only if none of them claims it.
+struct ClaimSet {
+    private(set) var keys: [PathKey]
+    private(set) var inodes: Set<InodeKey> = []
+
+    init(keys: [PathKey]) { self.keys = keys }
+
+    init(paths: [String]) {
+        var all: [PathKey] = []
+        for path in paths {
+            all.append(PathCanonicalizer.key(path))
+            all.append(Self.physicalKey(path))
+            var st = stat()
+            if lstat(path, &st) == 0 {
+                inodes.insert(InodeKey(device: Int32(truncatingIfNeeded: st.st_dev), inode: UInt64(st.st_ino)))
+            }
+        }
+        keys = all
+    }
+
+    func claims(path: String, key: PathKey) -> Bool {
+        if CleanupEngine.isClaimed(key, by: keys) || CleanupEngine.isClaimed(Self.physicalKey(path), by: keys) { return true }
+        var st = stat()
+        if lstat(path, &st) == 0,
+           inodes.contains(InodeKey(device: Int32(truncatingIfNeeded: st.st_dev), inode: UInt64(st.st_ino))) { return true }
+        return false
+    }
+
+    /// realpath of the deepest existing ancestor directory, then the remaining components unresolved. The last
+    /// component is never followed (a link is claimed by its own name, as the Trash move would act on it).
+    static func physicalKey(_ path: String) -> PathKey {
+        var comps = PathNormalization.components(PathNormalization.lexical(path)).map(String.init)
+        var tail: [String] = []
+        if let last = comps.popLast() { tail.append(last) }
+        while true {
+            let dir = "/" + comps.joined(separator: "/")
+            if let r = realpath(dir, nil) {
+                defer { free(r) }
+                return PathCanonicalizer.key(String(cString: r) + "/" + tail.reversed().joined(separator: "/"))
+            }
+            guard let c = comps.popLast() else { break }
+            tail.append(c)
+        }
+        return PathCanonicalizer.key(path)
     }
 }

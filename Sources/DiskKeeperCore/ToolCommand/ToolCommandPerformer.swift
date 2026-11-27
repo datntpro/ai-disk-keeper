@@ -8,6 +8,14 @@ public struct ToolRunRecord: Sendable, Hashable {
     public let durationMs: Int?
     public let stderrTail: String?
     public let target: String?
+    /// Set when an `intent` line was written for this run: the outcome line carries it back.
+    public let intentID: UUID?
+
+    public init(command: [String]?, exitStatus: Int32?, durationMs: Int?, stderrTail: String?, target: String?,
+                intentID: UUID? = nil) {
+        self.command = command; self.exitStatus = exitStatus; self.durationMs = durationMs
+        self.stderrTail = stderrTail; self.target = target; self.intentID = intentID
+    }
 }
 
 /// The engine's only entry point for tool commands: match → resolve → revalidate → run → verify.
@@ -71,13 +79,21 @@ public struct ToolCommandPerformer: Sendable {
             }
             guard expected == p.snapshot else { return .blocked([.identityChanged], record(expected, result: nil)) }
             let tool = p.spec.command
+            var intentID: UUID?
             if let intentLog {
+                let id = UUID()
                 let intent = AuditRecord(timestamp: Date(), runID: UUID(), itemID: item.id, path: item.path, bytes: item.sizeAllocated,
                                          action: .deletePermanently, result: AuditRecord.intentResult, trashPath: nil, ruleID: item.ruleID,
                                          tool: item.tool, reasons: [], error: nil, command: p.snapshot.command,
-                                         toolTarget: p.snapshot.targetLabel)
+                                         toolTarget: p.snapshot.targetLabel, intentID: id)
+                // Nothing runs unless the intent is durable: report "not run", not a failed run.
                 do { try await intentLog.appendStandalone(intent) } catch {
-                    return .ran(.failed("couldn't write the audit intent line: \(error)"), record(p.snapshot, result: nil))
+                    return .blocked([.auditIntentNotWritten], record(p.snapshot, result: nil))
+                }
+                intentID = id
+                // The intent write took milliseconds: look at the executable once more, right before the spawn.
+                if ExecutableIdentity.of(path: p.executable.path) != p.snapshot.executableIdentity {
+                    return .blocked([.identityChanged], record(p.snapshot, result: nil, intentID: id))
                 }
             }
             let result: ToolCommandResult
@@ -85,11 +101,11 @@ public struct ToolCommandPerformer: Sendable {
                 result = try await context.runner.run(executable: p.executable, arguments: p.argv, environment: p.environment,
                                                       timeout: p.spec.timeout, maxStdout: ToolCommandRunner.destructiveStdoutCap)
             } catch is CancellationError {
-                return .ran(.failed("stopped"), record(p.snapshot, result: nil))
+                return .ran(.failed("stopped"), record(p.snapshot, result: nil, intentID: intentID))
             } catch {
-                return .ran(.failed("\(tool) could not start: \(error)"), record(p.snapshot, result: nil))
+                return .ran(.failed("\(tool) could not start: \(error)"), record(p.snapshot, result: nil, intentID: intentID))
             }
-            let rec = record(p.snapshot, result: result)
+            let rec = record(p.snapshot, result: result, intentID: intentID)
             if result.timedOut {
                 let seconds = Int(p.spec.timeout.components.seconds)
                 return .ran(.failed("\(tool) didn't finish within \(seconds) s. It may still complete in the background; scan again to check."), rec)
@@ -147,10 +163,11 @@ public struct ToolCommandPerformer: Sendable {
         return d
     }
 
-    private func record(_ snapshot: ToolCommandSnapshot?, result: ToolCommandResult?) -> ToolRunRecord {
+    private func record(_ snapshot: ToolCommandSnapshot?, result: ToolCommandResult?, intentID: UUID? = nil) -> ToolRunRecord {
         let stderr = result.map { String(decoding: Self.utf8Tail($0.stderrTail, 2048), as: UTF8.self) }
         return ToolRunRecord(command: snapshot?.command, exitStatus: result.map { $0.timedOut ? nil : $0.exitStatus } ?? nil,
                              durationMs: result.map { Int($0.duration.components.seconds * 1000 + $0.duration.components.attoseconds / 1_000_000_000_000_000) },
-                             stderrTail: (stderr?.isEmpty ?? true) ? nil : stderr, target: snapshot?.targetLabel)
+                             stderrTail: (stderr?.isEmpty ?? true) ? nil : stderr, target: snapshot?.targetLabel,
+                             intentID: intentID)
     }
 }

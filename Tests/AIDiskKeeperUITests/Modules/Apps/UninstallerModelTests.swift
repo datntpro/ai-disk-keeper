@@ -144,6 +144,7 @@ final class UninstallerModelTests: XCTestCase {
         let r = CleanupItemResult(itemID: item.id, path: item.path, bytes: 1, action: .trash, outcome: outcome, finishedAt: Date())
         let report = CleanupReport(planID: UUID(), startedAt: Date(), finishedAt: Date(), results: [r], wasCancelled: false, auditFailure: nil)
         c.finished(trashed, report: report)
+        c.flow?.dismiss()   // what the sheet's Done does; a new review is refused while a flow is active
     }
 
     func testAppManagementDenialShowsGuidance() async {

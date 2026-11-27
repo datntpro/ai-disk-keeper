@@ -129,3 +129,42 @@ class CleanupTestCase: XCTestCase {
         return []
     }
 }
+
+
+extension CleanupTestCase {
+    /// An engine whose audit log is a FIFO: `execute` blocks in `auditLog.open()` (holding the run slot) until a reader opens it.
+    func makeFIFOEngine(clock: Clock) throws -> (engine: CleanupEngine, fifo: String) {
+        try fx.dir("audit")
+        let fifo = fx.path("audit/fifo.jsonl")
+        XCTAssertEqual(mkfifo(fifo, 0o600), 0)
+        return (try makeEngine(audit: AuditLog(fileURL: URL(fileURLWithPath: fifo)), now: { clock.now() }), fifo)
+    }
+
+    /// Deterministic "expires while queued": `first` takes the run slot and parks in the FIFO open, `second` queues behind it,
+    /// the clock moves past the plan lifetime, then a reader releases `first`. Returns `second`'s error (nil if it ran).
+    func executeExpiringWhileQueued(_ engine: CleanupEngine, fifo: String, clock: Clock,
+                                    first: CleanupPlan, second: CleanupPlan) async throws -> Error? {
+        func wait(_ what: String, _ cond: () async -> Bool) async throws {
+            for _ in 0..<1000 { if await cond() { return }; try await Task.sleep(nanoseconds: 5_000_000) }
+            XCTFail("timed out waiting for \(what)")
+        }
+        let a = Task { try await engine.execute(first) }
+        try await wait("first to hold the run slot") { await engine.runSlotState.held }
+        let b = Task { () -> Error? in
+            do { _ = try await engine.execute(second); return nil } catch { return error }
+        }
+        try await wait("second to queue") { await engine.runSlotState.queued == 1 }
+        clock.advance(20 * 60)
+        let reader = Thread {
+            let fd = Darwin.open(fifo, O_RDONLY)
+            var buf = [UInt8](repeating: 0, count: 65536)
+            while read(fd, &buf, buf.count) > 0 {}
+            Darwin.close(fd)
+        }
+        reader.start()
+        _ = try await a.value
+        let result = await b.value
+        while !reader.isFinished { try await Task.sleep(nanoseconds: 10_000_000) }
+        return result
+    }
+}

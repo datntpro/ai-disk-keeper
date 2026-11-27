@@ -46,13 +46,30 @@ final class CleanupExecuteTests: CleanupTestCase {
         let protectedItem = try item("home/.ssh/x")
         let prot = CleanupPlan(id: plan.id, createdAt: plan.createdAt, entries: [
             CleanupPlanEntry(item: protectedItem, action: e.action, blockers: [], fingerprint: e.fingerprint)])
-        await expectThrow(engine, prot, .planModified)
+        await expectThrow(engine, prot, .unknownPlan)   // the first tamper burned the id
         XCTAssertTrue(exists("home/cache/a/f")); XCTAssertTrue(exists("home/.ssh/x"))
         XCTAssertTrue(trashContents().isEmpty)
 
-        // The genuine plan still runs (a refused plan is not consumed).
-        let report = try await engine.execute(plan)
+        // A tampered plan burns its id: the genuine plan is refused too (re-plan), and nothing was touched.
+        await expectThrow(engine, plan, .unknownPlan)
+        XCTAssertTrue(exists("home/cache/a/f")); XCTAssertTrue(trashContents().isEmpty)
+        let fresh = await engine.plan([try item("home/cache/a")])
+        let report = try await engine.execute(fresh)
         guard case .trashed = report.results[0].outcome else { return XCTFail("\(report.results[0].outcome)") }
+    }
+
+    /// A plan that expires while it waits for the run slot is refused and nothing is touched. Ordered by a FIFO audit log
+    /// and an injected clock (see `executeExpiringWhileQueued`): no scheduling race.
+    func testPlanExpiringWhileQueuedIsRefused() async throws {
+        try fx.file("home/cache/a/f", bytes: 100); try fx.file("home/cache/b/f", bytes: 100)
+        let clock = Clock()
+        let (engine, fifo) = try makeFIFOEngine(clock: clock)
+        let first = await engine.plan([try item("home/cache/a")])
+        let second = await engine.plan([try item("home/cache/b")])
+        let error = try await executeExpiringWhileQueued(engine, fifo: fifo, clock: clock, first: first, second: second)
+        XCTAssertEqual(error as? CleanupError, .planExpired)
+        XCTAssertTrue(exists("home/cache/b/f"))
+        XCTAssertFalse(exists("home/cache/a/f"), "the plan holding the slot still ran")
     }
 
     func testForgedEntryForUnplannedPathIsRefused() async throws {

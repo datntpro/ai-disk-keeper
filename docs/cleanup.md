@@ -123,3 +123,11 @@ additive (`schemaVersion` stays 1). A JSON rule that declares `toolCommand` stil
 with `toolCommandNotAllowed`.
 
 Docker items (T17) are tool commands: see [docker.md](docker.md). Their blockers are `toolNotRunning` (daemon down), `toolUnavailable` (CLI missing or unsafe), `inUseByTool` (a container appeared, tags changed) and `missing` (already gone); a successful run is `.ranCommand`.
+
+## F9 hardening notes
+
+- **Claims are physical too.** Keep-one treats a survivor as claimed if any plan item claims its lexical key, its physical key (real parent directory + name, so a symlinked or renamed ancestor cannot hide it) or its `(device, inode)` (lstat at execute time).
+- **Plan lifecycle.** Expiry is re-checked after the run slot is acquired. A modified plan burns its id (the genuine plan is refused too: re-plan). One `CleanupEngine` per app, enforced by `CleanupEngineHolder.install`.
+- **Tool intents.** The `intent` line carries an `intentID` that the outcome line repeats (exact pairing). If it can't be written the command is not run (`auditIntentNotWritten`); the executable is re-checked after the write, right before the spawn.
+- **QA (manual):** selected-row contrast in light mode on the cleanup sheet.
+- **Limits (documented, fail-safe):** the re-check after the intent write compares `executableIdentity` only (not env or targets). If the intent line is written but its `fsync` throws, the item is reported not run without an `intentID` and the intent may stay dangling in history. The survivor-side physical key is defense in depth beyond the plan items' own keys (see `testSurvivorListedThroughSymlinkedDirectoryIsClaimedByRealFolder`).

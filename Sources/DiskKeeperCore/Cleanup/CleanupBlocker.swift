@@ -91,6 +91,8 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
     case needsAppManagementPermission(bundleID: String)
     /// A `.toolCommand` item but no performer is installed (fail closed).
     case toolCommandUnavailable
+    /// The audit intent line for a tool command could not be written, so the command was not run.
+    case auditIntentNotWritten
     /// The command is not on the compiled-in allowlist, or does not match its item (JSON rules land here).
     case toolCommandNotAllowed(reason: String)
     /// The tool's executable is missing or failed the safety checks (or changed since the dry run).
@@ -126,6 +128,7 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
         case .requiresAdmin: "requiresAdmin"
         case .needsAppManagementPermission: "needsAppManagementPermission"
         case .toolCommandUnavailable: "toolCommandUnavailable"
+        case .auditIntentNotWritten: "auditIntentNotWritten"
         case .toolCommandNotAllowed: "toolCommandNotAllowed"
         case .toolUnavailable: "toolUnavailable"
         case .toolNotRunning: "toolNotRunning"
@@ -165,6 +168,7 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
         case .requiresAdmin: "Installed for all users. Drag it to the Trash in Finder (you may need an administrator password)."
         case .needsAppManagementPermission: "macOS blocked this. Allow AI Disk Keeper in System Settings › Privacy & Security › App Management, then try again."
         case .toolCommandUnavailable: "Cleaning this item with its own tool isn't available."
+        case .auditIntentNotWritten: "The command was not run: the audit log couldn't record it first."
         case .toolCommandNotAllowed: "This command isn't on the list of commands AI Disk Keeper may run, so it was left alone."
         case .toolUnavailable(let t): "\(t) wasn't found or isn't safe to run."
         case .toolNotRunning(let t, _): "\(t) isn't running."

@@ -74,6 +74,11 @@ public struct CleanupReviewSheet: View {
                       systemImage: "exclamationmark.triangle")
                     .padding(8).background(.adkReviewSoft, in: RoundedRectangle(cornerRadius: 6))
             }
+            if executable.isEmpty {
+                Label(StateCopy.allBlocked, systemImage: "slash.circle")
+                    .font(.headline).foregroundStyle(.adkText2)
+                    .padding(8).background(.adkReviewSoft, in: RoundedRectangle(cornerRadius: 6))
+            }
             CleanupSummaryTrio(plan: plan)
             planList
             Divider()

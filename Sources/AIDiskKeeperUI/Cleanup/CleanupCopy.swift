@@ -228,6 +228,8 @@ public enum CleanupCopy {
             loc("cleanup.blocker.app.needsAppManagement", "macOS blocked this. Allow AI Disk Keeper in System Settings › Privacy & Security › App Management, then try again.")
         case .toolCommandUnavailable:
             loc("cleanup.blocker.toolCommandUnavailable", "Cleaning this item with its own tool isn't available.")
+        case .auditIntentNotWritten:
+            loc("cleanup.blocker.auditIntentNotWritten", "The command was not run: the audit log couldn't record it first. Nothing was changed.")
         case .toolCommandNotAllowed:
             loc("cleanup.blocker.toolCommandNotAllowed", "This command isn't on the list AI Disk Keeper may run, so it was left alone.")
         case .toolUnavailable(let tool): loc("cleanup.blocker.toolUnavailable", "\(tool) wasn't found or isn't safe to run.")

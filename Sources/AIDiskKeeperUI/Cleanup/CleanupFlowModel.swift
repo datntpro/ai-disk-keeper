@@ -18,6 +18,8 @@ public final class CleanupFlowModel {
     }
 
     public private(set) var state: State = .idle
+    /// True while `state` is the `.failed` of an audit log that could not be opened (the sheet shows the audit state).
+    public private(set) var failedBecauseOfAudit = false
 
     @ObservationIgnored private let engine: any CleanupEngineProtocol
     @ObservationIgnored private var items: [ScanItem] = []
@@ -43,6 +45,7 @@ public final class CleanupFlowModel {
         }
         guard !newItems.isEmpty else { return }
         items = newItems
+        failedBecauseOfAudit = false
         duplicateGroups = groups
         await makePlan(notice: nil)
     }
@@ -90,6 +93,7 @@ public final class CleanupFlowModel {
             // Never auto-execute: show a fresh preview and make the user confirm again.
             await makePlan(notice: .refreshedBecauseExpired)
         case .auditLogUnavailable(let msg):
+            failedBecauseOfAudit = true
             state = .failed(CleanupCopy.auditOpenFailed(msg))
         case .planModified, .unknownPlan, .planAlreadyExecuted:
             assertionFailure("Cleanup plan binding violated: \(error)")
@@ -112,6 +116,7 @@ public final class CleanupFlowModel {
         guard !isExecuting else { return }
         planGeneration += 1
         state = .idle
+        failedBecauseOfAudit = false
         items = []
         duplicateGroups = [:]
     }

@@ -10,7 +10,11 @@ public final class CleanupEngineHolder {
         self.error = error
     }
 
-    /// The one place the app-wide engine is set.
-    public func install(_ engine: any CleanupEngineProtocol) { self.engine = engine; error = nil }
+    /// The one place the app-wide engine is set. There is exactly one `CleanupEngine` per app (its run lock and
+    /// plan registry are per instance), so a second install is a programming error.
+    public func install(_ engine: any CleanupEngineProtocol) {
+        precondition(self.engine == nil, "CleanupEngineHolder: one CleanupEngine per app")
+        self.engine = engine; error = nil
+    }
     public func fail(_ message: String) { error = message }
 }

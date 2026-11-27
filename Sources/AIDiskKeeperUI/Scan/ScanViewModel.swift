@@ -26,6 +26,9 @@ public final class ScanViewModel {
     /// What stops the current stream: the engine's `cancel`, or whatever `consume(_:cancel:)` was given.
     @ObservationIgnored private var cancelAction: (@Sendable () async -> Void)?
     @ObservationIgnored private var consumer: Task<Void, Never>?
+    /// The off-main engine build of a starting scan: cancelled on cancel-while-starting, when a new scan supersedes it, and when the model goes away.
+    @ObservationIgnored private var building: DetachedBuild<any ScanEngineProtocol>?
+    @ObservationIgnored private var buildGuard: CancelOnRelease?
     @ObservationIgnored private var pending: [ScanItem] = []
     @ObservationIgnored private var sawTerminal = false
     @ObservationIgnored private var startedAt = Date()
@@ -48,15 +51,20 @@ public final class ScanViewModel {
     public func startScan() {
         guard !isScanning else { return }
         prepare()
-        let make = makeEngine
+        // Rule loading reads JSON from disk: keep it off the main actor.
+        let build = DetachedBuild(makeEngine)
+        building = build
+        buildGuard = CancelOnRelease(build)   // replacing it (a superseded start) or releasing the model cancels the build
         let generation = scanGeneration
         consumer = Task { [weak self] in
             do {
-                // Rule loading reads JSON from disk: keep it off the main actor.
-                let engine = try await Task.detached { try make() }.value
+                let engine = try await build.value()
                 guard let self, self.scanGeneration == generation else { return }
+                self.building = nil; self.buildGuard = nil
                 let stream = try await engine.scan()
                 await self.run(stream, cancel: { await engine.cancel() })
+            } catch is CancellationError {
+                self?.startCancelled(generation: generation)
             } catch {
                 self?.fail(error)
             }
@@ -72,6 +80,8 @@ public final class ScanViewModel {
     }
 
     private func prepare() {
+        building?.cancel()
+        building = nil; buildGuard = nil
         phase = .starting
         scanGeneration += 1
         items = []
@@ -102,6 +112,7 @@ public final class ScanViewModel {
         case .starting:
             cancelRequestedEarly = true
             phase = .cancelling
+            building?.cancel()   // a build that has not begun never runs; one in flight finishes and is cancelled by the consumer
         case .scanning:
             phase = .cancelling
             if let cancelAction { Task { await cancelAction() } }
@@ -185,7 +196,16 @@ public final class ScanViewModel {
         consumer = nil
     }
 
+    /// The engine build was cancelled before a scan started: end in the cancelled phase with nothing found.
+    private func startCancelled(generation: Int) {
+        guard scanGeneration == generation, !sawTerminal else { return }
+        building = nil; buildGuard = nil
+        terminal(ScanResult(items: [], warnings: [], startedAt: startedAt, finishedAt: Date(), wasCancelled: true), cancelled: true)
+        consumer = nil
+    }
+
     private func fail(_ error: Error) {
+        building = nil; buildGuard = nil
         pending = []
         cancelAction = nil
         consumer = nil
