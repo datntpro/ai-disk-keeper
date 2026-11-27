@@ -9,7 +9,7 @@ final class ModuleRegistryTests: XCTestCase {
         XCTAssertEqual(ids, ModuleID.allCases)
         XCTAssertEqual(Set(ids).count, ids.count)
         XCTAssertEqual(ids.map(\.rawValue), ["overview", "careScan", "diskMap", "largeOld", "duplicates", "storage",
-                                             "aiTools", "worktrees", "modelsDocker", "uninstaller", "startupItems", "diskActivity", "history", "buildCaches"])
+                                             "aiTools", "worktrees", "modelsDocker", "buildCaches", "uninstaller", "startupItems", "diskActivity", "history"])
     }
 
     func testSectionsAreOrderedAndExcludeDisabled() {

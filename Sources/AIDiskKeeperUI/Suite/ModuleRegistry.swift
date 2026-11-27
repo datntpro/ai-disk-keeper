@@ -6,8 +6,8 @@ public enum ModuleRegistry {
     public static let providers: [any ModuleProvider.Type] = [
         OverviewModule.self, CareScanModule.self, DiskMapModule.self, LargeOldModule.self, DuplicatesModule.self,
         StorageModule.self, AIToolsModule.self, WorktreesModule.self, ModelsDockerModule.self,
-        UninstallerModule.self, StartupItemsModule.self, DiskActivityModule.self, HistoryModule.self,
         BuildCachesModule.self,
+        UninstallerModule.self, StartupItemsModule.self, DiskActivityModule.self, HistoryModule.self,
     ]
 
     /// Debug builds also list modules that are not built yet (their detail is a stub).
