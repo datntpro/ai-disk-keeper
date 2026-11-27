@@ -133,6 +133,11 @@ public final class SettingsModel {
     public func setShowsTopProcesses(_ on: Bool) { mutate { $0.popoverShowsTopProcesses = on } }
     public func setHistoryMinutes(_ minutes: Int) { mutate { $0.popoverHistoryMinutes = AppSettings.snapHistoryMinutes(minutes) } }
 
+    public func setScanFrequency(_ f: ScanFrequency) { mutate { $0.scanFrequency = f } }
+    public func setScheduledSafeAlertGB(_ gb: Int) { mutate { $0.scheduledSafeAlertGB = min(max(gb, 1), 500) } }
+    public func setScheduledGrowthAlertGB(_ gb: Int) { mutate { $0.scheduledGrowthAlertGB = min(max(gb, 1), 500) } }
+    public func setScheduledSkipOnBattery(_ on: Bool) { mutate { $0.scheduledSkipOnBattery = on } }
+
     public func setOnboardingCompleted(_ done: Bool) { mutate { $0.hasCompletedOnboarding = done } }
 
     /// Applies `change` to a copy; on failure the settings stay unchanged and `lastError` explains why.

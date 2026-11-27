@@ -17,13 +17,14 @@ public final class AppModels {
     let scheduler: MonitorScheduler
     let hostLoad: DiskActivityModel
     let hostStatus: HostStatusPublisher
+    let scheduledScans: ScheduledScanController
 
     /// Used by `RootView(env:)` (tests): nothing is posted and nothing polls.
     public convenience init(env: AppEnvironment) {
         self.init(env: env, notifier: SilentLowSpaceNotifier(), defaults: .standard)
     }
 
-    init(env: AppEnvironment, notifier: any LowSpaceNotifying, defaults: UserDefaults) {
+    init(env: AppEnvironment, notifier: any AppNotifying, defaults: UserDefaults) {
         self.env = env
         let scan = ScanViewModel(makeEngine: env.makeScanEngine)
         let suite = SuiteModel(env: env)
@@ -37,6 +38,10 @@ public final class AppModels {
             historyStore: FreeSpaceHistoryStore(fileURL: FreeSpaceHistoryStore.defaultFileURL(environment: env.pathEnvironment)))
         self.monitor = SystemMonitorModel(settings: env.settings, menuBar: menuBar)
         self.hostLoad = DiskActivityModule.model(env: env, suite: suite)
+        let menuBar = menuBar
+        self.scheduledScans = ScheduledScanController(
+            settings: env.settings, runner: OverviewModule.careModel(env: env, scan: scan, suite: suite), notifier: notifier,
+            onNextRun: { menuBar.nextScheduledScan = $0 })
         self.scheduler = MonitorScheduler(monitor: monitor, menuBar: menuBar, settings: env.settings, hostLoad: hostLoad)
         self.hostStatus = HostStatusPublisher.make(env: env)
     }
@@ -51,6 +56,7 @@ public final class AppModels {
         }
         models.scheduler.start()
         models.hostStatus.start()
+        models.scheduledScans.start()
         return models
     }
 }
