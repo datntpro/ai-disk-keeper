@@ -58,26 +58,18 @@ final class CleanupExecuteTests: CleanupTestCase {
         guard case .trashed = report.results[0].outcome else { return XCTFail("\(report.results[0].outcome)") }
     }
 
-    /// A plan that expires while it waits for the run slot is refused and nothing is touched.
+    /// A plan that expires while it waits for the run slot is refused and nothing is touched. Ordered by a FIFO audit log
+    /// and an injected clock (see `executeExpiringWhileQueued`): no scheduling race.
     func testPlanExpiringWhileQueuedIsRefused() async throws {
-        final class AdvancingTrash: TrashAdapter, @unchecked Sendable {
-            let inner: DirectoryTrash; let clock: Clock
-            init(_ i: DirectoryTrash, _ c: Clock) { inner = i; clock = c }
-            func trashItem(at url: URL) throws -> URL? { clock.advance(20 * 60); return try inner.trashItem(at: url) }
-        }
         try fx.file("home/cache/a/f", bytes: 100); try fx.file("home/cache/b/f", bytes: 100)
         let clock = Clock()
-        let engine = try makeEngine(trash: AdvancingTrash(DirectoryTrash(root: trashDir), clock), now: { clock.now() })
+        let (engine, fifo) = try makeFIFOEngine(clock: clock)
         let first = await engine.plan([try item("home/cache/a")])
         let second = await engine.plan([try item("home/cache/b")])
-        async let r1 = engine.execute(first)
-        async let r2: Result<CleanupReport, Error> = { do { return .success(try await engine.execute(second)) } catch { return .failure(error) } }()
-        _ = try await r1
-        switch await r2 {
-        case .failure(let e): XCTAssertEqual(e as? CleanupError, .planExpired)
-        case .success: XCTFail("expired plan ran")
-        }
+        let error = try await executeExpiringWhileQueued(engine, fifo: fifo, clock: clock, first: first, second: second)
+        XCTAssertEqual(error as? CleanupError, .planExpired)
         XCTAssertTrue(exists("home/cache/b/f"))
+        XCTAssertFalse(exists("home/cache/a/f"), "the plan holding the slot still ran")
     }
 
     func testForgedEntryForUnplannedPathIsRefused() async throws {

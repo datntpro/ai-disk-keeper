@@ -227,6 +227,9 @@ public actor CleanupEngine {
         return age < 0 || age > options.planLifetime || monotonicSeconds > options.planLifetime
     }
 
+    /// Whether a run holds the slot and how many wait behind it (tests use it to order concurrent executes).
+    var runSlotState: (held: Bool, queued: Int) { (isExecuting, waiters.count) }
+
     private func acquireRunSlot() async {
         if !isExecuting { isExecuting = true; return }
         await withCheckedContinuation { waiters.append($0) }

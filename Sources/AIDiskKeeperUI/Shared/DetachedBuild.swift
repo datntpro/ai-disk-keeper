@@ -21,3 +21,11 @@ final class DetachedBuild<Value: Sendable>: Sendable {
 
     deinit { task.cancel() }
 }
+
+/// Cancels a build when its owner releases it. The awaiting task keeps the build itself alive, so the owner holds this
+/// guard instead: when the owner goes away the build is cancelled even though the task still references it.
+final class CancelOnRelease: Sendable {
+    private let cancelBuild: @Sendable () -> Void
+    init<Value>(_ build: DetachedBuild<Value>) { cancelBuild = { build.cancel() } }
+    deinit { cancelBuild() }
+}

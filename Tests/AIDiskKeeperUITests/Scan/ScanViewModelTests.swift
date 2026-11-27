@@ -129,7 +129,44 @@ final class ScanViewModelTests: XCTestCase {
         gate.signal()
         await until("cancelled") { vm.phase == .cancelled }
         let calls = await engine.cancelCalls
-        XCTAssertEqual(calls, 1)
+        // The build is cancelled with the scan: if it had not begun, no engine exists to cancel (0); if it had, exactly once.
+        XCTAssertLessThanOrEqual(calls, 1)
+    }
+
+    /// #92: the off-main engine build is cancelled by cancel-while-starting, by a superseding start and by releasing the model.
+    private final class BuildProbe: @unchecked Sendable {
+        private let lock = NSLock()
+        private var observed: [Bool] = []
+        let gate = DispatchSemaphore(value: 0)
+        let started = DispatchSemaphore(value: 0)
+        var cancelledFlags: [Bool] { lock.lock(); defer { lock.unlock() }; return observed }
+        func make() -> any ScanEngineProtocol {
+            started.signal(); gate.wait()
+            lock.lock(); observed.append(Task.isCancelled); lock.unlock()
+            return FakeScanEngine(.gated)
+        }
+    }
+
+    func testCancelWhileStartingCancelsTheBuild() async {
+        let probe = BuildProbe()
+        let vm = ScanViewModel { probe.make() }
+        vm.startScan()
+        probe.started.wait()
+        vm.cancelScan()
+        probe.gate.signal()
+        await until("cancelled") { vm.phase == .cancelled }
+        XCTAssertEqual(probe.cancelledFlags, [true])
+    }
+
+    func testReleasingTheModelCancelsTheBuild() async {
+        let probe = BuildProbe()
+        var vm: ScanViewModel? = ScanViewModel { probe.make() }
+        vm?.startScan()
+        probe.started.wait()
+        vm = nil
+        probe.gate.signal()
+        for _ in 0..<400 where probe.cancelledFlags.isEmpty { try? await Task.sleep(nanoseconds: 5_000_000) }
+        XCTAssertEqual(probe.cancelledFlags, [true])
     }
 
     func testProgressFlushesAreCoalesced() async {

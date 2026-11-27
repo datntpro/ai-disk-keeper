@@ -328,6 +328,33 @@ final class DuplicateGroupCleanupTests: CleanupTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: s.paths[1]))
     }
 
+    /// Survivor-side physical key: the group lists the survivor through a symlinked directory (`home/linkdir/a`), a folder
+    /// item names the real directory (`home/docs/k`). Lexically the survivor is not under the folder, and the folder's inode
+    /// is not the survivor's: only the survivor's physical key (`home/docs/k/a`) shows the folder would trash it.
+    func testSurvivorListedThroughSymlinkedDirectoryIsClaimedByRealFolder() async throws {
+        let s = try await makeGroup(["k/a", "b"])
+        XCTAssertEqual(symlink(fx.path("home/docs/k"), fx.path("home/linkdir")), 0)
+        let a = s.group.members[0]
+        let viaLink = DuplicateMember(
+            path: fx.path("home/linkdir/a"), device: a.device, inode: a.inode, otherLinkPaths: [], logicalBytes: a.logicalBytes,
+            allocatedBytes: a.allocatedBytes, reclaimableBytes: a.reclaimableBytes, sharesStorage: false,
+            sharesAllStorage: false, created: a.created, modified: a.modified, isInGitRepo: false)
+        let forged = DuplicateGroup(digest: s.group.digest, partialDigest: s.group.partialDigest,
+                                    logicalBytes: s.group.logicalBytes, members: [viaLink, s.group.members[1]])
+        let b = DuplicateScanner.makeItem(forged.members[1], group: forged, keeper: forged.keeper, rule: .oldest)
+        let folder = try nonDupItem("home/docs/k")
+        let engine = try makeEngine()
+        let plan = await engine.plan([b, folder], duplicateGroups: [forged.id: forged])
+        try assertBlocked(plan, b.id, "survivor reachable through a symlink must be claimed by the real folder")
+        let report = try await engine.execute(plan)
+        XCTAssertFalse(wasTrashedItem(report, b.id))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: s.paths[1]))
+    }
+
+    private func wasTrashedItem(_ r: CleanupReport, _ id: String) -> Bool {
+        r.results.contains { if $0.itemID == id, case .trashed = $0.outcome { true } else { false } }
+    }
+
     func testNonDuplicateEntriesHaveNoSurvivors() async throws {
         try fx.file("home/cache/a/f", bytes: 3000)
         let plan = await (try makeEngine()).plan([try item("home/cache/a")], duplicateGroups: [:])

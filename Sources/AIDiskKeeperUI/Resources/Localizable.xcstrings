@@ -3224,7 +3224,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Lệnh chưa được chạy: nhật ký kiểm tra không ghi được trước. Không có gì bị thay đổi."
+            "value" : "Lệnh chưa được chạy: không ghi trước được vào nhật ký thao tác. Không có gì bị thay đổi."
           }
         }
       }
