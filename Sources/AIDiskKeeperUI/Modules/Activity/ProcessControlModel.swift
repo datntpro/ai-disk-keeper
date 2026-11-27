@@ -42,7 +42,7 @@ final class ProcessControlModel {
         let controller = ProcessController(
             table: LibprocProcessTable(), signaler: LiveProcessSignaling(),
             store: PausedProcessStore(fileURL: PausedProcessStore.defaultURL(environment: environment)),
-            isGUIApp: { NSRunningApplication(processIdentifier: $0)?.activationPolicy == .regular },
+            isGUIApp: { pid in NSWorkspace.shared.runningApplications.contains { $0.processIdentifier == pid && $0.activationPolicy == .regular } },
             autoResumeMinutes: settings.settings.autoResumeMinutes,
             audit: { record in try? await log.appendProcessControlEvent(record) })
         return ProcessControlModel(controller: controller, settings: settings)

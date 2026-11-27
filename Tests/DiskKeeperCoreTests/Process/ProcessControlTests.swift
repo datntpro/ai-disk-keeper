@@ -416,3 +416,19 @@ private struct ChildRelabelingTable: ProcessTableReading {
         #expect(store.load().isEmpty)
     }
 }
+
+/// Source guard for the one file that signals: only SIGSTOP and SIGCONT, one kill(2) call, nothing else dangerous.
+@Suite struct ProcessControlSourceLintTests {
+    @Test func onlyStopAndContinueAreEverSent() throws {
+        let file = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Sources/DiskKeeperCore/Process/ProcessControl.swift")
+        let code = try String(contentsOf: file, encoding: .utf8).split(separator: "\n")
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }.joined(separator: "\n")
+        for banned in ["SIGKILL", "SIGTERM", "SIGINT", "SIGHUP", "SIGQUIT", "killpg", "task_for_pid", "taskpolicy", "renice", " Process(", "NSTask", "posix_spawn"] {
+            #expect(!code.contains(banned), "\(banned) must never appear in ProcessControl.swift")
+        }
+        #expect(code.components(separatedBy: "kill(").count - 1 == 1, "exactly one kill(2) call")
+        #expect(code.contains("sig == SIGSTOP || sig == SIGCONT"))
+    }
+}
