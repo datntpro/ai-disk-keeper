@@ -7143,6 +7143,22 @@
         }
       }
     },
+    "history.result.intent" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Started, no result recorded"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã bắt đầu, chưa ghi nhận kết quả"
+          }
+        }
+      }
+    },
     "history.result.trashed" : {
       "localizations" : {
         "en" : {
