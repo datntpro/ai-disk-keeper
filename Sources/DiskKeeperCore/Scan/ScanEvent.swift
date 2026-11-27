@@ -1,7 +1,9 @@
 import Foundation
 
 /// Aggregate progress of one scan, as reported to the UI. Counts are summed over every scanner's latest
-/// `ScannerProgress`; `itemsFound` and `bytesFound` count accepted items only.
+/// `ScannerProgress`; `itemsFound` counts accepted items only. `bytesFound` is accepted items plus whatever
+/// scanners report while still sizing candidates (never decreasing); the last progress before a terminal event
+/// is exact (accepted items only).
 public struct ScanProgress: Sendable, Hashable {
     public var scannersFinished: Int
     public var scannersTotal: Int

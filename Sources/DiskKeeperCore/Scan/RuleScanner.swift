@@ -137,9 +137,14 @@ public struct RuleScanner: Scanner {
             completedBytes += bytes
         }
 
+        /// Also emits (same ≤ 4/s gate) so progress keeps flowing when candidates are small and fast.
         func setSized(_ n: Int) {
             lock.lock(); defer { lock.unlock() }
             sized = n
+            let now = Date()
+            guard now.timeIntervalSince(lastEmit) >= Self.minInterval else { return }
+            lastEmit = now
+            continuation.yield(snapshot())
         }
 
         private func snapshot() -> ScannerProgress {
@@ -182,12 +187,6 @@ public struct RuleScanner: Scanner {
                     break
                 }
                 live.setSized(sized)
-                if sized % 64 == 0 {
-                    var p = base
-                    p.candidatesSized = sized
-                    p.bytesFound = bytes
-                    await sink.progress(p)
-                }
                 startNext()
             }
         }

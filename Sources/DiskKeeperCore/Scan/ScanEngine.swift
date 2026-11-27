@@ -23,6 +23,8 @@ public actor ScanEngine {
     private var perScanner: [String: ScannerProgress] = [:]
     private var finishedScanners = 0
     private var bytesFound: Int64 = 0
+    /// Highest bytes figure reported so far, so live (in-flight) bytes never make the number go down.
+    private var bytesHighWater: Int64 = 0
     private var terminated = false
     private var cancelRequested = false
     private var lastProgressAt: ContinuousClock.Instant?
@@ -93,6 +95,7 @@ public actor ScanEngine {
         perScanner = [:]
         finishedScanners = 0
         bytesFound = 0
+        bytesHighWater = 0
         terminated = false
         cancelRequested = false
         startedAt = Date()
@@ -226,17 +229,24 @@ public actor ScanEngine {
         continuation?.yield(.progress(snapshot()))
     }
 
-    private func snapshot() -> ScanProgress {
-        ScanProgress(scannersFinished: finishedScanners, scannersTotal: scanners.count,
+    /// `live`: also count the bytes scanners report while still walking candidates (monotonic), so one long
+    /// walk is visible. The terminal snapshot is exact (`live: false`: accepted items only).
+    private func snapshot(live: Bool = true) -> ScanProgress {
+        var bytes = bytesFound
+        if live {
+            bytes = max(bytesHighWater, bytesFound, perScanner.values.reduce(0) { $0 + $1.bytesFound })
+            bytesHighWater = bytes
+        }
+        return ScanProgress(scannersFinished: finishedScanners, scannersTotal: scanners.count,
                      candidatesFound: perScanner.values.reduce(0) { $0 + $1.candidatesFound },
                      candidatesSized: perScanner.values.reduce(0) { $0 + $1.candidatesSized },
-                     itemsFound: items.count, bytesFound: bytesFound)
+                     itemsFound: items.count, bytesFound: bytes)
     }
 
     private func finish(generation gen: Int) {
         guard gen == generation, !terminated else { return }
         let wasCancelled = cancelRequested || Task.isCancelled
-        continuation?.yield(.progress(snapshot()))
+        continuation?.yield(.progress(snapshot(live: false)))
         let result = ScanResult(items: items, warnings: warnings, startedAt: startedAt,
                                 finishedAt: Date(), wasCancelled: wasCancelled)
         terminated = true

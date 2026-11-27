@@ -107,12 +107,19 @@ final class CatalogLintTests: XCTestCase {
     static let oldSpellings = ["xoá", "hoà", "thuỷ", "khoẻ"]
 
     /// Whole-word, case-insensitive match (Unicode word boundary), so "hoàn" does not trip "hoà".
+    private static let oldSpellingRegexes: [String: NSRegularExpression] = Dictionary(
+        uniqueKeysWithValues: oldSpellings.map { word in
+            let w = NSRegularExpression.escapedPattern(for: word.precomposedStringWithCanonicalMapping)
+            return (word, try! NSRegularExpression(
+                pattern: "(?<![\\p{L}\\p{M}\\p{N}_])\(w)(?![\\p{L}\\p{M}\\p{N}_])", options: [.caseInsensitive]))
+        })
+
     static func containsWholeWord(_ text: String, _ word: String) -> Bool {
         let t = text.precomposedStringWithCanonicalMapping
-        let w = NSRegularExpression.escapedPattern(for: word.precomposedStringWithCanonicalMapping)
-        guard let re = try? NSRegularExpression(pattern: "(?<![\\p{L}\\p{M}\\p{N}_])\(w)(?![\\p{L}\\p{M}\\p{N}_])",
-                                                options: [.caseInsensitive]) else { return false }
-        return re.firstMatch(in: t, range: NSRange(t.startIndex..., in: t)) != nil
+        let re = oldSpellingRegexes[word] ?? (try? NSRegularExpression(
+            pattern: "(?<![\\p{L}\\p{M}\\p{N}_])\(NSRegularExpression.escapedPattern(for: word.precomposedStringWithCanonicalMapping))(?![\\p{L}\\p{M}\\p{N}_])",
+            options: [.caseInsensitive]))
+        return re?.firstMatch(in: t, range: NSRange(t.startIndex..., in: t)) != nil
     }
 
     func testOldSpellingCheckIsWholeWord() {

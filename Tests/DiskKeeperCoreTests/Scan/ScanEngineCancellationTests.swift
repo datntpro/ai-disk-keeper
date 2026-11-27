@@ -91,6 +91,31 @@ final class ScanEngineCancellationTests: XCTestCase {
         guard case .cancelled? = events.last else { return XCTFail("last must be cancelled") }
     }
 
+    /// #75 FU1 at the engine level: bytes a scanner reports while still sizing reach `ScanProgress`
+    /// (monotonic), and the last progress before the terminal event is exact (accepted items only).
+    func testLiveScannerBytesReachScanProgress() async throws {
+        let scanner = ClosureScanner(id: "live") { _, sink in
+            await sink.progress(ScannerProgress(candidatesFound: 1, candidatesSized: 0, bytesFound: 500))
+            try await Task.sleep(nanoseconds: 400_000_000)
+            await sink.progress(ScannerProgress(candidatesFound: 1, candidatesSized: 0, bytesFound: 900))
+            try await Task.sleep(nanoseconds: 400_000_000)
+            await sink.item(EngineKit.item(self.fixture.abs(".g/x"), size: 700))
+        }
+        let (engine, _) = try engine([scanner])
+        var events: [ScanEvent] = []
+        for await e in try await engine.scan() { events.append(e) }
+        var seenItem = false
+        var live: [Int64] = []
+        for e in events {
+            if case .itemFound = e { seenItem = true }
+            if case .progress(let p) = e, !seenItem { live.append(p.bytesFound) }
+        }
+        XCTAssertTrue(live.contains { $0 >= 500 }, "live scanner bytes must show before any item: \(live)")
+        XCTAssertEqual(live, live.sorted(), "bytesFound must never decrease")
+        let progresses = events.compactMap { e -> ScanProgress? in if case .progress(let p) = e { return p } else { return nil } }
+        XCTAssertEqual(progresses.last?.bytesFound, 700)
+    }
+
     func testCancelBeforeAnyItem() async throws {
         let (engine, context) = try engine([ClosureScanner(id: "idle") { _, _ in
             while true { try await Task.sleep(nanoseconds: 5_000_000) }

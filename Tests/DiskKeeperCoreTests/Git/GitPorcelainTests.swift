@@ -147,6 +147,10 @@ final class GitPorcelainTests: XCTestCase {
         XCTAssertTrue(GitPorcelain.isPrecious("node_modules/pkg/.env"))
         XCTAssertTrue(GitPorcelain.isPrecious("dist/prod.pem"))
         XCTAssertFalse(GitPorcelain.isPrecious("Pods/Foo/uploads/x.txt"))
+        // Documented trade-off: dir-name precious stops at the first regenerable component (incl. generic
+        // `build`/`out`); precious file patterns still match there.
+        XCTAssertFalse(GitPorcelain.isPrecious("build/backups/dump.sql"))
+        XCTAssertTrue(GitPorcelain.isPrecious("out/data/app.sqlite"))
         let c = GitPorcelain.classifyIgnored(["data/", "node_modules/"])
         XCTAssertEqual(c.precious, ["data/"])
         XCTAssertEqual(GitPorcelain.mergePrecious([], ["node_modules/x/data/a.json", "node_modules/p/.env"]),
