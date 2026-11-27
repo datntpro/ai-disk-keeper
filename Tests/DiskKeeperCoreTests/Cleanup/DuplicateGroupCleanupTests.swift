@@ -240,9 +240,9 @@ final class DuplicateGroupCleanupTests: CleanupTestCase {
                 survivors: [SurvivorFingerprint(path: s.paths[0], device: s.group.members[0].device,
                                                 inode: s.group.members[0].inode, modified: s.group.members[0].modified)]))
         let folderKey = PathCanonicalizer.key(fx.path("home/docs/k"))
-        let gate = await engine.keepOneGate(entry, trashedKeys: [], claimed: [folderKey])
+        let gate = await engine.keepOneGate(entry, trashedKeys: [], claimed: ClaimSet(keys: [folderKey]))
         XCTAssertEqual(gate?.code, "survivorChanged")
-        let free = await engine.keepOneGate(entry, trashedKeys: [], claimed: [])
+        let free = await engine.keepOneGate(entry, trashedKeys: [], claimed: ClaimSet(keys: []))
         XCTAssertNil(free)
     }
 
@@ -263,6 +263,69 @@ final class DuplicateGroupCleanupTests: CleanupTestCase {
         let item = DuplicateScanner.makeItem(m, group: forged, keeper: forged.keeper, rule: .oldest)
         let plan = await engine.plan([item], duplicateGroups: [forged.id: forged])
         XCTAssertTrue(codes(plan.entries[0]).contains("wouldRemoveAllCopies"), "\(codes(plan.entries[0]))")
+    }
+
+    // MARK: #86 physical identity (attack fixtures)
+
+    private func assertBlocked(_ plan: CleanupPlan, _ id: String, _ msg: String = "", file: StaticString = #filePath, line: UInt = #line) throws {
+        let e = try XCTUnwrap(plan.entries.first { $0.item.id == id }, file: file, line: line)
+        XCTAssertTrue(codes(e).contains("wouldRemoveAllCopies"), "\(msg) \(codes(e))", file: file, line: line)
+    }
+
+    /// The survivor is reachable through a symlinked ancestor named by another plan item.
+    func testSymlinkedAncestorClaimsSurvivor() async throws {
+        let s = try await makeGroup(["k/a", "b"])
+        XCTAssertEqual(symlink(fx.path("home/docs/k"), fx.path("home/link")), 0)
+        let viaLink = try nonDupItem("home/link/a")
+        let (plan, _) = try await exec(s, [s.items[1], viaLink])
+        try assertBlocked(plan, s.items[1].id)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: s.paths[1]))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: s.paths[0]))
+    }
+
+    /// A parent is renamed between plan and execute: the survivor's directory now answers to a claimed name.
+    func testParentRenamedBetweenPlanAndExecute() async throws {
+        let s = try await makeGroup(["k/a", "b", "c"])
+        try fx.file("home/docs/old/x", bytes: 10)
+        let folder = try nonDupItem("home/docs/old")
+        let engine = try makeEngine()
+        let plan = await engine.plan([s.items[1], s.items[2], folder], duplicateGroups: s.groups)
+        try FileManager.default.moveItem(atPath: fx.path("home/docs/old"), toPath: fx.path("home/docs/gone"))
+        try FileManager.default.moveItem(atPath: fx.path("home/docs/k"), toPath: fx.path("home/docs/old"))
+        let report = try await engine.execute(plan)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: fx.path("home/docs/old/a")), "survivor must not be trashed")
+        XCTAssertTrue(trashContents().isEmpty || !trashContents().contains { $0.hasSuffix("-a") })
+        for r in report.results where r.itemID == s.items[1].id || r.itemID == s.items[2].id {
+            if case .trashed = r.outcome { XCTFail("duplicate trashed with no verified survivor") }
+        }
+    }
+
+    /// Two groups share a member: each selected copy is the other's only survivor.
+    func testSharedMemberAcrossGroups() async throws {
+        let s = try await makeGroup(["a", "b"])
+        let g2 = DuplicateGroup(digest: "other-" + s.group.digest, partialDigest: s.group.partialDigest,
+                                logicalBytes: s.group.logicalBytes, members: s.group.members)
+        let a2 = DuplicateScanner.makeItem(g2.members[0], group: g2, keeper: g2.members[1], rule: .oldest)
+        let engine = try makeEngine()
+        let plan = await engine.plan([s.items[1], a2], duplicateGroups: [s.group.id: s.group, g2.id: g2])
+        try assertBlocked(plan, s.items[1].id)
+        try assertBlocked(plan, a2.id)
+        _ = try await engine.execute(plan)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: s.paths[0]))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: s.paths[1]))
+    }
+
+    /// Case and Unicode-normalization variants of the survivor's path still claim it.
+    func testCaseAndNFDVariantsClaimSurvivor() async throws {
+        let nfc = "caf\u{00E9}", nfd = "cafe\u{0301}"
+        let s = try await makeGroup([nfc, "b"])
+        var st = stat()
+        guard lstat(fx.path("home/docs/\(nfd)"), &st) == 0 else { throw XCTSkip("volume is normalization-sensitive") }
+        guard lstat(fx.path("home/docs/\(nfd)".uppercased()), &st) == 0 else { throw XCTSkip("case-sensitive volume") }
+        let variant = try nonDupItem("home/docs/\(nfd)".uppercased())
+        let (plan, _) = try await exec(s, [s.items[1], variant])
+        try assertBlocked(plan, s.items[1].id)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: s.paths[1]))
     }
 
     func testNonDuplicateEntriesHaveNoSurvivors() async throws {

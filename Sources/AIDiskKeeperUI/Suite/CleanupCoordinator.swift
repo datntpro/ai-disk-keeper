@@ -20,13 +20,14 @@ public final class CleanupCoordinator {
     public init(holder: CleanupEngineHolder) { self.holder = holder }
 
     /// Opens the sheet on a dry-run plan for `items`. Duplicate items need their `duplicateGroups` (keyed by
-    /// `ScanItem.groupID`) so the engine can enforce keep-one. No-op while the engine is unavailable.
+    /// `ScanItem.groupID`) so the engine can enforce keep-one. No-op while the engine is unavailable, and while a flow is
+    /// active: the running flow keeps its own `onFinished`/`onRescan` (a second `review` would swap them mid-flow).
     /// `onRescan` is the originating screen's own "check again" (Duplicates re-hashes); without it the Re-scan
     /// next step starts a normal scan.
     public func review(_ items: [ScanItem], duplicateGroups: [String: DuplicateGroup] = [:],
                        onRescan: (@MainActor () -> Void)? = nil,
                        onFinished: @escaping @MainActor (Set<ScanItem.ID>) -> Void) {
-        guard let engine = holder.engine else { return }
+        guard let engine = holder.engine, flow?.isActive != true else { return }
         let flow = flow ?? CleanupFlowModel(engine: engine)
         self.flow = flow
         self.onFinished = onFinished

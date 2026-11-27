@@ -36,6 +36,9 @@ public struct ScanCommands: Commands {
 
     public init() {}
 
+    /// The Go menu's entries: the first nine enabled modules, in sidebar order (⌘1…⌘9).
+    static func goMenuModules() -> [ModuleDescriptor] { Array(ModuleRegistry.enabled().prefix(9)) }
+
     public var body: some Commands {
         CommandMenu(loc("menu.scan", "Scan")) {
             Button(loc("action.scan", "Scan")) { actions?.start() }
@@ -47,7 +50,7 @@ public struct ScanCommands: Commands {
         }
         CommandMenu(loc("menu.go", "Go")) {
             // ⌘1…⌘9 for the first nine enabled modules.
-            ForEach(Array(ModuleRegistry.enabled().prefix(9).enumerated()), id: \.element.id) { index, module in
+            ForEach(Array(Self.goMenuModules().enumerated()), id: \.element.id) { index, module in
                 Button(module.title) { navigation?.go(module.id) }
                     .keyboardShortcut(KeyEquivalent(Character(String(index + 1))), modifiers: .command)
                     .disabled(navigation == nil)

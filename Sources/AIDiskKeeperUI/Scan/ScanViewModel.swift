@@ -26,6 +26,8 @@ public final class ScanViewModel {
     /// What stops the current stream: the engine's `cancel`, or whatever `consume(_:cancel:)` was given.
     @ObservationIgnored private var cancelAction: (@Sendable () async -> Void)?
     @ObservationIgnored private var consumer: Task<Void, Never>?
+    /// The off-main engine build of a starting scan: cancelled when the model goes away (a cancel while starting still lets the engine be built, then cancels it).
+    @ObservationIgnored private var building: DetachedBuild<any ScanEngineProtocol>?
     @ObservationIgnored private var pending: [ScanItem] = []
     @ObservationIgnored private var sawTerminal = false
     @ObservationIgnored private var startedAt = Date()
@@ -48,15 +50,19 @@ public final class ScanViewModel {
     public func startScan() {
         guard !isScanning else { return }
         prepare()
-        let make = makeEngine
+        // Rule loading reads JSON from disk: keep it off the main actor.
+        let build = DetachedBuild(makeEngine)
+        building = build
         let generation = scanGeneration
         consumer = Task { [weak self] in
             do {
-                // Rule loading reads JSON from disk: keep it off the main actor.
-                let engine = try await Task.detached { try make() }.value
+                let engine = try await build.value()
                 guard let self, self.scanGeneration == generation else { return }
+                self.building = nil
                 let stream = try await engine.scan()
                 await self.run(stream, cancel: { await engine.cancel() })
+            } catch is CancellationError {
+                self?.startCancelled(generation: generation)
             } catch {
                 self?.fail(error)
             }
@@ -185,7 +191,16 @@ public final class ScanViewModel {
         consumer = nil
     }
 
+    /// The engine build was cancelled before a scan started: end in the cancelled phase with nothing found.
+    private func startCancelled(generation: Int) {
+        guard scanGeneration == generation, !sawTerminal else { return }
+        building = nil
+        terminal(ScanResult(items: [], warnings: [], startedAt: startedAt, finishedAt: Date(), wasCancelled: true), cancelled: true)
+        consumer = nil
+    }
+
     private func fail(_ error: Error) {
+        building = nil
         pending = []
         cancelAction = nil
         consumer = nil

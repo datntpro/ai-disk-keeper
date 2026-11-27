@@ -46,13 +46,38 @@ final class CleanupExecuteTests: CleanupTestCase {
         let protectedItem = try item("home/.ssh/x")
         let prot = CleanupPlan(id: plan.id, createdAt: plan.createdAt, entries: [
             CleanupPlanEntry(item: protectedItem, action: e.action, blockers: [], fingerprint: e.fingerprint)])
-        await expectThrow(engine, prot, .planModified)
+        await expectThrow(engine, prot, .unknownPlan)   // the first tamper burned the id
         XCTAssertTrue(exists("home/cache/a/f")); XCTAssertTrue(exists("home/.ssh/x"))
         XCTAssertTrue(trashContents().isEmpty)
 
-        // The genuine plan still runs (a refused plan is not consumed).
-        let report = try await engine.execute(plan)
+        // A tampered plan burns its id: the genuine plan is refused too (re-plan), and nothing was touched.
+        await expectThrow(engine, plan, .unknownPlan)
+        XCTAssertTrue(exists("home/cache/a/f")); XCTAssertTrue(trashContents().isEmpty)
+        let fresh = await engine.plan([try item("home/cache/a")])
+        let report = try await engine.execute(fresh)
         guard case .trashed = report.results[0].outcome else { return XCTFail("\(report.results[0].outcome)") }
+    }
+
+    /// A plan that expires while it waits for the run slot is refused and nothing is touched.
+    func testPlanExpiringWhileQueuedIsRefused() async throws {
+        final class AdvancingTrash: TrashAdapter, @unchecked Sendable {
+            let inner: DirectoryTrash; let clock: Clock
+            init(_ i: DirectoryTrash, _ c: Clock) { inner = i; clock = c }
+            func trashItem(at url: URL) throws -> URL? { clock.advance(20 * 60); return try inner.trashItem(at: url) }
+        }
+        try fx.file("home/cache/a/f", bytes: 100); try fx.file("home/cache/b/f", bytes: 100)
+        let clock = Clock()
+        let engine = try makeEngine(trash: AdvancingTrash(DirectoryTrash(root: trashDir), clock), now: { clock.now() })
+        let first = await engine.plan([try item("home/cache/a")])
+        let second = await engine.plan([try item("home/cache/b")])
+        async let r1 = engine.execute(first)
+        async let r2: Result<CleanupReport, Error> = { do { return .success(try await engine.execute(second)) } catch { return .failure(error) } }()
+        _ = try await r1
+        switch await r2 {
+        case .failure(let e): XCTAssertEqual(e as? CleanupError, .planExpired)
+        case .success: XCTFail("expired plan ran")
+        }
+        XCTAssertTrue(exists("home/cache/b/f"))
     }
 
     func testForgedEntryForUnplannedPathIsRefused() async throws {

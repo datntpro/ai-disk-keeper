@@ -45,11 +45,11 @@ public final class DiskIndexModel {
         progress = nil
         lastProgressAt = nil
         let id = runID
-        let make = makeIndexer
+        // Building the guard loads rule JSON: keep it off the main actor. Cancelled with `task` (abandonCurrent).
+        let build = DetachedBuild(makeIndexer)
         task = Task { [weak self] in
             do {
-                // Building the guard loads rule JSON: keep it off the main actor.
-                let indexer = try await Task.detached { try make() }.value
+                let indexer = try await build.value()
                 guard let model = self, model.runID == id else { return }
                 model.indexer = indexer
                 let tree = try await indexer.index(scope) { [weak model] p in

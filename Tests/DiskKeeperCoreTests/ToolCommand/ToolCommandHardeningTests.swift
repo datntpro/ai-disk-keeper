@@ -93,6 +93,64 @@ final class ToolCommandHardeningTests: XCTestCase {
         XCTAssertEqual(records[0].command, snap?.command)
     }
 
+    /// N3: no intent line, no run: reported as blocked ("not run"), never as a failed run.
+    func testUnwritableIntentLogMeansNotRun() async throws {
+        let exe = try ToolFixtures.writeTool(in: fx)
+        try Data("x".utf8).write(to: URL(fileURLWithPath: fx.path("file")))
+        let log = AuditLog(fileURL: URL(fileURLWithPath: fx.path("file/audit.jsonl")))   // parent is a regular file
+        let p = performer(exe: exe, intentLog: log)
+        let (_, snap) = await p.planCheck(ToolFixtures.virtualItem(), probes: ToolProbeCache())
+        switch await p.execute(ToolFixtures.virtualItem(), expected: snap) {
+        case .blocked(let b, _): XCTAssertEqual(b, [.auditIntentNotWritten])
+        case .ran(let o, _): XCTFail("reported as run: \(o)")
+        }
+        XCTAssertTrue(runner.calls.isEmpty)
+    }
+
+    /// Exact pairing: an outcome carrying an intent's id settles that intent, not the nearest one; `skipped` included.
+    func testIntentIDPairingIsExact() throws {
+        func rec(_ result: String, id: UUID?, at t: TimeInterval) -> AuditRecord {
+            AuditRecord(timestamp: Date(timeIntervalSince1970: t), runID: UUID(), itemID: "a", path: "/p", bytes: 5,
+                        action: .deletePermanently, result: result, trashPath: nil, ruleID: "r", tool: "adktest", reasons: [],
+                        error: nil, command: ["/x/adk-test", "rm", "a"], intentID: id)
+        }
+        let first = UUID(), second = UUID()
+        let enc = DiskKeeperJSON.makeEncoder()
+        var data = Data()
+        for r in [rec("intent", id: first, at: 1), rec("intent", id: second, at: 2),
+                  rec("ran", id: first, at: 3), rec("skipped", id: second, at: 4)] {
+            data.append(try enc.encode(r)); data.append(0x0A)
+        }
+        let results = AuditHistoryReader.parse(data).runs.flatMap { $0.records }.map(\.result).sorted()
+        XCTAssertEqual(results, ["ran", "skipped"])
+        // The outcome of the first intent alone leaves the second one visible.
+        var only = Data()
+        for r in [rec("intent", id: first, at: 1), rec("intent", id: second, at: 2), rec("ran", id: first, at: 3)] {
+            only.append(try enc.encode(r)); only.append(0x0A)
+        }
+        let left = AuditHistoryReader.parse(only).runs.flatMap { $0.records }
+        XCTAssertEqual(left.map(\.result).sorted(), ["intent", "ran"])
+        XCTAssertEqual(left.first { $0.result == "intent" }?.intentID, second)
+    }
+
+    /// A symlink cycle (and a chain longer than the hop cap) is refused, not followed forever.
+    func testSymlinkCycleAndHopCapAreRefused() throws {
+        let a = fx.path("cyc-a"), b = fx.path("cyc-b")
+        try FileManager.default.createSymbolicLink(atPath: a, withDestinationPath: b)
+        try FileManager.default.createSymbolicLink(atPath: b, withDestinationPath: a)
+        guard case .failure = ToolExecutableResolver().resolve(candidates: [a], toolName: "cyc-a") else { return XCTFail("cycle resolved") }
+
+        let exe = try ToolFixtures.writeTool(in: fx)
+        var target = exe
+        for i in 0..<45 {
+            let link = fx.path("hop\(i)/adk-test")
+            try FileManager.default.createDirectory(atPath: fx.path("hop\(i)"), withIntermediateDirectories: true)
+            try FileManager.default.createSymbolicLink(atPath: link, withDestinationPath: target)
+            target = link
+        }
+        guard case .failure = ToolExecutableResolver().resolve(candidates: [target], toolName: "adk-test") else { return XCTFail("45 hops resolved") }
+    }
+
     func testHistoryToleratesIntentWithoutOutcomeAndSettlesPaired() throws {
         func rec(_ result: String, item: String, at t: TimeInterval) -> AuditRecord {
             AuditRecord(timestamp: Date(timeIntervalSince1970: t), runID: UUID(), itemID: item, path: "/p", bytes: 5,

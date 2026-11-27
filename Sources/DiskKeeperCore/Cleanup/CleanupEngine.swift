@@ -2,6 +2,9 @@ import Darwin
 import Foundation
 
 /// Turns a dry-run plan into Trash moves and writes an audit log. See docs/cleanup.md.
+///
+/// One `CleanupEngine` per app: `execute` is serialized per instance, so two engines on the same audit log and
+/// the same disk would run plans concurrently. `CleanupEngineHolder.install` enforces it.
 public actor CleanupEngine {
     private let validator: ItemValidator
     private let auditLog: AuditLog
@@ -166,20 +169,16 @@ public actor CleanupEngine {
             throw executed.contains(plan.id) ? CleanupError.planAlreadyExecuted : CleanupError.unknownPlan
         }
         // Only exactly what `plan()` returned (and the user confirmed) may run.
-        guard plan == entry0.plan else { throw CleanupError.planModified }
-        // Expired by wall clock, by monotonic clock, or issued "in the future" (clock set back).
-        let age = now().timeIntervalSince(entry0.plan.createdAt)
-        let monotonicAge = entry0.monotonic.duration(to: ContinuousClock.now)
-        let monotonicSeconds = Double(monotonicAge.components.seconds)
-            + Double(monotonicAge.components.attoseconds) / 1e18
-        if age < 0 || age > options.planLifetime || monotonicSeconds > options.planLifetime {
-            throw CleanupError.planExpired
-        }
+        // A plan that was edited after `plan()` burns its id: the genuine plan is refused too (re-plan).
+        guard plan == entry0.plan else { issued[plan.id] = nil; throw CleanupError.planModified }
+        if isExpired(entry0) { throw CleanupError.planExpired }
         issued[plan.id] = nil
         executed.insert(plan.id)
 
         await acquireRunSlot()
         defer { releaseRunSlot() }
+        // The wait for the run slot can outlast the plan: re-check before anything is touched.
+        if isExpired(entry0) { throw CleanupError.planExpired }
 
         do { try await auditLog.open() } catch { throw CleanupError.auditLogUnavailable("\(error)") }
 
@@ -188,7 +187,7 @@ public actor CleanupEngine {
         var wasCancelled = false
         var auditFailure: String?
         var trashedKeys: Set<PathKey> = []
-        let claimed = plan.entries.map { PathCanonicalizer.key($0.item.path) }
+        let claimed = ClaimSet(paths: plan.entries.map(\.item.path))
         let total = plan.entries.count
 
         for (index, entry) in plan.entries.enumerated() {
@@ -219,6 +218,15 @@ public actor CleanupEngine {
                              wasCancelled: wasCancelled, auditFailure: auditFailure)
     }
 
+    /// Expired by wall clock, by monotonic clock, or issued "in the future" (clock set back).
+    private func isExpired(_ issued: Issued) -> Bool {
+        let age = now().timeIntervalSince(issued.plan.createdAt)
+        let monotonicAge = issued.monotonic.duration(to: ContinuousClock.now)
+        let monotonicSeconds = Double(monotonicAge.components.seconds)
+            + Double(monotonicAge.components.attoseconds) / 1e18
+        return age < 0 || age > options.planLifetime || monotonicSeconds > options.planLifetime
+    }
+
     private func acquireRunSlot() async {
         if !isExecuting { isExecuting = true; return }
         await withCheckedContinuation { waiters.append($0) }
@@ -229,7 +237,7 @@ public actor CleanupEngine {
     }
 
     private func run(_ entry: CleanupPlanEntry, trashedKeys: Set<PathKey>,
-                     claimed: [PathKey]) async -> (CleanupOutcome, String?, ToolRunRecord?) {
+                     claimed: ClaimSet) async -> (CleanupOutcome, String?, ToolRunRecord?) {
         if case .toolCommand = entry.item.cleanupMethod {
             let (outcome, record) = await runToolCommand(entry)
             return (outcome, nil, record)
@@ -259,7 +267,7 @@ public actor CleanupEngine {
         }
     }
 
-    private func runTrash(_ entry: CleanupPlanEntry, trashedKeys: Set<PathKey>, claimed: [PathKey]) async -> (CleanupOutcome, String?) {
+    private func runTrash(_ entry: CleanupPlanEntry, trashedKeys: Set<PathKey>, claimed: ClaimSet) async -> (CleanupOutcome, String?) {
         if !entry.blockers.isEmpty { return (.skipped(entry.blockers), nil) }
         let item = entry.item
 
@@ -353,6 +361,6 @@ public actor CleanupEngine {
                            trashPath: path, ruleID: entry.item.ruleID, tool: entry.item.tool,
                            reasons: reasons, error: error, bundleID: bundleID,
                            command: toolRun?.command, exitStatus: toolRun?.exitStatus, durationMs: toolRun?.durationMs,
-                           stderrTail: toolRun?.stderrTail, toolTarget: toolRun?.target)
+                           stderrTail: toolRun?.stderrTail, toolTarget: toolRun?.target, intentID: toolRun?.intentID)
     }
 }

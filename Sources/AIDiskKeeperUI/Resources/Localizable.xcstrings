@@ -3213,6 +3213,22 @@
         }
       }
     },
+    "cleanup.blocker.auditIntentNotWritten" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The command was not run: the audit log couldn't record it first. Nothing was changed."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lệnh chưa được chạy: nhật ký kiểm tra không ghi được trước. Không có gì bị thay đổi."
+          }
+        }
+      }
+    },
     "cleanup.blocker.changed" : {
       "localizations" : {
         "en" : {
@@ -7127,22 +7143,6 @@
         }
       }
     },
-    "history.result.ran" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Removed by its tool"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Đã xóa bằng công cụ của nó"
-          }
-        }
-      }
-    },
     "history.result.intent" : {
       "localizations" : {
         "en" : {
@@ -7155,6 +7155,22 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Đã bắt đầu, chưa ghi nhận kết quả"
+          }
+        }
+      }
+    },
+    "history.result.ran" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Removed by its tool"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã xóa bằng công cụ của nó"
           }
         }
       }

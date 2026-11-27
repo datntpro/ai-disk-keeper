@@ -36,7 +36,9 @@ struct CleanupSheetContent: View {
                 flow.dismiss()
             }
         case .failed(let message):
-            StateView(kind: .blockingError, symbol: "exclamationmark.triangle", title: StateCopy.errorCleanupTitle, message: message,
+            StateView(kind: .blockingError, symbol: "exclamationmark.triangle",
+                      title: flow.failedBecauseOfAudit ? StateCopy.errorAuditTitle : StateCopy.errorCleanupTitle,
+                      message: flow.failedBecauseOfAudit ? "\(StateCopy.errorAuditBody)\n\n\(message)" : message,
                       actions: [StateAction(title: CleanupCopy.done) { flow.dismiss() }])
                 .padding(24).frame(minWidth: 420)
         }
