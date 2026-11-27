@@ -20,6 +20,16 @@ public final class ScopeProvider: @unchecked Sendable {
     func set(_ new: ScanScope) { lock.lock(); scope = new; lock.unlock() }
 }
 
+/// Thread-safe handle to the one scan cache: `current` is nil while the user has it switched off.
+public final class ScanCacheProvider: @unchecked Sendable {
+    public let cache: SizeCache
+    private let lock = NSLock()
+    private var enabled: Bool
+    public init(cache: SizeCache, enabled: Bool) { self.cache = cache; self.enabled = enabled }
+    public var current: SizeCache? { lock.lock(); defer { lock.unlock() }; return enabled ? cache : nil }
+    func set(enabled: Bool) { lock.lock(); self.enabled = enabled; lock.unlock() }
+}
+
 @MainActor @Observable
 public final class SettingsModel {
     public private(set) var settings: AppSettings
@@ -32,6 +42,9 @@ public final class SettingsModel {
     public private(set) var languageRevision = 0
 
     @ObservationIgnored public let scopeProvider: ScopeProvider
+    @ObservationIgnored public let scanCache: ScanCacheProvider
+    /// Set after "Clear scan cache" finishes; the view shows a confirmation.
+    public private(set) var scanCacheCleared = false
     @ObservationIgnored private let store: SettingsStore
     @ObservationIgnored private let environment: PathEnvironment
     @ObservationIgnored private let probe: @Sendable () -> FullDiskAccessStatus
@@ -53,6 +66,8 @@ public final class SettingsModel {
         self.availableTools = availableTools
         self.probe = probe
         self.scopeProvider = ScopeProvider(loaded.scanScope(environment: environment))
+        self.scanCache = ScanCacheProvider(
+            cache: SizeCache(fileURL: SizeCache.defaultFileURL(environment: environment)), enabled: loaded.useScanCache)
         refreshFullDiskAccess()
     }
 
@@ -85,6 +100,16 @@ public final class SettingsModel {
 
     static func persistAppleLanguages(_ l: AppLanguage, defaults: UserDefaults = .standard) {
         if l == .system { defaults.removeObject(forKey: "AppleLanguages") } else { defaults.set([l.rawValue], forKey: "AppleLanguages") }
+    }
+
+    public func setUseScanCache(_ on: Bool) { mutate { $0.useScanCache = on } }
+    public func clearScanCache() {
+        scanCacheCleared = false
+        let cache = scanCache.cache
+        Task { [weak self] in
+            await cache.clear()
+            self?.scanCacheCleared = true
+        }
     }
 
     public func setShowMenuBarItem(_ on: Bool) { mutate { $0.showMenuBarItem = on } }
@@ -123,6 +148,7 @@ public final class SettingsModel {
         guard copy != settings else { return }
         settings = copy
         scopeProvider.set(copy.scanScope(environment: environment))
+        scanCache.set(enabled: copy.useScanCache)
         do {
             try store.save(copy)
             lastError = nil

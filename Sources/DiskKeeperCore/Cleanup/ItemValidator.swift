@@ -7,6 +7,8 @@ struct ItemValidator: Sendable {
     let userID: uid_t
     let runningApps: any RunningAppChecking
     let tolerance: ChangeTolerance
+    /// A plain `FileSizer`, never a `ScanContext`: the execute-time re-size must always walk the disk and must never
+    /// see the incremental scan cache (T25). `ItemValidatorNoCacheTests` pins this.
     let sizer: FileSizer
     /// nil = every `.trashApplication` entry is blocked (fail closed).
     let appPolicy: ApplicationBundlePolicy?

@@ -50,16 +50,17 @@ public actor ScanEngine {
                                    bundledRulesDirectory: URL? = CoreResources.rulesDirectoryURL,
                                    userRulesDirectory: URL? = nil,
                                    extraScanners: [any Scanner] = [],
-                                   maxConcurrentSizing: Int = ProcessInfo.processInfo.activeProcessorCount,
+                                   maxConcurrentSizing: Int = ScanContext.defaultConcurrentSizing,
                                    now: Date = Date(),
-                                   scope: ScanScope = .unrestricted) throws -> ScanEngine {
+                                   scope: ScanScope = .unrestricted,
+                                   sizeCache: SizeCache? = nil) throws -> ScanEngine {
         let loaded = RuleLoader(
             environment: environment, bundledRulesDirectory: bundledRulesDirectory,
             userRulesDirectory: userRulesDirectory,
             guardFactory: ScanGuard.loaderFactory(environment: environment)).load()
         let pathGuard = try ScanGuard(environment: environment, protectPatterns: loaded.protectPatterns)
         let context = ScanContext(environment: environment, pathGuard: pathGuard, now: now,
-                                  maxConcurrentSizing: maxConcurrentSizing)
+                                  maxConcurrentSizing: maxConcurrentSizing, sizeCache: sizeCache)
         let warnings = (loaded.errors + loaded.warnings).map {
             ScanWarning(kind: .ruleError, path: $0.file?.path, message: $0.description,
                         code: .ruleFileInvalid(file: $0.file?.lastPathComponent ?? ""))
@@ -123,6 +124,8 @@ public actor ScanEngine {
         for w in initialWarnings { accept(w, generation: gen) }
 
         let context = self.context
+        // The cache learns what changed since the last scan BEFORE any walk starts (event id captured first).
+        await context.sizeCache?.beginScan(options: context.sizerOptions)
         // Heartbeat: progress also advances on item arrivals and finished scanners, never only on scanner calls.
         let period = min(progressInterval, .milliseconds(250))
         let ticker = Task { [self] in
@@ -167,6 +170,7 @@ public actor ScanEngine {
             }
         }
         ticker.cancel()
+        await context.sizeCache?.endScan()
         finish(generation: gen)
     }
 

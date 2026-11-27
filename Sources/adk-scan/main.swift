@@ -2,12 +2,14 @@ import DiskKeeperCore
 import Foundation
 
 // Developer-only, read-only: runs the bundled (and optional extra) JSON rules against the REAL home and
-// prints what they find. Usage: swift run adk-scan [--rules-dir DIR] [--tool ID] [--json]
+// prints what they find. Usage: swift run adk-scan [--rules-dir DIR] [--tool ID] [--json] [--cache]
 
 struct Options {
     var rulesDir: String?
     var tool: String?
     var json = false
+    /// Use (and update) the same incremental size cache as the app, to time first vs second scans.
+    var cache = false
 }
 
 func parseOptions() -> Options {
@@ -18,8 +20,9 @@ func parseOptions() -> Options {
         case "--rules-dir": o.rulesDir = args.popFirst()
         case "--tool": o.tool = args.popFirst()
         case "--json": o.json = true
+        case "--cache": o.cache = true
         default:
-            FileHandle.standardError.write(Data("usage: adk-scan [--rules-dir DIR] [--tool ID] [--json]\n".utf8))
+            FileHandle.standardError.write(Data("usage: adk-scan [--rules-dir DIR] [--tool ID] [--json] [--cache]\n".utf8))
             exit(2)
         }
     }
@@ -57,10 +60,18 @@ func run() async throws {
     if let tool = options.tool { rules = rules.filter { $0.tool.rawValue == tool } }
 
     let pathGuard = try ScanGuard(environment: env, protectPatterns: loaded.protectPatterns)
-    let context = ScanContext(environment: env, pathGuard: pathGuard)
+    let sizeCache = options.cache ? SizeCache(fileURL: SizeCache.defaultFileURL(environment: env)) : nil
+    let context = ScanContext(environment: env, pathGuard: pathGuard, sizeCache: sizeCache)
+    let started = ContinuousClock.now
+    await sizeCache?.beginScan(options: context.sizerOptions)
     let collector = Collector()
     let sink = ScanSink(item: { await collector.add($0) }, warning: { await collector.add($0) }, progress: { _ in })
     try await RuleScanner(rules: rules).scan(context: context, sink: sink)
+    await sizeCache?.endScan()
+    if let sizeCache {
+        let hits = await sizeCache.hits, misses = await sizeCache.misses
+        FileHandle.standardError.write(Data("scan took \(started.duration(to: .now)); cache hits \(hits), misses \(misses)\n".utf8))
+    }
 
     let items = await collector.items.sorted { ($0.ruleID, $0.path) < ($1.ruleID, $1.path) }
     let warnings = await collector.warnings

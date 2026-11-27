@@ -63,9 +63,11 @@ public final class AppEnvironment {
             }
         }
         let provider = settings.scopeProvider   // current scope is read when each scan starts
+        let cacheProvider = settings.scanCache  // nil while the user has the scan cache off
         return AppEnvironment(pathEnvironment: env, settings: settings, makeScanEngine: {
             try ScanEngine.makeDefault(environment: env, userRulesDirectory: nil,
-                                       extraScanners: BuiltInScanners.live(environment: env), scope: provider.current)
+                                       extraScanners: BuiltInScanners.live(environment: env), scope: provider.current,
+                                       sizeCache: cacheProvider.current)
         }, cleanup: cleanup, makeDiskIndexer: {
             let loaded = RuleLoader(
                 environment: env, bundledRulesDirectory: CoreResources.rulesDirectoryURL, userRulesDirectory: nil,

@@ -11449,6 +11449,54 @@
         }
       }
     },
+    "settings.cache.clear" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear scan cache"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Xóa bộ nhớ đệm quét"
+          }
+        }
+      }
+    },
+    "settings.cache.cleared" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan cache cleared"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã xóa bộ nhớ đệm quét"
+          }
+        }
+      }
+    },
+    "settings.cache.toggle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speed up rescans with a cache"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quét lại nhanh hơn nhờ bộ nhớ đệm"
+          }
+        }
+      }
+    },
     "settings.changesApplyNextScan" : {
       "localizations" : {
         "en" : {
