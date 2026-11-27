@@ -47,7 +47,8 @@ if [ "$UNIVERSAL" = 1 ]; then ARCH_ARGS=(--arch arm64 --arch x86_64); fi
 
 echo "==> Building ($CONFIG, universal=$UNIVERSAL)"
 # The Swift Build engine compiles the .xcstrings catalog; the older native engine only copies it (no vi.lproj).
-if ! swift build --build-system swiftbuild -c "$CONFIG" --product AIDiskKeeper --product adk ${ARCH_ARGS[@]+"${ARCH_ARGS[@]}"}; then
+if ! { swift build --build-system swiftbuild -c "$CONFIG" --product AIDiskKeeper ${ARCH_ARGS[@]+"${ARCH_ARGS[@]}"} \
+   && swift build --build-system swiftbuild -c "$CONFIG" --product adk ${ARCH_ARGS[@]+"${ARCH_ARGS[@]}"}; }; then   # one --product per call: SwiftPM keeps only the last
   [ "$UNIVERSAL" = 1 ] && echo "hint: --universal requires full Xcode (not just Command Line Tools)" >&2
   die "swift build failed"
 fi

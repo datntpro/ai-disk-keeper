@@ -7,7 +7,7 @@ VI = {
     "hoststatus.reveal": "Hiện trong Finder",
     "hoststatus.install": "Cài công cụ dòng lệnh…",
     "hoststatus.remove": "Gỡ công cụ dòng lệnh",
-    "hoststatus.pathHint": "%@ chưa nằm trong PATH của bạn",
+    "hoststatus.pathHint": "Nếu không tìm thấy lệnh adk, hãy thêm %@ vào PATH của bạn",
     "hoststatus.error.occupied": "%@ đã tồn tại và không phải của ứng dụng này.",
     "hoststatus.error.noBinary": "Bản dựng này không có công cụ dòng lệnh.",
 }

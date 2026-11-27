@@ -139,8 +139,11 @@ final class HostStatusSettingsModel {
     var canInstall: Bool { installer.binaryExists }
     var linkPath: String { installer.linkPath }
     /// Shown after an install when `~/.local/bin` is not on the PATH.
-    var needsPathHint: Bool { state == .installed && !installer.directoryInPath }
+    var needsPathHint: Bool { state == .installed }
     var directory: String { installer.directory }
+
+    /// Shown up front when something else already sits at the link path.
+    var foreignMessage: String? { state == .foreign ? Self.message(CLIInstaller.InstallError.occupied(installer.linkPath)) : nil }
 
     func install() {
         do { try installer.install(); errorMessage = nil } catch { errorMessage = Self.message(error) }

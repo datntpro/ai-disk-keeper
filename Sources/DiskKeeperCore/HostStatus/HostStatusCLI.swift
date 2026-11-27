@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 /// `adk status`: pure, so it is tested without a process. Reads one file; never starts or wakes the app, no network.
@@ -20,7 +21,8 @@ public enum HostStatusCLI {
 
         """
 
-    public static func run(args: [String], statusURL: URL, now: Date) -> Output {
+    public static func run(args: [String], statusURL: URL, now: Date,
+                           processAlive: (Int32) -> Bool = { $0 <= 0 || kill($0, 0) == 0 || errno != ESRCH }) -> Output {
         var json = false, quiet = false, worktree: String?, maxAge = defaultMaxAge
         var rest = args[...]
         guard let command = rest.popFirst() else { return Output(stdout: "", stderr: usage, exitCode: 2) }
@@ -57,6 +59,8 @@ public enum HostStatusCLI {
             return out("", "adk: status file is unreadable\n", 4)
         }
         guard status.running else { return out("", "adk: AI Disk Keeper is not running (status is from its last quit)\n", 3) }
+        // A crashed app leaves `running: true`; a dead generator pid shows that at once instead of after max-age.
+        guard processAlive(status.generator.pid) else { return out("", "adk: AI Disk Keeper is not running (its process is gone)\n", 3) }
         let age = max(0, now.timeIntervalSince(status.generatedAt))
         guard age <= maxAge else { return out("", "adk: status is stale (\(Int(age)) s old, max \(Int(maxAge)) s)\n", 3) }
 

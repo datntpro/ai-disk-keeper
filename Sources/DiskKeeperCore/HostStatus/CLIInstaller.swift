@@ -26,8 +26,9 @@ public struct CLIInstaller: Sendable {
 
     private func destination() -> String? { try? FileManager.default.destinationOfSymbolicLink(atPath: linkPath) }
     private var exists: Bool { (try? FileManager.default.attributesOfItem(atPath: linkPath)) != nil }
-    /// Ours = a symlink to some app's `Contents/MacOS/adk` (also an old location after the app moved).
-    private func isOurs(_ dest: String) -> Bool { dest == binary.path || dest.hasSuffix("/Contents/MacOS/adk") }
+    /// Ours = a symlink to this binary, or to `adk` inside an "AI Disk Keeper.app" (an old location after the app moved).
+    /// Another app's `adk` link is foreign.
+    private func isOurs(_ dest: String) -> Bool { dest == binary.path || dest.hasSuffix("/AI Disk Keeper.app/Contents/MacOS/adk") }
 
     public var state: State {
         guard exists else { return .notInstalled }

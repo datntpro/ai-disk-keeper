@@ -9,7 +9,9 @@ final class HostStatusCLITests: XCTestCase {
     override func tearDown() { tmp = nil }
 
     private func put(_ s: HostStatus) throws { try HostStatusFixtures.data(s).write(to: url) }
-    private func run(_ args: [String]) -> HostStatusCLI.Output { HostStatusCLI.run(args: args, statusURL: url, now: now) }
+    private func run(_ args: [String], alive: Bool = true) -> HostStatusCLI.Output {
+        HostStatusCLI.run(args: args, statusURL: url, now: now, processAlive: { _ in alive })
+    }
 
     func testLevelsMapToExitCodes() throws {
         for (level, code) in [(HostStatusLevel.ok, Int32(0)), (.warn, 10), (.critical, 20)] {
@@ -34,6 +36,13 @@ final class HostStatusCLITests: XCTestCase {
         XCTAssertEqual(run(["status", "--max-age", "600"]).exitCode, 0)
         try put(HostStatusFixtures.status(level: .critical, running: false, at: HostStatusFixtures.date))
         XCTAssertEqual(run(["status"]).exitCode, 3, "quit: running false")
+    }
+
+    func testCrashedAppIsExit3AtOnce() throws {
+        try put(HostStatusFixtures.status(level: .ok))   // running:true and fresh, but its pid is gone
+        XCTAssertEqual(run(["status"], alive: false).exitCode, 3)
+        XCTAssertEqual(run(["status"], alive: true).exitCode, 0)
+        XCTAssertEqual(HostStatusCLI.run(args: ["status"], statusURL: url, now: now, processAlive: { _ in true }).exitCode, 0)
     }
 
     func testSchemaMismatchAndGarbageAreExit4() throws {

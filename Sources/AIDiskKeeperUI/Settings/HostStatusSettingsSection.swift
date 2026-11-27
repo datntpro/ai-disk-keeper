@@ -28,10 +28,10 @@ struct HostStatusSettingsSection: View {
                 Text(verbatim: status.linkPath).font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
             }
             if status.needsPathHint {
-                Text(loc("hoststatus.pathHint", "\(status.directory) is not in your PATH"))
+                Text(loc("hoststatus.pathHint", "If the adk command is not found, add \(status.directory) to your PATH"))
                     .font(.caption).foregroundStyle(.secondary)
             }
-            if let message = status.errorMessage {
+            if let message = status.foreignMessage ?? status.errorMessage {
                 Text(verbatim: message).font(.caption).foregroundStyle(.red)
             }
         }

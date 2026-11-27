@@ -44,6 +44,7 @@ public final class HostStatusWriter: @unchecked Sendable {
     private func persist(_ status: HostStatus) throws {
         let dir = fileURL.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: dir.path)   // also an older, wider directory
         let data = try HostStatus.makeEncoder().encode(status)
         let tmp = dir.appendingPathComponent("status.json.tmp")
         unlink(tmp.path)

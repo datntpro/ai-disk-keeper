@@ -62,10 +62,18 @@ final class CLIInstallerTests: XCTestCase {
     func testAppMovedLeavesOurOldLinkReplaceable() throws {
         let i = installer()
         try FileManager.default.createDirectory(atPath: i.directory, withIntermediateDirectories: true)
-        try FileManager.default.createSymbolicLink(atPath: i.linkPath, withDestinationPath: "/Applications/Old.app/Contents/MacOS/adk")
+        try FileManager.default.createSymbolicLink(atPath: i.linkPath, withDestinationPath: "/Applications/AI Disk Keeper.app/Contents/MacOS/adk")
         XCTAssertEqual(i.state, .installed)
         try i.install()
         XCTAssertEqual(try FileManager.default.destinationOfSymbolicLink(atPath: i.linkPath), binary.path)
+    }
+
+    func testAnotherAppsAdkLinkIsForeign() throws {
+        let i = installer()
+        try FileManager.default.createDirectory(atPath: i.directory, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(atPath: i.linkPath, withDestinationPath: "/Applications/Other.app/Contents/MacOS/adk")
+        XCTAssertEqual(i.state, .foreign)
+        XCTAssertEqual(try i.remove(), false)
     }
 
     func testMissingBinaryAndPathHint() {
