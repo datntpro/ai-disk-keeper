@@ -15,7 +15,7 @@ case "${1:-}" in
     [[ "$(id -un)" != "datnt" ]] || { echo "refusing to run outside the VM" >&2; exit 1; }
     mkdir -p "$DIR"
     for i in 1 2 3 4 5 6; do
-      mkfile -n 1g "$DIR/adkqa-t22-$i.jsonl"
+      dd if=/dev/zero bs=1048576 count=1024 of="$DIR/adkqa-t22-$i.jsonl" 2>/dev/null   # real blocks, not sparse
       touch -t 202001010000 "$DIR/adkqa-t22-$i.jsonl"
     done
     echo "seeded $DIR" ;;

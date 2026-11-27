@@ -38,13 +38,16 @@ public enum ScanSchedulePolicy {
         case .daily: component = .day
         case .weekly: component = .weekOfYear
         }
-        return calendar.date(byAdding: component, value: 1, to: last ?? now)
+        // A last run in the future (the clock was set ahead, then corrected) must not stall the schedule.
+        let base = last.map { min($0, now) } ?? now
+        return calendar.date(byAdding: component, value: 1, to: base)
     }
 
     public static func shouldRun(now: Date, next: Date?, power: PowerState, skipOnBattery: Bool = true) -> ScheduleDecision {
         guard let next, now >= next else { return .notDue }
         if power.userScanRunning { return .defer(.busy) }
-        if power.lowPowerMode { return .defer(.lowPower) }
+        // Both power gates follow the one toggle ("Skip on battery and in Low Power Mode").
+        if skipOnBattery && power.lowPowerMode { return .defer(.lowPower) }
         if skipOnBattery && power.onBattery { return .defer(.onBattery) }
         return .run
     }

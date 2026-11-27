@@ -64,13 +64,19 @@ final class ScheduledScanController {
     private let calendar: Calendar
     private let defaults: UserDefaults
     private let onNextRun: (Date?) -> Void
+    private let isBusy: @MainActor () -> Bool
+    private let launchCheckDelay: Duration?
+    private var launchCheck: Task<Void, Never>?
     private var running = false
     private var lastFrequency: ScanFrequency
 
     init(settings: SettingsModel, runner: any ScheduledScanRunning, notifier: any AppNotifying,
          ticker: any ScheduleTicking = BackgroundActivityTicker(), power: any PowerSourceReading = LivePowerSource(),
          clock: @escaping () -> Date = Date.init, calendar: Calendar = .current, defaults: UserDefaults = .standard,
+         launchCheckDelay: Duration? = .seconds(90), isBusy: @escaping @MainActor () -> Bool = { false },
          onNextRun: @escaping (Date?) -> Void = { _ in }) {
+        self.isBusy = isBusy
+        self.launchCheckDelay = launchCheckDelay
         self.settings = settings
         self.runner = runner
         self.notifier = notifier
@@ -97,9 +103,19 @@ final class ScheduledScanController {
         ticker.start { [weak self] in await self?.check() }
         observe()
         onNextRun(nextRun)
+        // The system scheduler's first fire can be most of an hour away: look once shortly after launch too.
+        if let delay = launchCheckDelay {
+            launchCheck = Task { [weak self] in
+                try? await Task.sleep(for: delay)
+                if !Task.isCancelled { await self?.check() }
+            }
+        }
     }
 
-    func stop() { ticker.stop() }
+    func stop() {
+        ticker.stop()
+        launchCheck?.cancel()
+    }
 
     private func observe() {
         withObservationTracking {
@@ -122,7 +138,7 @@ final class ScheduledScanController {
             return
         }
         if was == .off {
-            if lastRunAt == nil { lastRunAt = clock() }
+            lastRunAt = clock()   // every off -> on restarts the clock: turning it on never scans at once
             _ = await notifier.requestPermission()
         }
         onNextRun(nextRun)
@@ -135,7 +151,7 @@ final class ScheduledScanController {
         let state = power.read()
         let decision = ScanSchedulePolicy.shouldRun(
             now: clock(), next: nextRun,
-            power: PowerState(onBattery: state.onBattery, lowPowerMode: state.lowPowerMode, userScanRunning: runner.isUserBusy),
+            power: PowerState(onBattery: state.onBattery, lowPowerMode: state.lowPowerMode, userScanRunning: runner.isUserBusy || isBusy()),
             skipOnBattery: s.scheduledSkipOnBattery)
         guard decision == .run else { return }
         running = true

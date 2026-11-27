@@ -43,6 +43,17 @@ final class ScanSchedulePolicyTests: XCTestCase {
         XCTAssertEqual(tokyo.timeIntervalSince(last), 86_400, accuracy: 1)
     }
 
+    func testLastRunInTheFutureDoesNotStall() {
+        let now = date("2026-03-01T09:00:00Z")
+        let future = date("2026-06-01T09:00:00Z")
+        XCTAssertEqual(ScanSchedulePolicy.nextRun(after: future, frequency: .daily, now: now, calendar: cal("UTC")), date("2026-03-02T09:00:00Z"))
+    }
+
+    func testToggleOffIgnoresPowerGates() {
+        let now = Date(), due = now.addingTimeInterval(-1)
+        XCTAssertEqual(ScanSchedulePolicy.shouldRun(now: now, next: due, power: PowerState(lowPowerMode: true), skipOnBattery: false), .run)
+    }
+
     func testNotDueBeforeNextAndNilNext() {
         let now = Date()
         XCTAssertEqual(ScanSchedulePolicy.shouldRun(now: now, next: now.addingTimeInterval(60), power: PowerState()), .notDue)

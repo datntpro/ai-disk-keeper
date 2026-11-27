@@ -41,6 +41,9 @@ public final class AppModels {
         let menuBar = menuBar
         self.scheduledScans = ScheduledScanController(
             settings: env.settings, runner: OverviewModule.careModel(env: env, scan: scan, suite: suite), notifier: notifier,
+            // A scheduled run waits while a cleanup is open or running, and while the user has items ticked: starting
+            // a scan bumps the scan generation, which clears the selection (invariant 18, T22 B1/B2).
+            isBusy: { [cleanup = suite.cleanup, selection = cleanupSelection] in cleanup.isPresented || !selection.selectedIDs.isEmpty },
             onNextRun: { menuBar.nextScheduledScan = $0 })
         self.scheduler = MonitorScheduler(monitor: monitor, menuBar: menuBar, settings: env.settings, hostLoad: hostLoad)
         self.hostStatus = HostStatusPublisher.make(env: env)
