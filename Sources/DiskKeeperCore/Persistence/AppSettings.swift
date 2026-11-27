@@ -38,6 +38,9 @@ public struct AppSettings: Codable, Sendable, Hashable {
     public var popoverShowsTopProcesses = false
     public var popoverHistoryMinutes = 1
 
+    /// T25: reuse sizes of unchanged items between scans (validated against the file system journal).
+    public var useScanCache = true
+
     public static let historyMinuteChoices = [1, 5]
 
     public static let lowSpaceThresholdRange = 5...30
@@ -60,7 +63,7 @@ public struct AppSettings: Codable, Sendable, Hashable {
         case schemaVersion, hasCompletedOnboarding, projectRoots, excludedPaths, disabledTools, language
         case showMenuBarItem, menuBarShowsFreeSpace, lowSpaceAlertEnabled, lowSpaceThresholdPercent
         case monitorOrder, monitorDisabled, menuBarMetrics, menuBarStyle, menuBarRefreshSeconds, networkUnits
-        case popoverShowsTopProcesses, popoverHistoryMinutes
+        case popoverShowsTopProcesses, popoverHistoryMinutes, useScanCache
     }
 
     /// Lenient: unknown keys are ignored and missing keys take defaults.
@@ -85,6 +88,7 @@ public struct AppSettings: Codable, Sendable, Hashable {
         networkUnits = (try c.decodeIfPresent(String.self, forKey: .networkUnits)).flatMap(NetworkUnits.init(rawValue:)) ?? .bytes
         popoverShowsTopProcesses = try c.decodeIfPresent(Bool.self, forKey: .popoverShowsTopProcesses) ?? false
         popoverHistoryMinutes = Self.snapHistoryMinutes(try c.decodeIfPresent(Int.self, forKey: .popoverHistoryMinutes) ?? 1)
+        useScanCache = try c.decodeIfPresent(Bool.self, forKey: .useScanCache) ?? true
     }
 
     /// Unknown and duplicate ids are dropped; missing ones are appended in the default order.

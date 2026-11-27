@@ -2,11 +2,11 @@ import Foundation
 import XCTest
 @testable import DiskKeeperCore
 
-/// Opt-in benchmarks; skipped unless env vars are set, so CI never runs them.
+/// Opt-in benchmarks (`ADK_BENCH=1`); skipped in the normal test job, run by the non-blocking `bench` CI job.
 final class FileSizerBenchmarkTests: XCTestCase {
     func testBenchmarkSyntheticTree() throws {
-        try XCTSkipUnless(ProcessInfo.processInfo.environment["DISKKEEPER_BENCH"] == "1",
-                          "set DISKKEEPER_BENCH=1")
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["ADK_BENCH"] == "1",
+                          "set ADK_BENCH=1")
         let tmp = try TemporaryDirectory()
         defer { tmp.cleanup() }
         for d in 0..<2000 {

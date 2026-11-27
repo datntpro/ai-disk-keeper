@@ -122,7 +122,7 @@ Package.swift
 Sources/
   DiskKeeperCore/
     Model/        ScanItem.swift, RiskTier.swift, ItemCategory.swift, ToolID.swift, ScanResult.swift
-    FS/           FileSizer.swift, PathTemplate.swift
+    FS/           FileSizer.swift, PathTemplate.swift, FSEventsJournal.swift
     Rules/        ScannerRule.swift, RuleLoader.swift, RuleValidator.swift, RuleScanner.swift
     Scan/         ScanEngine.swift, Scanner.swift, ScanEvent.swift
     Scanners/     WorktreeScanner.swift, ArtifactScanner.swift, OllamaScanner.swift,
@@ -130,7 +130,7 @@ Sources/
     Git/          GitInspector.swift, GitState.swift, ProcessRunner.swift
     Safety/       ProtectedPaths.swift, InUseDetector.swift
     Cleanup/      CleanupEngine.swift, CleanupPlan.swift, TrashAdapter.swift, AuditLog.swift
-    Persistence/  SettingsStore.swift, ScanCache.swift
+    Persistence/  SettingsStore.swift, SizeCache.swift   (incremental scan cache, see docs/PERF.md)
     Resources/Rules/  claude-code.json, claude-desktop.json, cursor.json, codex.json, gemini.json,
                       kiro.json, windsurf.json, copilot.json, aider.json, continue.json, orca.json,
                       system-junk.json

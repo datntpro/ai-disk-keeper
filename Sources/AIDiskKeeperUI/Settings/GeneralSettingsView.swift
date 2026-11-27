@@ -16,10 +16,24 @@ struct GeneralSettingsView: View {
                 }
             }
             languageSection
+            cacheSection
             FullDiskAccessCard(status: model.fdaStatus, recheck: model.refreshFullDiskAccess)
             Button(loc("settings.general.showWelcome", "Show welcome screen again")) { model.setOnboardingCompleted(false) }
         }
         .formStyle(.grouped)
+    }
+
+    private var cacheSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Toggle(loc("settings.cache.toggle", "Speed up rescans with a cache"), isOn: Binding(
+                get: { model.settings.useScanCache }, set: { model.setUseScanCache($0) }))
+            HStack {
+                Button(loc("settings.cache.clear", "Clear scan cache")) { model.clearScanCache() }
+                if model.scanCacheCleared {
+                    Text(loc("settings.cache.cleared", "Scan cache cleared")).font(.caption).foregroundStyle(.secondary)
+                }
+            }
+        }
     }
 
     private var languageSection: some View {
