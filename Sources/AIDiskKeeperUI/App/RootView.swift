@@ -72,7 +72,7 @@ public struct RootView: View {
             canStart: !scan.isScanning && !care.isBusy, canStop: care.isBusy,
             start: { care.start() }, stop: { care.stop() }))
         .focusedSceneValue(\.suiteNavigation, SuiteNavigation(go: { suite.navigation.selection = SidebarSelection(module: $0) }))
-        .onChange(of: suite.navigation.selection) { _, new in query.scope = new }
+        .onChange(of: suite.navigation.selection) { _, new in query.setScope(new) }
         .onChange(of: query) { _, _ in refreshList() }
         .onChange(of: scan.items.count) { _, _ in refreshList() }
         .onChange(of: scan.phase) { _, _ in refreshList() }

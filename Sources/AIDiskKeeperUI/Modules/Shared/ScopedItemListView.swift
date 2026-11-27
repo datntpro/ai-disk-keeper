@@ -5,6 +5,8 @@ import SwiftUI
 struct ScopedItemListView: View {
     let ctx: ModuleContext
     var scopeName: String?
+    /// Optional breakdown charts above the table: (module key, categories, show the "By tool" chart).
+    var breakdown: (key: String, categories: Set<ItemCategory>, showTool: Bool)?
 
     var body: some View {
         let scan = ctx.scan
@@ -28,6 +30,10 @@ struct ScopedItemListView: View {
             VStack(spacing: 0) {
                 if let count = ModuleStateResolver.fdaBanner(warnings: scan.warnings, fdaGranted: false) {
                     FDABanner(count: count).padding([.horizontal, .top], ADKTheme.Spacing.lg)
+                }
+                if let breakdown {
+                    BreakdownHeader(ctx: ctx, moduleKey: breakdown.key, categories: breakdown.categories, showTool: breakdown.showTool)
+                        .id(breakdown.key)
                 }
                 ItemTableView(rows: ctx.list.rows, tierCounts: ctx.list.tierCounts, query: ctx.query,
                               inspectedID: ctx.inspectedID, selection: ctx.scanSelection, scopeName: scopeName,
