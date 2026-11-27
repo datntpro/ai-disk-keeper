@@ -8,8 +8,13 @@ public struct ExecutableIdentity: Codable, Sendable, Hashable {
     public let size: Int64
     public let mtimeSeconds: Int64
     public let mtimeNanoseconds: Int64
+    /// Status-change time: unlike mtime it can't be restored after an in-place rewrite.
+    public let ctimeSeconds: Int64
+    public let ctimeNanoseconds: Int64
 
-    public init(dev: Int64, ino: UInt64, size: Int64, mtimeSeconds: Int64, mtimeNanoseconds: Int64) {
+    public init(dev: Int64, ino: UInt64, size: Int64, mtimeSeconds: Int64, mtimeNanoseconds: Int64,
+                ctimeSeconds: Int64 = 0, ctimeNanoseconds: Int64 = 0) {
+        self.ctimeSeconds = ctimeSeconds; self.ctimeNanoseconds = ctimeNanoseconds
         self.dev = dev; self.ino = ino; self.size = size
         self.mtimeSeconds = mtimeSeconds; self.mtimeNanoseconds = mtimeNanoseconds
     }
@@ -19,7 +24,8 @@ public struct ExecutableIdentity: Codable, Sendable, Hashable {
         var st = stat()
         guard stat(path, &st) == 0 else { return nil }
         return ExecutableIdentity(dev: Int64(st.st_dev), ino: UInt64(st.st_ino), size: Int64(st.st_size),
-                                  mtimeSeconds: Int64(st.st_mtimespec.tv_sec), mtimeNanoseconds: Int64(st.st_mtimespec.tv_nsec))
+                                  mtimeSeconds: Int64(st.st_mtimespec.tv_sec), mtimeNanoseconds: Int64(st.st_mtimespec.tv_nsec),
+                                  ctimeSeconds: Int64(st.st_ctimespec.tv_sec), ctimeNanoseconds: Int64(st.st_ctimespec.tv_nsec))
     }
 }
 

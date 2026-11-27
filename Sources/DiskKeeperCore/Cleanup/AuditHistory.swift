@@ -98,21 +98,19 @@ public enum AuditHistoryReader {
                             truncatedHead: truncatedHead, lifetimeReclaimed: lifetime)
     }
 
-    /// An `intent` line is superseded by a later outcome line for the same item and command; one with no outcome
-    /// (crash between intent and outcome) stays visible as its own entry and counts as nothing.
+    /// An outcome line (`ran`, `failed`, `deleted`, `trashed`; never `skipped`, which has no intent) settles at most
+    /// one earlier intent for the same item and command: the nearest unmatched one. Unmatched intents (a crash between
+    /// intent and outcome) stay visible and count as nothing.
     static func settleIntents(_ entries: [AuditEntry]) -> [AuditEntry] {
-        var settled = Set<String>()
-        var out: [AuditEntry] = []
-        for e in entries.reversed() {
-            if case .cleanup(let r) = e {
-                let key = r.itemID + "\u{0}" + (r.command ?? []).joined(separator: " ")
-                if r.result == AuditRecord.intentResult {
-                    if settled.contains(key) { continue }
-                } else if r.command != nil { settled.insert(key) }
-            }
-            out.append(e)
+        func key(_ r: AuditRecord) -> String { r.itemID + "\u{0}" + (r.command ?? []).joined(separator: " ") }
+        var open: [String: [Int]] = [:]            // key -> indices of unmatched intents, oldest first
+        var drop = Set<Int>()
+        for (i, e) in entries.enumerated() {
+            guard case .cleanup(let r) = e, r.command != nil else { continue }
+            if r.result == AuditRecord.intentResult { open[key(r), default: []].append(i) }
+            else if r.result != "skipped", let j = open[key(r)]?.popLast() { drop.insert(j) }
         }
-        return out.reversed()
+        return entries.enumerated().filter { !drop.contains($0.offset) }.map(\.element)
     }
 
     static func group(_ entries: [AuditEntry]) -> [AuditRun] {

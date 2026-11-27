@@ -20,10 +20,12 @@ public struct ToolExecutableResolver: Sendable {
     /// must be owned by root or the user and not group- or world-writable.
     public func resolve(candidates: [String], toolName: String? = nil) -> Result<URL, ToolUnavailable> {
         for candidate in candidates where candidate.hasPrefix("/") {
-            guard let resolved = realpath(candidate, nil) else { continue }
-            defer { free(resolved) }
-            let real = String(cString: resolved)
-            if let unsafe = unsafeHopDirectory(candidate) { return .failure(.unsafeOwnerOrMode(unsafe)) }
+            let real: String
+            switch walk(candidate) {
+            case .missing: continue
+            case .unsafe(let dir): return .failure(.unsafeOwnerOrMode(dir))
+            case .resolved(let r): real = r
+            }
             if let toolName {
                 let base = (real as NSString).lastPathComponent
                 guard base == toolName || Self.aliases[toolName, default: []].contains(base) else {
@@ -46,23 +48,37 @@ public struct ToolExecutableResolver: Sendable {
     /// Real executable names a vendor ships behind the tool's name (Docker Desktop's CLI).
     static let aliases: [String: Set<String>] = ["docker": ["com.docker.cli"]]
 
-    /// Walks the symlink chain from `candidate`; returns the first hop whose containing directory is unsafe.
-    private func unsafeHopDirectory(_ candidate: String) -> String? {
-        var current = candidate
-        for _ in 0..<32 {
+    private enum Walk { case missing, unsafe(String), resolved(String) }
+
+    /// `realpath` by hand, one component at a time and purely lexical on the already-resolved prefix. Every symlink
+    /// met, file or directory, absolute or relative, makes the directory that holds it subject to `isSafe`.
+    private func walk(_ path: String) -> Walk {
+        var resolved = "/"
+        var pending = path.split(separator: "/").map(String.init).reversed().map { $0 }   // used as a stack
+        var hops = 0
+        while let comp = pending.popLast() {
+            if comp == "." { continue }
+            if comp == ".." {
+                resolved = resolved == "/" ? "/" : (resolved as NSString).deletingLastPathComponent
+                if resolved.isEmpty { resolved = "/" }
+                continue
+            }
+            let next = resolved == "/" ? "/" + comp : resolved + "/" + comp
             var st = stat()
-            guard lstat(current, &st) == 0, (st.st_mode & S_IFMT) == S_IFLNK else { return nil }
-            let dir = (current as NSString).deletingLastPathComponent
-            var d = stat()
-            guard stat(dir, &d) == 0, isSafe(d) else { return dir }
+            guard lstat(next, &st) == 0 else { return .missing }
+            guard (st.st_mode & S_IFMT) == S_IFLNK else { resolved = next; continue }
+            hops += 1
+            guard hops <= 40 else { return .missing }
+            var holder = stat()
+            guard stat(resolved, &holder) == 0, isSafe(holder) else { return .unsafe(resolved) }
             var buf = [CChar](repeating: 0, count: Int(PATH_MAX) + 1)
-            let n = readlink(current, &buf, Int(PATH_MAX))
-            guard n > 0 else { return nil }
-            let target = String(cString: buf.prefix(n).map { $0 } + [0])
-            current = target.hasPrefix("/") ? target : (dir as NSString).appendingPathComponent(target)
-            current = (current as NSString).standardizingPath
+            let n = readlink(next, &buf, Int(PATH_MAX))
+            guard n > 0 else { return .missing }
+            let target = String(decoding: buf.prefix(n).map { UInt8(bitPattern: $0) }, as: UTF8.self)
+            if target.hasPrefix("/") { resolved = "/" }
+            pending.append(contentsOf: target.split(separator: "/").map(String.init).reversed())
         }
-        return current
+        return .resolved(resolved)
     }
 
     private func isSafe(_ st: stat) -> Bool {
