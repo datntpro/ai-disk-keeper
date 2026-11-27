@@ -7705,6 +7705,150 @@
         }
       }
     },
+    "hoststatus.error.noBinary" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This build has no command-line tool."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bản dựng này không có công cụ dòng lệnh."
+          }
+        }
+      }
+    },
+    "hoststatus.error.occupied" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ already exists and is not ours."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ đã tồn tại và không phải của ứng dụng này."
+          }
+        }
+      }
+    },
+    "hoststatus.file" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status file"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tệp trạng thái"
+          }
+        }
+      }
+    },
+    "hoststatus.help" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Writes disk space, disk writes and load to a small file every 30 seconds while the app runs, so coding agents can check it with the adk command. No command lines or file contents are included."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ghi dung lượng trống, tốc độ ghi đĩa và tải vào một tệp nhỏ mỗi 30 giây khi ứng dụng đang chạy, để các agent lập trình kiểm tra bằng lệnh adk. Không có dòng lệnh hay nội dung tệp."
+          }
+        }
+      }
+    },
+    "hoststatus.install" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install command-line tool…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cài công cụ dòng lệnh…"
+          }
+        }
+      }
+    },
+    "hoststatus.pathHint" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is not in your PATH"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ chưa nằm trong PATH của bạn"
+          }
+        }
+      }
+    },
+    "hoststatus.remove" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove command-line tool"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gỡ công cụ dòng lệnh"
+          }
+        }
+      }
+    },
+    "hoststatus.reveal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reveal"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hiện trong Finder"
+          }
+        }
+      }
+    },
+    "hoststatus.toggle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Publish machine status for coding agents"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Công bố tình trạng máy cho các agent lập trình"
+          }
+        }
+      }
+    },
     "index.builtAgo" : {
       "localizations" : {
         "en" : {

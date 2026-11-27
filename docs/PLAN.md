@@ -35,6 +35,7 @@ to remove — especially for worktrees, where deleting the wrong one loses uncom
 4. **Break down** usage per tool and per project (a repo's worktrees + artifacts + sessions).
 5. **Stay on top of it**: optional scheduled scan + notification, menu bar summary.
 6. Native, fast, private: no network, no telemetry, no helper daemons with root.
+   (H2: no daemon at all. The running app writes `status.json` itself and `adk` only reads it; see `docs/host-status.md`.)
 7. **See and manage the whole disk** (M4): disk map, large & old files, duplicates, app uninstall with
    leftovers, startup items, wider system junk, storage overview, one-click Care Scan that only *finds*.
 8. **Speak the user's language** (issue #76): every user-facing string ships in Vietnamese (vi) and

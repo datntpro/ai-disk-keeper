@@ -36,7 +36,9 @@ jobs:
           restore-keys: spm-${{ runner.os }}-
 
       - name: Build
-        run: swift build --build-system swiftbuild -c debug
+        run: |
+          swift build --build-system swiftbuild -c debug
+          swift build --build-system swiftbuild -c debug --product adk
 
       - name: Localization lint (catalog vs code, vi/en complete)
         run: python3 -I scripts/l10n-extract.py --check

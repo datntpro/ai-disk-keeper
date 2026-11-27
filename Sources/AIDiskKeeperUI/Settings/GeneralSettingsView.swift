@@ -5,6 +5,12 @@ import SwiftUI
 struct GeneralSettingsView: View {
     let model: SettingsModel
     @State private var languageChanged = false
+    @State private var hostStatus: HostStatusSettingsModel
+
+    init(model: SettingsModel) {
+        self.model = model
+        _hostStatus = State(initialValue: HostStatusSettingsModel.live(environment: model.environment))
+    }
 
     var body: some View {
         Form {
@@ -18,6 +24,7 @@ struct GeneralSettingsView: View {
             languageSection
             cacheSection
             FullDiskAccessCard(status: model.fdaStatus, recheck: model.refreshFullDiskAccess)
+            HostStatusSettingsSection(model: model, status: hostStatus)
             Button(loc("settings.general.showWelcome", "Show welcome screen again")) { model.setOnboardingCompleted(false) }
         }
         .formStyle(.grouped)
