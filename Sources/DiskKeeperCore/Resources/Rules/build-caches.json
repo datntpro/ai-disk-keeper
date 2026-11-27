@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "tool": {
+    "id": "build-caches",
+    "name": "Build caches"
+  },
+  "rules": [
+    {
+      "id": "build-caches.xcode-modulecache",
+      "title": "Xcode module cache",
+      "category": "systemJunk",
+      "paths": [
+        "~/Library/Developer/Xcode/DerivedData/ModuleCache.noindex"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: the compiled module cache that every Xcode project shares. Xcode and swiftc rebuild it on the next build, so the first build of each project is slower. Kept when changed in the last day, because a build may be using it.",
+      "localized": {
+        "vi": {
+          "title": "Cache module của Xcode",
+          "explanation": "Tạo lại được: cache module đã biên dịch mà mọi dự án Xcode dùng chung. Xcode và swiftc sẽ dựng lại ở lần build sau, nên lần build đầu của mỗi dự án sẽ chậm hơn. Được giữ lại nếu thay đổi trong ngày gần nhất vì có thể đang có bản build dùng nó."
+        }
+      }
+    },
+    {
+      "id": "build-caches.pnpm-store",
+      "title": "pnpm content store",
+      "category": "systemJunk",
+      "paths": [
+        "${PNPM_HOME}/store",
+        "~/Library/pnpm/store",
+        "~/.local/share/pnpm/store"
+      ],
+      "match": {
+        "kind": "self"
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: pnpm's content-addressable package store. Projects' node_modules hard-link their files from it, so deleting it frees only what no project still uses (the Real size shown may be smaller). Packages are downloaded again on the next install. Hint: `pnpm store prune` removes only unreferenced packages. Kept when changed in the last day.",
+      "localized": {
+        "vi": {
+          "title": "Kho nội dung của pnpm",
+          "explanation": "Tạo lại được: kho gói của pnpm (địa chỉ theo nội dung). node_modules của các dự án liên kết cứng tới các tệp trong kho, nên xóa chỉ giải phóng phần không dự án nào còn dùng (dung lượng thực có thể nhỏ hơn). Các gói sẽ được tải lại ở lần cài sau. Gợi ý: `pnpm store prune` chỉ xóa các gói không còn được tham chiếu. Được giữ lại nếu thay đổi trong ngày gần nhất."
+        }
+      }
+    },
+    {
+      "id": "build-caches.tart-oci",
+      "title": "Tart image cache",
+      "category": "systemJunk",
+      "paths": [
+        "~/.tart/cache/OCIs"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "*",
+        "type": "directory",
+        "depth": 3
+      },
+      "tier": "review",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: a VM image (all its tags) that Tart pulled from a registry. `tart clone` downloads it again when needed, which can take a long time and many GB. VMs cloned from it keep sharing disk blocks with it, so deleting it may free little. Hint: `tart prune --entries=caches --older-than=7`. Kept when changed in the last day.",
+      "localized": {
+        "vi": {
+          "title": "Cache image của Tart",
+          "explanation": "Tạo lại được: một image máy ảo mà Tart đã kéo từ registry. `tart clone` sẽ tải lại khi cần, có thể mất nhiều thời gian và nhiều GB. Các máy ảo được nhân bản từ nó vẫn dùng chung khối đĩa, nên xóa có thể giải phóng rất ít. Gợi ý: `tart prune --entries=caches --older-than=7`. Được giữ lại nếu thay đổi trong ngày gần nhất."
+        }
+      }
+    },
+    {
+      "id": "build-caches.tart-tmp",
+      "title": "Tart temporary downloads",
+      "category": "systemJunk",
+      "paths": [
+        "~/.tart/tmp"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "*",
+        "type": "any"
+      },
+      "tier": "safe",
+      "tierWhen": [
+        {
+          "if": {
+            "newerThanDays": 1
+          },
+          "tier": "keep"
+        }
+      ],
+      "explanation": "Regenerable: partial downloads and scratch files Tart leaves behind when a pull or clone is interrupted. Tart starts them again. Kept when changed in the last day, because a download may be in progress.",
+      "localized": {
+        "vi": {
+          "title": "Tệp tạm của Tart",
+          "explanation": "Tạo lại được: các bản tải dở và tệp nháp mà Tart để lại khi việc pull hoặc clone bị gián đoạn. Tart sẽ bắt đầu lại. Được giữ lại nếu thay đổi trong ngày gần nhất vì có thể đang tải."
+        }
+      }
+    },
+    {
+      "id": "build-caches.tart-vms",
+      "title": "Tart virtual machine",
+      "category": "systemJunk",
+      "paths": [
+        "~/.tart/vms"
+      ],
+      "match": {
+        "kind": "children",
+        "glob": "*",
+        "type": "directory"
+      },
+      "tier": "review",
+      "explanation": "Not regenerable: a Tart virtual machine you created or cloned. It holds its own disk, installed software and your data, so it is shown for information only and Disk Keeper cannot delete it. To remove one yourself, run `tart delete <name>` in Terminal.",
+      "localized": {
+        "vi": {
+          "title": "Máy ảo Tart",
+          "explanation": "Không tạo lại được: một máy ảo Tart do bạn tạo hoặc nhân bản. Nó chứa đĩa riêng, phần mềm đã cài và dữ liệu của bạn, nên chỉ hiển thị để tham khảo và Disk Keeper không thể xóa. Để tự xóa, hãy chạy `tart delete <tên>` trong Terminal."
+        }
+      },
+      "cleanup": {
+        "method": "none"
+      }
+    }
+  ]
+}

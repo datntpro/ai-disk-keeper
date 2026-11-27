@@ -2,4 +2,5 @@
 public enum ModuleID: String, CaseIterable, Sendable, Hashable {
     case overview, careScan, diskMap, largeOld, duplicates, storage
     case aiTools, worktrees, modelsDocker, uninstaller, startupItems, diskActivity, history
+    case buildCaches
 }
