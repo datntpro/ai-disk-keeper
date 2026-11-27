@@ -7,9 +7,14 @@ final class FreeSpaceTrendTests: XCTestCase {
 
     /// One point per 10 minutes for `hours`, free = `from` minus `perHour` bytes per hour (plus `noise(i)`).
     private func series(hours: Int, from: Int64, perHour: Int64, noise: (Int) -> Int64 = { _ in 0 }, offsetBuckets: Int = 0) -> [FreeSpaceHistory.Point] {
-        (0...(hours * 6)).map { i in
-            FreeSpaceHistory.Point(t: start + (offsetBuckets + i) * 600, freeBytes: from - perHour * Int64(i) / 6 + noise(i))
+        var out: [FreeSpaceHistory.Point] = []
+        for i in 0...(hours * 6) {
+            let t: Int = start + (offsetBuckets + i) * 600
+            let drop: Int64 = perHour * Int64(i) / 6
+            let free: Int64 = from - drop + noise(i)
+            out.append(FreeSpaceHistory.Point(t: t, freeBytes: free))
         }
+        return out
     }
     private func now(_ pts: [FreeSpaceHistory.Point]) -> Date { pts.last!.date }
 
@@ -24,16 +29,26 @@ final class FreeSpaceTrendTests: XCTestCase {
     func testCleanupJumpResetsTheWindow() throws {
         let before = series(hours: 20, from: 50 * gb, perHour: 3 * gb)                     // falling fast
         let afterStart = before.last!.t + 600
-        let after = (0...(8 * 6)).map { i in FreeSpaceHistory.Point(t: afterStart + i * 600, freeBytes: 120 * gb - Int64(i) * gb / 6) } // -1 GB/h
+        var after: [FreeSpaceHistory.Point] = []
+        for i in 0...(8 * 6) {
+            let free: Int64 = 120 * gb - Int64(i) * gb / 6   // -1 GB/h
+            after.append(FreeSpaceHistory.Point(t: afterStart + i * 600, freeBytes: free))
+        }
         let pts = before + after
         let t = try XCTUnwrap(FreeSpaceTrend.estimate(pts, now: now(pts)))
         XCTAssertEqual(t.bytesPerHour, -1e9, accuracy: 0.05e9, "only the window after the jump counts")
-        XCTAssertEqual(try XCTUnwrap(t.timeToFull), Double(after.last!.freeBytes) / 1e9 * 3600, accuracy: 3600 * 3)
+        let expected: Double = Double(after.last!.freeBytes) / 1e9 * 3600
+        XCTAssertEqual(try XCTUnwrap(t.timeToFull), expected, accuracy: 3600 * 3)
     }
 
     func testNotEnoughHistoryAfterACleanupIsNil() {
         let before = series(hours: 20, from: 50 * gb, perHour: 3 * gb)
-        let after = (0...(3 * 6)).map { i in FreeSpaceHistory.Point(t: before.last!.t + 600 + i * 600, freeBytes: 120 * gb - Int64(i) * gb / 6) }
+        let lastT: Int = before.last!.t
+        var after: [FreeSpaceHistory.Point] = []
+        for i in 0...(3 * 6) {
+            let free: Int64 = 120 * gb - Int64(i) * gb / 6
+            after.append(FreeSpaceHistory.Point(t: lastT + 600 + i * 600, freeBytes: free))
+        }
         XCTAssertNil(FreeSpaceTrend.estimate(before + after, now: Date()), "3 h after the cleanup is not enough")
     }
 
@@ -49,7 +64,11 @@ final class FreeSpaceTrendTests: XCTestCase {
     }
 
     func testNoisyDeclineIsNil() {
-        let noise: (Int) -> Int64 = { i in (i % 2 == 0 ? 1 : -1) * Int64(((i * 7919) % 13)) * 1_000_000_000 / 2 }
+        let noise: (Int) -> Int64 = { (i: Int) -> Int64 in
+            let sign: Int64 = i % 2 == 0 ? 1 : -1
+            let magnitude: Int64 = Int64((i * 7919) % 13)
+            return sign * magnitude * 500_000_000
+        }
         let pts = series(hours: 24, from: 100 * gb, perHour: gb / 50, noise: noise)
         XCTAssertNil(FreeSpaceTrend.estimate(pts, now: now(pts)))
     }
