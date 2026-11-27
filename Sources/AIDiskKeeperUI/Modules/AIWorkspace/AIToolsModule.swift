@@ -10,6 +10,7 @@ enum AIToolsModule: ModuleProvider {
     }
 
     @MainActor static func makeDetail(_ ctx: ModuleContext) -> AnyView {
-        AnyView(ScopedItemListView(ctx: ctx, scopeName: descriptor.title))
+        AnyView(ScopedItemListView(ctx: ctx, scopeName: descriptor.title,
+                                   breakdown: ("aiTools", [.aiToolData], true)))
     }
 }

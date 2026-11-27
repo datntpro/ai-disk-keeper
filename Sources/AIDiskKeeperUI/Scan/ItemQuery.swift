@@ -34,6 +34,22 @@ public struct ScanTotals: Sendable, Equatable {
     }
 }
 
+extension ScanTotals {
+    /// Per-project totals keyed by resolved repo-root id (worktrees merged into their main repo).
+    /// Items without a project are keyed `ItemQuery.noProject`. Resolves through `ProjectKeyResolver`, so keep it off hot paths.
+    public static func byProject(_ items: [ScanItem]) -> [String: (ref: ProjectRef?, totals: UsageTotals)] {
+        var out: [String: (ref: ProjectRef?, totals: UsageTotals)] = [:]
+        for item in items {
+            let ref = item.project.map { ProjectKeyResolver.shared.repoRoot(for: $0) }
+            let key = ref?.id ?? ItemQuery.noProject
+            var entry = out[key] ?? (ref, .zero)
+            entry.totals.add(item)
+            out[key] = entry
+        }
+        return out
+    }
+}
+
 public enum ItemSortKey: Sendable, Hashable { case size, name, lastUsed, tier }
 
 public struct ItemSort: Sendable, Hashable {
@@ -53,9 +69,18 @@ public struct ItemQuery: Sendable, Equatable {
     public var tiers: Set<RiskTier>
     public var searchText: String
     public var sort: ItemSort
+    /// Breakdown-chart refinements, ANDed with the scope. `projectID` is a resolved repo-root id;
+    /// `ItemQuery.noProject` selects items without a project.
+    public var projectID: String?
+    public var toolFilter: ToolID?
+
+    /// `projectID` value for items that belong to no project.
+    public static let noProject = ""
 
     public init(scope: SidebarSelection = .overview, tiers: Set<RiskTier> = Set(RiskTier.allCases),
-                searchText: String = "", sort: ItemSort = .default) {
+                searchText: String = "", sort: ItemSort = .default, projectID: String? = nil, toolFilter: ToolID? = nil) {
+        self.projectID = projectID
+        self.toolFilter = toolFilter
         self.scope = scope
         self.tiers = tiers
         self.searchText = searchText
@@ -79,6 +104,8 @@ public struct ItemQuery: Sendable, Equatable {
             case .category(let c): if item.category != c { return false }
             case .warnings: return false
             }
+            if let toolFilter, item.tool != toolFilter { return false }
+            if let projectID, ProjectBreakdown.projectID(of: item) != projectID { return false }
             guard !needle.isEmpty else { return true }
             return item.displayName.localizedCaseInsensitiveContains(needle)
                 || item.uiDisplayName().localizedCaseInsensitiveContains(needle)
