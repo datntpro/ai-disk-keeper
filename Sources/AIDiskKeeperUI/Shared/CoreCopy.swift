@@ -70,6 +70,10 @@ extension ScanWarning {
             }
         case .sizeIncomplete:
             return loc("warning.code.sizeIncomplete", "Some files inside couldn't be read, so the size may be too low.")
+        case .inUseUnknown:
+            return loc("inuse.unknown.warning", "Couldn't check which apps are using files. Items were not marked in use.")
+        case .adjusterRejected:
+            return loc("inuse.adjusterRejected.warning", "A safety check returned an invalid result and was ignored.")
         case .settingsUnreadable(let backup):
             if let backup {
                 return loc("warning.code.settingsBackedUp",

@@ -85,16 +85,20 @@ public enum CareStages {
     // MARK: Engine plumbing
 
     private static func forward(_ engine: ScanEngine, to sink: CareStageSink) async throws {
+        // With adjusters the final tiers are only known at the end: the tally must see the adjusted items.
+        let deferItems = engine.adjustsItems
         let stream = try await engine.scan()
         await withTaskCancellationHandler {
             for await event in stream {
                 await sink.scanEvent(event)
                 switch event {
-                case .itemFound(let item): await sink.item(item)
+                case .itemFound(let item): if !deferItems { await sink.item(item) }
                 case .warning(let w): await sink.warning(w)
                 case .progress(let p):
                     await sink.progress(p.scannersTotal > 0 ? Double(p.scannersFinished) / Double(p.scannersTotal) : nil)
-                case .started, .finished, .cancelled: break
+                case .finished(let r), .cancelled(let r):
+                    if deferItems { for item in r.items { await sink.item(item) } }
+                case .started, .itemsAdjusted: break
                 }
             }
         } onCancel: {

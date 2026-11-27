@@ -71,7 +71,8 @@ public final class AppEnvironment {
         return AppEnvironment(pathEnvironment: env, settings: settings, makeScanEngine: {
             try ScanEngine.makeDefault(environment: env, userRulesDirectory: nil,
                                        extraScanners: BuiltInScanners.live(environment: env), scope: provider.current,
-                                       sizeCache: cacheProvider.current)
+                                       sizeCache: cacheProvider.current,
+                                       adjusters: [InUseAdjuster(source: LibprocUsageSource())])
         }, cleanup: cleanup, makeDiskIndexer: {
             let loaded = RuleLoader(
                 environment: env, bundledRulesDirectory: CoreResources.rulesDirectoryURL, userRulesDirectory: nil,

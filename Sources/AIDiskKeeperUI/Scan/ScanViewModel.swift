@@ -151,11 +151,22 @@ public final class ScanViewModel {
             progress = p
         case .warning(let w):
             warnings.append(w)
+        case .itemsAdjusted(let changed):
+            applyAdjusted(changed)
         case .finished(let r):
             terminal(r, cancelled: false)
         case .cancelled(let r):
             terminal(r, cancelled: true)
         }
+    }
+
+    /// Items an adjuster moved toward Keep: replace by id (flushed items and still-pending ones).
+    private func applyAdjusted(_ changed: [ScanItem]) {
+        flushPending()
+        for item in changed {
+            if let i = itemIndex[item.id], i < items.count, items[i].id == item.id { items[i] = item }
+        }
+        totals = ScanTotals(items: items)
     }
 
     private func flushPending() {

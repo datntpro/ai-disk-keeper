@@ -234,6 +234,12 @@ public enum CleanupCopy {
             loc("cleanup.blocker.toolCommandNotAllowed", "This command isn't on the list AI Disk Keeper may run, so it was left alone.")
         case .toolUnavailable(let tool): loc("cleanup.blocker.toolUnavailable", "\(tool) wasn't found or isn't safe to run.")
         case .toolNotRunning(let tool, _): loc("cleanup.blocker.toolNotRunning", "\(tool) isn't running. Start it, then press Re-check.")
+        case .inUse(let process, let pid):
+            loc("inuse.blocker.inUse", "In use by \(process) (process \(String(pid))). Close it, then try again.")
+        case .inUseUnknown:
+            loc("inuse.blocker.unknown", "Couldn't check whether something is using this, so it was left alone. Try again.")
+        case .modifiedRecently:
+            loc("inuse.blocker.recent", "Modified in the last hour, so it was left alone. Rescan later.")
         case .inUseByTool: loc("cleanup.blocker.inUseByTool", "The tool says this is in use right now. Rescan to review it again.")
         }
     }

@@ -53,7 +53,14 @@ struct ItemDetailView: View {
         var out: [String] = []
         if item.flags.contains(.sizeIncomplete) { out.append(loc("note.sizeIncomplete", "Some files couldn't be read, so the real size may be larger.")) }
         if item.flags.contains(.needsFullDiskAccess) { out.append(loc("note.needsFDA", "macOS blocked access to part of this folder.")) }
-        if item.flags.contains(.inUse) { out.append(loc("note.inUse", "In use by a running app.")) }
+        if item.flags.contains(.inUse) {
+            if let by = item.inUseBy {
+                out.append(item.inUsePID.map { loc("inuse.byPid", "In use by \(by) (process \(String($0)))") }
+                           ?? loc("inuse.by", "In use by \(by)"))
+            } else {
+                out.append(loc("inuse.recent", "Modified in the last hour"))
+            }
+        }
         return out
     }
 
