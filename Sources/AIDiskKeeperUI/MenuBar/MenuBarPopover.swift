@@ -129,6 +129,7 @@ struct MenuBarPopover: View {
 
     private func openDiskActivity() {
         suite.navigation.selection = .module(.diskActivity)
+        monitor.popoverWindow?.close()   // the popover must not stay open over the window
         openWindow(id: "main")
         NSApp.activate()
         open()

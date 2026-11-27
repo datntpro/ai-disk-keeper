@@ -86,12 +86,16 @@ public struct FreeSpaceHistoryStore: Sendable {
                 }
             }
             fsync(fd)
-            close(fd)
-            guard rename(tmp.path, fileURL.path) == 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
         } catch {
             close(fd)
             remove(tmp.path)
             throw error
+        }
+        close(fd)
+        guard rename(tmp.path, fileURL.path) == 0 else {
+            let code = POSIXErrorCode(rawValue: errno) ?? .EIO
+            remove(tmp.path)
+            throw POSIXError(code)
         }
     }
 }

@@ -1,5 +1,6 @@
 import Darwin
 import Foundation
+import os
 
 /// One process of the current user, read through libproc. Name, path and cwd only: argv is never read (it can hold secrets).
 public struct ProcessRecord: Sendable, Hashable {
@@ -84,6 +85,8 @@ public struct LibprocProcessTable: ProcessTableReading {
 
     public init(userID: uid_t = getuid()) { self.userID = userID }
 
+    private static let log = Logger(subsystem: "app.aidiskkeeper", category: "hostload")
+
     private static let timebase: (numer: UInt64, denom: UInt64) = {
         var t = mach_timebase_info_data_t()
         mach_timebase_info(&t)
@@ -102,6 +105,11 @@ public struct LibprocProcessTable: ProcessTableReading {
         records.reserveCapacity(Int(n) / 2)
         for pid in pids.prefix(Int(n)) where pid > 0 {
             if let r = Self.read(pid, uid: userID) { records.append(r) }
+        }
+        let elapsed = ContinuousClock.now - started
+        if elapsed > .milliseconds(50) {
+            let ms = Double(elapsed.components.seconds) * 1000 + Double(elapsed.components.attoseconds) / 1e15
+            Self.log.info("process table took \(ms, privacy: .public) ms")
         }
         return ProcessTableSnapshot(at: started, wall: wall, records: records)
     }

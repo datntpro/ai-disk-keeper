@@ -1,7 +1,7 @@
 #!/bin/bash
 # H1 QA fixtures (Disk activity). Run in the Tart VM only, never on the owner's Mac.
 # Creates files ONLY under ~/ADKQA-H1 (a temp git repo and one linked worktree "repo-wt"); teardown removes exactly that.
-#   writer    start a fixture writer inside the worktree: bash -> dd, 64 MB per loop. PID in ~/ADKQA-H1/writer.pid
+#   writer    start a fixture writer inside the worktree: one long-lived python process, 64 MB per loop. PID in ~/ADKQA-H1/writer.pid
 #   stop      stop the writer
 #   teardown  stop + remove ~/ADKQA-H1
 # For the 15 % warning step reuse T47's `fill` / `unfill` (scripts/qa/T47.sh).
@@ -20,7 +20,14 @@ case "${1:-}" in
       git -C "$ROOT/repo" worktree add -q "$ROOT/repo-wt" -b qa-h1
     fi
     cd "$ROOT/repo-wt"
-    nohup bash -c 'while :; do dd if=/dev/zero of=w bs=1m count=64 2>/dev/null; done' >/dev/null 2>&1 &
+    # One long-lived writer: a loop of 25 ms `dd` processes is never in two samples (their counters die with them).
+    nohup python3 -c "import os
+f=open('w','wb')
+b=b'0'*(1<<20)
+while True:
+    f.seek(0)
+    for _ in range(64): f.write(b)
+    f.flush(); os.fsync(f.fileno())" >/dev/null 2>&1 &
     echo $! > "$ROOT/writer.pid"
     echo "writer started (pid $(cat "$ROOT/writer.pid")); expect repo-wt at the top of Disk activity"
     ;;

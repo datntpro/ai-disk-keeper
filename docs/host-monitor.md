@@ -32,6 +32,10 @@ on demand changes; the loop lives in `DiskActivityModel`.
 | `Volume/FreeSpaceHistory.swift` | 10-minute buckets (minimum free in the bucket), 7 days = 1008 points, `free-space-history.json` (0600, atomic). Written at most once per bucket. |
 | `Volume/FreeSpaceTrend.swift` | Linear fit, per D6. |
 
+A process that is born and dies between two ticks (a 25 ms `dd`, most compiler invocations) is never in a snapshot, and
+the kernel keeps no child disk-io counter, so its bytes show up only as "Other processes". One born since the previous
+tick and still alive counts its whole counter in that interval. A gap longer than 60 s (popover closed) starts a new baseline.
+
 The whole-disk counters count the physical device, the per-process ones count what the kernel attributes to a process, so
 "Other processes" is the remainder (short-lived processes, other users, the kernel).
 

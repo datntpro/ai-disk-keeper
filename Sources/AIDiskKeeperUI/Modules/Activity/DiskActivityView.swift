@@ -9,6 +9,7 @@ struct DiskActivityView: View {
             if let snap = model.snapshot {
                 ScrollView {
                     VStack(alignment: .leading, spacing: ADKTheme.Spacing.lg) {
+                        Text(DiskActivityCopy.title).font(.headline)
                         header(snap)
                         worktreeTable(snap)
                         agentTable(snap)

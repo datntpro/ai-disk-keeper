@@ -81,6 +81,30 @@ final class HostLoadSamplerTests: XCTestCase {
         XCTAssertEqual(s.processes.first?.name, "dd")
     }
 
+    func testShortLivedWriterShowsUpWithItsWorktree() async throws {
+        try FileManager.default.createDirectory(atPath: tmp.path("repo-wt/.git"), withIntermediateDirectories: true)
+        let t0 = ContinuousClock.now
+        let wall0 = Date(timeIntervalSince1970: 1_700_000_000)
+        let born = wall0.addingTimeInterval(3)
+        let startID = (UInt64(born.timeIntervalSince1970) << 20)
+        let dd = ProcessRecord(pid: 90, ppid: 1, name: "dd", cwd: tmp.path("repo-wt"), startID: startID, diskBytesWritten: 64 << 20)
+        let idle = ProcessRecord(pid: 91, ppid: 1, name: "zsh", cwd: nil, startID: 5, diskBytesWritten: 0)
+        let idleBefore = ProcessRecord(pid: 91, ppid: 1, name: "zsh", cwd: nil, startID: 5, diskBytesWritten: 0)
+        let table = FakeTable([
+            ProcessTableSnapshot(at: t0, wall: wall0, records: [idleBefore]),
+            ProcessTableSnapshot(at: t0 + .seconds(5), wall: wall0.addingTimeInterval(5), records: [dd, idle]),
+        ])
+        let clock = FakeClock()
+        let sampler = HostLoadSampler(table: table, disk: FakeDisk([]), attribution: WorktreeAttribution(home: tmp.url.path),
+                                      clock: { clock.next() })
+        _ = await sampler.tick()
+        let s = await sampler.tick()
+        XCTAssertEqual(s.processes.map(\.name), ["dd"], "the idle zsh is not listed")
+        XCTAssertEqual(s.byWorktree.first?.worktree.displayName, "repo-wt")
+        XCTAssertEqual(s.byWorktree.first?.writeBytesPerSec ?? 0, Double(64 << 20) / 5, accuracy: 1)
+        XCTAssertEqual(s.byAgent.map(\.processCount), [1], "idle processes are not counted")
+    }
+
     func testUnattributedNeverNegative() async {
         let t0 = ContinuousClock.now
         func snap(_ s: Int, _ w: UInt64) -> ProcessTableSnapshot {

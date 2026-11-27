@@ -43,7 +43,7 @@ public struct DiskActivityTracker: Sendable {
         guard let p = previous else { return nil }
         let d = at - p.at
         let seconds = Double(d.components.seconds) + Double(d.components.attoseconds) / 1e18
-        guard seconds > 0, stats.bytesRead >= p.stats.bytesRead, stats.bytesWritten >= p.stats.bytesWritten,
+        guard seconds > 0, seconds <= IORateTracker.maximumGap, stats.bytesRead >= p.stats.bytesRead, stats.bytesWritten >= p.stats.bytesWritten,
               stats.totalTimeReadNs >= p.stats.totalTimeReadNs, stats.totalTimeWriteNs >= p.stats.totalTimeWriteNs else { return nil }
         let busyNs = Double(stats.totalTimeReadNs - p.stats.totalTimeReadNs) + Double(stats.totalTimeWriteNs - p.stats.totalTimeWriteNs)
         return DiskActivity(readBytesPerSec: Double(stats.bytesRead - p.stats.bytesRead) / seconds,

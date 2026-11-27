@@ -26,10 +26,13 @@ public enum AgentClassifier {
         if name == "tart" || name.contains("com.apple.virtualization.virtualmachine")
             || path.contains("com.apple.virtualization.virtualmachine") { return .vm }
         let isApp = path.contains(".app/contents/")
-        if name == "claude" && !isApp { return .claude }
-        if name == "codex" || name.hasPrefix("codex-") { return .codex }
-        if name == "gemini" { return .gemini }
-        if name == "aider" { return .aider }
+        let leaf = (path as NSString).lastPathComponent
+        // A native Claude Code install names the process after its version ("2.1.330"); only the path tells.
+        // The npm install sets its process title to "claude" (so `name` matches) while the executable is `node`.
+        if !isApp, name == "claude" || leaf == "claude" || path.contains("/claude/versions/") { return .claude }
+        if !isApp, name == "codex" || name.hasPrefix("codex-") || leaf == "codex" || path.contains("/@openai/codex") { return .codex }
+        if !isApp, name == "gemini" || leaf == "gemini" || path.contains("/@google/gemini-cli") { return .gemini }
+        if !isApp, name == "aider" { return .aider }
         if name == "cursor-agent" { return .cursor }
         if name == "orca" || path.contains("/orca.app/") { return .orca }
         switch name {

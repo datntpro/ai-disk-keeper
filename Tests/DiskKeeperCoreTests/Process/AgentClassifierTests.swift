@@ -24,6 +24,33 @@ final class AgentClassifierTests: XCTestCase {
         XCTAssertEqual(AgentClassifier.kind(name: "Orca", path: "/Applications/Orca.app/Contents/MacOS/Orca"), .orca)
     }
 
+    func testNativeClaudeCodeInstallIsRecognisedByPath() {
+        let home = "/Users/x/.local/share/claude/versions/2.1.330"
+        XCTAssertEqual(AgentClassifier.kind(name: "2.1.330", path: home), .claude)
+        let r = rec(7, 1, "2.1.330", path: home)
+        XCTAssertEqual(AgentClassifier.classify(r), .claude)
+        let node = rec(8, 7, "node", path: "/opt/homebrew/bin/node")
+        XCTAssertEqual(AgentClassifier.agent(of: node, ancestors: [r]), .claude)
+    }
+
+    func testNpmClaudeCodeIsNodeWithClaudeTitle() {
+        // The npm install runs `node cli.js` and sets its process title to "claude".
+        XCTAssertEqual(AgentClassifier.kind(name: "claude", path: "/opt/homebrew/bin/node"), .claude)
+        XCTAssertEqual(AgentClassifier.kind(name: "node", path: "/opt/homebrew/bin/node"), .node)
+    }
+
+    func testCodexNativeAndNpm() {
+        XCTAssertEqual(AgentClassifier.kind(name: "codex", path: "/opt/homebrew/bin/codex"), .codex)
+        XCTAssertEqual(AgentClassifier.kind(name: "codex-aarch64-apple-darwin",
+                                            path: "/usr/local/lib/node_modules/@openai/codex/vendor/codex"), .codex)
+        XCTAssertEqual(AgentClassifier.kind(name: "weird", path: "/usr/local/lib/node_modules/@openai/codex/bin/codex"), .codex)
+    }
+
+    func testGuiAppsNamedLikeAgentsAreNotAgentCLIs() {
+        XCTAssertEqual(AgentClassifier.kind(name: "Gemini", path: "/Applications/Gemini.app/Contents/MacOS/Gemini"), .other)
+        XCTAssertEqual(AgentClassifier.kind(name: "Codex", path: "/Applications/Codex.app/Contents/MacOS/Codex"), .other)
+    }
+
     func testNodeUnderClaudeIsAttributedToClaude() {
         let claude = rec(1, 0, "claude"), shell = rec(2, 1, "zsh"), node = rec(3, 2, "node")
         XCTAssertEqual(AgentClassifier.agent(of: node, ancestors: [shell, claude]), .claude)

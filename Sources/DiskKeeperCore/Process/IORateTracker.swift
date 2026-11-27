@@ -27,6 +27,9 @@ public struct IORateTick: Sendable {
 public struct IORateTracker: Sendable {
     private var previous: [ProcessKey: (read: UInt64, written: UInt64)] = [:]
     private var previousAt: ContinuousClock.Instant?
+    private var previousWall: Date?
+    /// A gap longer than this (popover closed for a while) would average the whole gap: start from a new baseline.
+    public static let maximumGap: Double = 60
 
     public init() {}
 
@@ -35,22 +38,38 @@ public struct IORateTracker: Sendable {
             let d = snap.at - $0
             return Double(d.components.seconds) + Double(d.components.attoseconds) / 1e18
         }
+        let usable: Double? = seconds.flatMap { $0 > 0 && $0 <= Self.maximumGap ? $0 : nil }
+        let priorWall = previousWall
         var next: [ProcessKey: (read: UInt64, written: UInt64)] = [:]
         next.reserveCapacity(snap.records.count)
         var rates: [ProcessIORate] = []
         for r in snap.records {
             let key = ProcessKey(pid: r.pid, startID: r.startID)
             next[key] = (r.diskBytesRead, r.diskBytesWritten)
-            guard let seconds, seconds > 0, let old = previous[key],
-                  r.diskBytesRead >= old.read, r.diskBytesWritten >= old.written else { continue }
-            rates.append(ProcessIORate(record: r, readBytesPerSec: Double(r.diskBytesRead - old.read) / seconds,
-                                       writeBytesPerSec: Double(r.diskBytesWritten - old.written) / seconds))
+            guard let seconds = usable else { continue }
+            if let old = previous[key] {
+                guard r.diskBytesRead >= old.read, r.diskBytesWritten >= old.written else { continue }
+                rates.append(ProcessIORate(record: r, readBytesPerSec: Double(r.diskBytesRead - old.read) / seconds,
+                                           writeBytesPerSec: Double(r.diskBytesWritten - old.written) / seconds))
+            } else if let priorWall, Self.startedAfter(r.startID, priorWall) {
+                // Born since the last tick: it started at zero, so its whole counter happened in this interval.
+                // (A process that came and went between two ticks is never seen; that stays in "other processes".)
+                rates.append(ProcessIORate(record: r, readBytesPerSec: Double(r.diskBytesRead) / seconds,
+                                           writeBytesPerSec: Double(r.diskBytesWritten) / seconds))
+            }
         }
         let gone = previous.filter { next[$0.key] == nil }
         previous = next
         previousAt = snap.at
+        previousWall = snap.wall
         return IORateTick(rates: rates, exited: Array(gone.keys),
                           exitedBytesWritten: gone.values.reduce(0) { $0 &+ $1.written })
+    }
+
+    /// `startID` is `tv_sec << 20 | tv_usec`.
+    static func startedAfter(_ startID: UInt64, _ date: Date) -> Bool {
+        let start = Double(startID >> 20) + Double(startID & 0xFFFFF) / 1_000_000
+        return start > date.timeIntervalSince1970
     }
 
     public mutating func rates(_ snap: ProcessTableSnapshot) -> [ProcessIORate] { update(snap).rates }

@@ -32,6 +32,40 @@ final class IORateTrackerTests: XCTestCase {
         XCTAssertTrue(t.rates(snap(after: 5, [rec(10, written: 100)])).isEmpty)
     }
 
+    private func rec(_ pid: pid_t, bornAt born: Date, written: UInt64) -> ProcessRecord {
+        let sec = UInt64(born.timeIntervalSince1970)
+        let usec = UInt64((born.timeIntervalSince1970 - Double(sec)) * 1_000_000)
+        return ProcessRecord(pid: pid, ppid: 1, name: "dd", startID: (sec << 20) | usec, diskBytesWritten: written)
+    }
+
+    func testProcessBornBetweenTicksCountsItsWholeCounter() {
+        let wall0 = Date(timeIntervalSince1970: 1_700_000_000)
+        var t = IORateTracker()
+        _ = t.rates(ProcessTableSnapshot(at: t0, wall: wall0, records: []))
+        let born = wall0.addingTimeInterval(2)
+        let r = t.rates(ProcessTableSnapshot(at: t0 + .seconds(5), wall: wall0.addingTimeInterval(5),
+                                             records: [rec(50, bornAt: born, written: 50_000_000)]))
+        XCTAssertEqual(r.count, 1)
+        XCTAssertEqual(r[0].writeBytesPerSec, 10_000_000, accuracy: 1, "50 MB written during a 5 s tick")
+    }
+
+    func testOldProcessFirstSeenGetsNoWholeCounterRate() {
+        let wall0 = Date(timeIntervalSince1970: 1_700_000_000)
+        var t = IORateTracker()
+        _ = t.rates(ProcessTableSnapshot(at: t0, wall: wall0, records: []))
+        // Started an hour before the previous tick (e.g. it was just outside our uid view or the table was empty).
+        let r = t.rates(ProcessTableSnapshot(at: t0 + .seconds(5), wall: wall0.addingTimeInterval(5),
+                                             records: [rec(51, bornAt: wall0.addingTimeInterval(-3600), written: 9_000_000_000)]))
+        XCTAssertTrue(r.isEmpty, "its lifetime counter is not this interval's I/O")
+    }
+
+    func testLongGapStartsANewBaseline() {
+        var t = IORateTracker()
+        _ = t.rates(snap(after: 0, [rec(10, written: 1_000)]))
+        XCTAssertTrue(t.rates(snap(after: 600, [rec(10, written: 9_000_000)])).isEmpty, "10 minutes of closed popover is not one rate")
+        XCTAssertEqual(t.rates(snap(after: 605, [rec(10, written: 9_005_000)])).first?.writeBytesPerSec ?? 0, 1_000, accuracy: 0.01)
+    }
+
     func testExitedProcessesAreReported() {
         var t = IORateTracker()
         _ = t.update(snap(after: 0, [rec(10, written: 700), rec(11, written: 5)]))

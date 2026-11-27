@@ -8,6 +8,7 @@ import Observation
 @MainActor @Observable
 final class DiskActivityModel {
     static let interval: Duration = .seconds(5)
+    static let windowSeconds: Double = 5
     static let historyWindow: Double = 300
 
     private(set) var snapshot: HostLoadSnapshot?
@@ -22,6 +23,7 @@ final class DiskActivityModel {
     @ObservationIgnored private var popoverOpen = false
     @ObservationIgnored private var moduleVisible = false
     @ObservationIgnored private var suspended = false
+    @ObservationIgnored private var lastTickAt: Double?
 
     init(sampler: HostLoadSampler, now: @escaping () -> Double = SystemMonitorModel.defaultClock,
          sleeper: @escaping @Sendable (Duration) async -> Void = { try? await Task.sleep(for: $0, tolerance: $0 / 5) }) {
@@ -50,6 +52,11 @@ final class DiskActivityModel {
     }
 
     private func run() async {
+        // Opening and closing the popover quickly must not sample more often than every 5 s.
+        if let last = lastTickAt {
+            let wait = Self.windowSeconds - (now() - last)
+            if wait > 0 { await sleeper(.milliseconds(Int(wait * 1000))) }
+        }
         while !Task.isCancelled {
             await tick()
             await sleeper(Self.interval)
@@ -59,6 +66,7 @@ final class DiskActivityModel {
     func tick() async {
         let snap = await sampler.tick()
         guard !Task.isCancelled else { return }
+        lastTickAt = now()
         apply(snap)
     }
 

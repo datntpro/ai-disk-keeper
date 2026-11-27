@@ -82,15 +82,17 @@ public actor HostLoadSampler {
                     readBytesPerSec: rate.readBytesPerSec, writeBytesPerSec: rate.writeBytesPerSec, totalBytesWritten: r.diskBytesWritten))
             }
         }
+        // Idle processes (no read or write in the interval) are neither listed nor counted.
+        let active = processes.filter { $0.readBytesPerSec > 0 || $0.writeBytesPerSec > 0 }
         let attributed = processes.reduce(0) { $0 + $1.writeBytesPerSec }
         var load = [Double](repeating: 0, count: 3)
         getloadavg(&load, 3)
         return HostLoadSnapshot(
             at: Date(), disk: diskActivity,
-            processes: Array(processes.filter { $0.readBytesPerSec > 0 || $0.writeBytesPerSec > 0 }
+            processes: Array(active
                 .sorted { $0.writeBytesPerSec != $1.writeBytesPerSec ? $0.writeBytesPerSec > $1.writeBytesPerSec : $0.pid < $1.pid }
                 .prefix(Self.processLimit)),
-            byWorktree: Self.byWorktree(processes), byAgent: Self.byAgent(processes),
+            byWorktree: Self.byWorktree(active), byAgent: Self.byAgent(active),
             unattributedWriteBytesPerSec: diskActivity.map { max(0, $0.writeBytesPerSec - attributed) },
             loadAverage: (load[0], load[1], load[2]), cpuCount: ProcessInfo.processInfo.activeProcessorCount, freeSpace: freeSpace())
     }
