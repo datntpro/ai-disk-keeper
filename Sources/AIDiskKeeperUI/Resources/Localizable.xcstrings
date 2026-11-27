@@ -1635,6 +1635,22 @@
         }
       }
     },
+    "breakdown.disambiguated" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (%@)"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ (%@)"
+          }
+        }
+      }
+    },
     "breakdown.hide" : {
       "localizations" : {
         "en" : {

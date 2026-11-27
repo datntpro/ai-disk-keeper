@@ -33,6 +33,7 @@ struct ScopedItemListView: View {
                 }
                 if let breakdown {
                     BreakdownHeader(ctx: ctx, moduleKey: breakdown.key, categories: breakdown.categories, showTool: breakdown.showTool)
+                        .id(breakdown.key)
                 }
                 ItemTableView(rows: ctx.list.rows, tierCounts: ctx.list.tierCounts, query: ctx.query,
                               inspectedID: ctx.inspectedID, selection: ctx.scanSelection, scopeName: scopeName,

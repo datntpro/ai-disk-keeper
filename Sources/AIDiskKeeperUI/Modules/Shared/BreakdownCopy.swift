@@ -13,6 +13,9 @@ enum BreakdownCopy {
         let t = Formatting.bytes(total), s = Formatting.bytes(safe)
         return loc("breakdown.a11y", "\(name), \(t), \(s) safe")
     }
+    static func disambiguated(_ name: String, _ folder: String) -> String {
+        loc("breakdown.disambiguated", "\(name) (\(folder))")
+    }
     static var show: String { loc("breakdown.show", "Show breakdown") }
     static var hide: String { loc("breakdown.hide", "Hide breakdown") }
 }

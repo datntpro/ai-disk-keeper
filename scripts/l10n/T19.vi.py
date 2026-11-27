@@ -8,6 +8,7 @@ VI = {
     "breakdown.clearFilter": "Bỏ lọc",
     "breakdown.showing": "Đang hiện %@",
     "breakdown.a11y": "%@, %@, %@ an toàn",
+    "breakdown.disambiguated": "%@ (%@)",
     "breakdown.show": "Hiện biểu đồ phân bổ",
     "breakdown.hide": "Ẩn biểu đồ phân bổ",
 }

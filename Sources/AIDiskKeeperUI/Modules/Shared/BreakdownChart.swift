@@ -18,11 +18,10 @@ struct BreakdownChart: View {
             Chart {
                 ForEach(rows) { row in
                     ForEach(tiers, id: \.self) { tier in
-                        BarMark(x: .value(Text(verbatim: "bytes"), row.bytes(for: tier)), y: .value(Text(verbatim: "name"), row.name), width: .ratio(0.7))
+                        BarMark(x: .value(Text(verbatim: "bytes"), row.bytes(for: tier)),
+                                y: .value(Text(verbatim: "row"), row.chartID), width: .ratio(0.7))
                             .foregroundStyle(TierStyle.style(for: tier).color)
-                            .opacity(selected == nil || selected == row.id ? 1 : 0.35)
-                            .accessibilityLabel(row.accessibilityLabel)
-                            .accessibilityHidden(tier != .safe)
+                            .opacity(selected == nil || selected == row.id ? 1 : 0.55)
                             .annotation(position: .trailing, alignment: .leading) {
                                 if tier == .keep {
                                     Text(Formatting.bytes(row.total)).font(.caption).foregroundStyle(.adkText2)
@@ -33,7 +32,16 @@ struct BreakdownChart: View {
             }
             .chartLegend(.hidden)
             .chartXAxis(.hidden)
-            .chartYScale(domain: rows.map(\.name))
+            .chartYScale(domain: rows.map(\.chartID))
+            .chartYAxis {
+                AxisMarks { value in
+                    AxisValueLabel {
+                        if let id = value.as(String.self), let row = rows.first(where: { $0.chartID == id }) {
+                            Text(verbatim: row.label)
+                        }
+                    }
+                }
+            }
             .frame(height: CGFloat(max(rows.count, 1)) * 26 + 8)
             .chartOverlay { proxy in
                 GeometryReader { geo in
@@ -41,11 +49,24 @@ struct BreakdownChart: View {
                         .onTapGesture { point in
                             guard let frame = proxy.plotFrame else { return }
                             let y = point.y - geo[frame].origin.y
-                            if let name: String = proxy.value(atY: y, as: String.self),
-                               let row = rows.first(where: { $0.name == name }), row.id != nil {
+                            if let id: String = proxy.value(atY: y, as: String.self),
+                               let row = rows.first(where: { $0.chartID == id }), row.id != nil {
                                 onSelect(row)
                             }
                         }
+                }
+            }
+            // VoiceOver and keyboard users get one button per bar instead of the drawn marks.
+            .accessibilityRepresentation {
+                VStack {
+                    ForEach(rows) { row in
+                        if row.id != nil {
+                            Button(row.accessibilityLabel) { onSelect(row) }
+                                .accessibilityAddTraits(selected == row.id ? .isSelected : [])
+                        } else {
+                            Text(row.accessibilityLabel)
+                        }
+                    }
                 }
             }
         }
@@ -57,6 +78,8 @@ struct BreakdownHeader: View {
     let ctx: ModuleContext
     let categories: Set<ItemCategory>
     let showTool: Bool
+    let moduleKey: String
+    private struct TaskKey: Hashable { let signature: [Int64]; let module: String }
     @AppStorage private var expanded: Bool
     @State private var toolRows: [BreakdownRow] = []
     @State private var projectRows: [BreakdownRow] = []
@@ -65,6 +88,7 @@ struct BreakdownHeader: View {
         self.ctx = ctx
         self.categories = categories
         self.showTool = showTool
+        self.moduleKey = moduleKey
         _expanded = AppStorage(wrappedValue: true, "breakdown.expanded.\(moduleKey)")
     }
 
@@ -110,17 +134,20 @@ struct BreakdownHeader: View {
                 }
             }
             .padding([.horizontal, .top], ADKTheme.Spacing.lg)
-            .task(id: signature) { await refresh() }
+            .task(id: TaskKey(signature: signature, module: moduleKey)) { await refresh() }
             .onDisappear { ctx.query.wrappedValue.projectID = nil; ctx.query.wrappedValue.toolFilter = nil }
         } else {
-            Color.clear.frame(height: 0).task(id: signature) { await refresh() }
+            Color.clear.frame(height: 0).task(id: TaskKey(signature: signature, module: moduleKey)) { await refresh() }
         }
     }
 
     private func activeFilterLabel(_ q: ItemQuery) -> String? {
-        if let t = q.toolFilter { return t.uiName }
-        if let p = q.projectID { return projectRows.first { $0.id == p }?.name ?? (p == ItemQuery.noProject ? BreakdownCopy.noProject : p) }
-        return nil
+        var parts: [String] = []
+        if let t = q.toolFilter { parts.append(toolRows.first { $0.id == t.rawValue }?.label ?? t.uiName) }
+        if let p = q.projectID {
+            parts.append(projectRows.first { $0.id == p }?.label ?? (p == ItemQuery.noProject ? BreakdownCopy.noProject : p))
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     private func refresh() async {

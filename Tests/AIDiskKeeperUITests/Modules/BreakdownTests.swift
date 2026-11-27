@@ -72,4 +72,31 @@ final class BreakdownTests: XCTestCase {
         XCTAssertFalse(label.isEmpty)
         XCTAssertNotNil(rows.first { $0.id == ItemQuery.noProject })
     }
+
+    func testSameNamedProjectsGetDistinctRowsAndLabels() throws {
+        let a = ProjectRef(id: "/work/api", displayName: "api"), b = ProjectRef(id: "/oss/api", displayName: "api")
+        let rows = ProjectBreakdown.byProject([item("x", size: 300, project: a), item("y", size: 100, project: b)])
+        XCTAssertEqual(rows.count, 2)
+        XCTAssertEqual(Set(rows.map(\.chartID)).count, 2)
+        XCTAssertEqual(Set(rows.map(\.label)).count, 2)
+        XCTAssertTrue(rows[0].label.contains("work"))
+        XCTAssertTrue(rows[1].label.contains("oss"))
+        // Each row is selectable by its own id.
+        XCTAssertEqual(ItemQuery(scope: .overview, projectID: "/oss/api").apply(to: [item("x", size: 300, project: a), item("y", size: 100, project: b)]).map(\.displayName), ["y"])
+    }
+
+    func testUniqueNamesKeepPlainLabels() {
+        let rows = ProjectBreakdown.byTool([item("a"), item("b", tool: .cursor)])
+        XCTAssertEqual(rows.map(\.label), rows.map(\.name))
+    }
+
+    func testScopeChangeClearsChartFilters() {
+        var q = ItemQuery(scope: .module(.aiTools), projectID: "/p", toolFilter: .cursor)
+        q.setScope(.module(.aiTools))
+        XCTAssertEqual(q.projectID, "/p")
+        q.setScope(.module(.worktrees))
+        XCTAssertNil(q.projectID)
+        XCTAssertNil(q.toolFilter)
+        XCTAssertEqual(q.scope, .module(.worktrees))
+    }
 }

@@ -74,6 +74,14 @@ public struct ItemQuery: Sendable, Equatable {
     public var projectID: String?
     public var toolFilter: ToolID?
 
+    /// Moves to another sidebar scope. Chart filters belong to the module that set them, so a real scope change clears them.
+    public mutating func setScope(_ new: SidebarSelection) {
+        guard new != scope else { return }
+        scope = new
+        projectID = nil
+        toolFilter = nil
+    }
+
     /// `projectID` value for items that belong to no project.
     public static let noProject = ""
 
