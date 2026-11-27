@@ -11,6 +11,8 @@ struct LabelContent: Equatable {
     /// Live strata meters (0…12 per bar, top to bottom).
     var meters: [UInt8] = []
     var pressureDot = false
+    /// 0 = ok, 1 = warning, 2 = critical: a badge in the top-right corner (the item is a template image, so no colour).
+    var lowSpace: UInt8 = 0
 
     static func quantize(_ v: Double) -> UInt8 { UInt8((min(max(v.isNaN ? 0 : v, 0), 1) * 12).rounded()) }
 }
@@ -21,7 +23,7 @@ enum MenuBarLabelRenderer {
 
     static func render(_ c: LabelContent) -> NSImage {
         // The T47 item with no text is the glyph itself: same image, same pixels.
-        if c.layout.mode == .glyph, c.layout.cells.count == 1 { return StrataGlyph.image() }
+        if c.layout.mode == .glyph, c.layout.cells.count == 1, c.lowSpace == 0 { return StrataGlyph.image() }
         let size = NSSize(width: max(c.layout.width, 1), height: height)
         let image = NSImage(size: size, flipped: false) { _ in
             NSColor.black.setFill()
@@ -32,6 +34,7 @@ enum MenuBarLabelRenderer {
                 draw(cell, at: x, content: c)
                 x += cell.width + gap
             }
+            if c.lowSpace > 0 { drawLowSpaceBadge(critical: c.lowSpace > 1, in: size) }
             return true
         }
         image.isTemplate = true
@@ -66,6 +69,23 @@ enum MenuBarLabelRenderer {
                 }
             }
         }
+    }
+
+    /// Punches a hole in the corner and draws a warning symbol (circle for low, triangle for critical).
+    private static func drawLowSpaceBadge(critical: Bool, in size: NSSize) {
+        let side: CGFloat = 9
+        let rect = NSRect(x: size.width - side - 0.5, y: size.height - side - 0.5, width: side, height: side)
+        NSGraphicsContext.current?.saveGraphicsState()
+        NSGraphicsContext.current?.compositingOperation = .clear
+        NSBezierPath(ovalIn: rect.insetBy(dx: -1.5, dy: -1.5)).fill()
+        NSGraphicsContext.current?.restoreGraphicsState()
+        let name = critical ? "exclamationmark.triangle.fill" : "exclamationmark.circle.fill"
+        guard let symbol = NSImage(systemSymbolName: name, accessibilityDescription: nil)?
+            .withSymbolConfiguration(.init(pointSize: 8, weight: .bold)) else { return }
+        let s = symbol.size
+        let scale = min(side / max(s.width, 1), side / max(s.height, 1), 1)
+        symbol.draw(in: NSRect(x: rect.midX - s.width * scale / 2, y: rect.midY - s.height * scale / 2,
+                               width: s.width * scale, height: s.height * scale))
     }
 
     private static func drawMark(_ m: MetricID, at x: CGFloat) {

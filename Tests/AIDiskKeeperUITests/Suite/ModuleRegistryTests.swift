@@ -9,7 +9,7 @@ final class ModuleRegistryTests: XCTestCase {
         XCTAssertEqual(ids, ModuleID.allCases)
         XCTAssertEqual(Set(ids).count, ids.count)
         XCTAssertEqual(ids.map(\.rawValue), ["overview", "careScan", "diskMap", "largeOld", "duplicates", "storage",
-                                             "aiTools", "worktrees", "modelsDocker", "uninstaller", "startupItems", "history"])
+                                             "aiTools", "worktrees", "modelsDocker", "uninstaller", "startupItems", "diskActivity", "history"])
     }
 
     func testSectionsAreOrderedAndExcludeDisabled() {
@@ -51,7 +51,7 @@ final class ModuleRegistryTests: XCTestCase {
             .diskMap: "square.stack.3d.down.right", .largeOld: "doc.badge.clock", .duplicates: "doc.on.doc",
             .storage: "internaldrive", .aiTools: "cpu", .worktrees: "arrow.triangle.branch",
             .modelsDocker: "cube.transparent", .uninstaller: "xmark.app", .startupItems: "power.circle",
-            .history: "clock.arrow.circlepath",
+            .diskActivity: "waveform.path.ecg", .history: "clock.arrow.circlepath",
         ])
     }
 

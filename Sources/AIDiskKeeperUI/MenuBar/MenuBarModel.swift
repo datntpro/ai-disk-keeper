@@ -11,7 +11,8 @@ struct VolumeCapacity: Equatable, Sendable {
 
     /// Two `URLResourceValues` reads: no Trash walk, no child process. Free counts purgeable space, like Finder.
     static let live: @Sendable () -> VolumeCapacity? = {
-        for path in ["/System/Volumes/Data", "/"] {
+        // The Data volume everywhere (`/` only when it is missing); never the sealed system volume.
+        for path in [DataVolume.path] {
             let keys: Set<URLResourceKey> = [.volumeTotalCapacityKey, .volumeAvailableCapacityKey, .volumeAvailableCapacityForImportantUsageKey]
             guard let v = try? URL(fileURLWithPath: path).resourceValues(forKeys: keys), let total = v.volumeTotalCapacity,
                   let free = v.volumeAvailableCapacityForImportantUsage ?? v.volumeAvailableCapacity.map(Int64.init) else { continue }
@@ -42,10 +43,17 @@ final class MenuBarModel {
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private var monitor: LowSpaceMonitor
     @ObservationIgnored private var lastThreshold: Int?
+    @ObservationIgnored private var history: FreeSpaceHistory
+    @ObservationIgnored private let historyStore: FreeSpaceHistoryStore?
+    /// Where free space is heading (D6); nil until six hours of history exist.
+    private(set) var trend: FreeSpaceTrend.Trend?
 
     init(storage: StorageModel, care: CareScanModel, scan: ScanViewModel, settings: SettingsModel,
          notifier: any LowSpaceNotifying, defaults: UserDefaults = .standard,
-         probe: @escaping @Sendable () -> VolumeCapacity? = VolumeCapacity.live, clock: @escaping () -> Date = Date.init) {
+         probe: @escaping @Sendable () -> VolumeCapacity? = VolumeCapacity.live, clock: @escaping () -> Date = Date.init,
+         historyStore: FreeSpaceHistoryStore? = nil) {
+        self.historyStore = historyStore
+        self.history = historyStore?.load() ?? FreeSpaceHistory()
         self.probe = probe
         self.clock = clock
         self.storage = storage
@@ -55,6 +63,7 @@ final class MenuBarModel {
         self.notifier = notifier
         self.defaults = defaults
         self.monitor = LowSpaceMonitor.load(from: defaults)
+        self.trend = FreeSpaceTrend.estimate(history.points, now: clock())
     }
 
     // MARK: Derived (pure)
@@ -116,6 +125,28 @@ final class MenuBarModel {
         return Formatting.bytes(free)
     }
 
+    /// ok / warning / critical against the user's threshold (default 15 %); critical below 5 % or 10 GB.
+    var freeSpaceStatus: FreeSpaceStatus? {
+        guard let c = currentCapacity else { return nil }
+        return FreeSpaceStatus(freeBytes: c.free, totalBytes: c.total, thresholdPercent: settings.settings.lowSpaceThresholdPercent, trend: trend)
+    }
+
+    var freeSpaceLevel: FreeSpaceLevel { freeSpaceStatus?.level ?? .ok }
+
+    /// "Full in about 2 days at the current rate" / "Free space is stable"; nil while there is no trend.
+    var trendText: String? {
+        guard let trend else { return nil }
+        guard let eta = trend.timeToFull else { return FreeSpaceCopy.stable }
+        return FreeSpaceCopy.fullIn(FreeSpaceCopy.duration(eta))
+    }
+
+    /// "Low disk space: 13% free" while the level is not ok, else the plain label.
+    var lowSpaceAccessibility: String? {
+        guard let status = freeSpaceStatus, status.level != .ok else { return nil }
+        let percent = MonitorFormatting.percent(status.freeFraction)
+        return status.level == .critical ? FreeSpaceCopy.criticalA11y(percent) : FreeSpaceCopy.lowA11y(percent)
+    }
+
     var labelAccessibility: String {
         MenuBarCopy.labelA11y(freeBytes.map { Formatting.bytes($0) } ?? "—")
     }
@@ -125,13 +156,29 @@ final class MenuBarModel {
         Binding(get: { settings.settings.showMenuBarItem }, set: { settings.setShowMenuBarItem($0) })
     }
 
+    private static let saveQueue = DispatchQueue(label: "adk.free-space-history", qos: .utility)
+
     // MARK: Poll
 
     /// One poll step: read the volume's capacity (cheap), then feed the alert. Never touches `StorageModel`, so the
     /// poll does not walk the Trash or spawn a child process.
     func tick() async {
-        if let capacity = probe() { polled = (capacity, clock()) }
+        if let capacity = probe() {
+            polled = (capacity, clock())
+            recordHistory(capacity)
+        }
         await evaluateLowSpace()
+    }
+
+    /// Feeds the 10-minute free-space history; the file is written only when a new bucket opens.
+    private func recordHistory(_ capacity: VolumeCapacity) {
+        let now = clock()
+        let opened = history.record(freeBytes: capacity.free, at: now)
+        trend = FreeSpaceTrend.estimate(history.points, now: now)
+        if opened, let store = historyStore {
+            let snapshot = history
+            Self.saveQueue.async { try? store.save(snapshot) }   // serial: an older snapshot never lands after a newer one
+        }
     }
 
     /// The popover opened: refresh the full overview (coalesced by `StorageModel`).

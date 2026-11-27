@@ -34,6 +34,7 @@ public struct ModuleDescriptor: Sendable, Equatable {
         case .modelsDocker: loc("module.modelsDocker", "Models & Docker")
         case .uninstaller: loc("module.uninstaller", "Uninstaller")
         case .startupItems: loc("module.startupItems", "Startup Items")
+        case .diskActivity: loc("hostio.module.title", "Disk activity")
         case .history: loc("module.history", "Cleanup History")
         }
     }
