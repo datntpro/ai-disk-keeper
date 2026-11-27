@@ -193,3 +193,90 @@ final class SizeCacheInvalidationTests: XCTestCase {
         XCTAssertNil(a)
     }
 }
+
+// MARK: mid-scan writes, superseded scans, tampered files (PR #144 review)
+
+extension SizeCacheInvalidationTests {
+    /// The 6/15 race, deterministically: the write is not in the history query at `beginScan` but the live watch
+    /// reports it before the item is looked up. The stale entry must not be served.
+    func testWriteDeliveredAfterBeginScanIsNotServedStale() async throws {
+        try await warm()
+        let c = cache()
+        let ctx = try makeContext(fx, cache: c)
+        await c.beginScan(options: ctx.sizerOptions)          // history says: nothing changed
+        journal.injectLive([fx.abs("home/a/deep/er/x.bin")])  // …but x.bin was written; delivered late
+        let a = await c.valid(url("home/a"))
+        let b = await c.valid(url("home/b"))
+        XCTAssertNil(a, "stale report served for a path written during the scan")
+        XCTAssertNotNil(b)
+    }
+
+    func testWriteDuringTheWalkIsNotStored() async throws {
+        let c = cache()
+        let ctx = try makeContext(fx, cache: c)
+        await c.beginScan(options: ctx.sizerOptions)
+        let u = url("home/a")
+        let stamp = await c.stamp(u)
+        let report = try await FileSizer().size(of: u)
+        journal.injectLive([fx.abs("home/a/y.bin")])          // written while/after the walk read it
+        await c.store(report, for: u, stamp: stamp)
+        let n = await c.count
+        XCTAssertEqual(n, 0)
+    }
+
+    func testLostWatchDropsEverythingAndStopsCaching() async throws {
+        try await warm()
+        let c = cache()
+        let ctx = try makeContext(fx, cache: c)
+        await c.beginScan(options: ctx.sizerOptions)
+        journal.loseWatch()
+        let a = await c.valid(url("home/a"))
+        XCTAssertNil(a)
+        let stamp = await c.stamp(url("home/b"))
+        XCTAssertNil(stamp)
+    }
+
+    func testNoWatchMeansNoCache() async throws {
+        try await warm()
+        journal.noWatch = true
+        let c = cache()
+        await c.beginScan(options: .init())
+        let a = await c.valid(url("home/a"))
+        XCTAssertNil(a)
+    }
+
+    func testStoreFromSupersededScanIsRejected() async throws {
+        let c = SizeCache(fileURL: nil, journal: journal)
+        let ctx = try makeContext(fx, cache: c)
+        await c.beginScan(options: ctx.sizerOptions)                  // scan 1
+        let u = url("home/a")
+        let stamp = await c.stamp(u)
+        let stale = try await FileSizer().size(of: u)
+        try FileHandle(forWritingTo: URL(fileURLWithPath: fx.abs("home/a/y.bin"))).append(1 << 16)
+        journal.id = 200; journal.result = .changed([fx.abs("home/a/y.bin")])
+        await c.beginScan(options: ctx.sizerOptions)                  // scan 2 consumes the write
+        await c.store(stale, for: u, stamp: stamp)                    // scan 1's late store
+        journal.id = 300; journal.result = .changed([])
+        await c.beginScan(options: ctx.sizerOptions)                  // scan 3
+        let hit = await c.valid(u)
+        XCTAssertNil(hit)
+    }
+
+    func testFutureLastEventIDInvalidatesEverything() async throws {
+        try await warm()
+        journal.id = 50    // the saved id (100) is ahead of the journal's current id
+        let r = try await second()
+        XCTAssertFalse(r.a); XCTAssertFalse(r.b)
+    }
+
+    func testCacheFileWritableByOthersIsIgnored() async throws {
+        try await warm()
+        chmod(cacheFile.path, 0o666)
+        let r = try await second()
+        XCTAssertFalse(r.a); XCTAssertFalse(r.b)
+    }
+}
+
+private extension FileHandle {
+    func append(_ n: Int) throws { try seekToEnd(); try write(contentsOf: Data(repeating: 0x41, count: n)); try close() }
+}

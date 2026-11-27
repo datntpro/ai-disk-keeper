@@ -28,7 +28,13 @@ At the start of each scan (`beginScan`), **before any walk**:
    `KernelDropped`, `EventIdsWrapped`, `RootChanged`, `Mount` or `Unmount`; more than 1M events; or the journal does
    not answer within 5 s.
 3. Otherwise an entry is dropped if any changed path is **equal to, inside, or an ancestor of** its root.
-4. On every lookup the root's `lstat` device / inode / mtime must still equal what was recorded **before** its walk
+4. A second FSEvents stream stays open from the captured id until `endScan`. Every lookup and store first flushes it:
+   an entry touched by any event during the scan is dropped and never served, and a root written between its
+   stamp and its store is not stored. A watch that cannot open, or that reports a drop, ends caching for the scan.
+   Stamps carry the scan generation, so a store from a superseded scan is rejected.
+5. A saved event id ahead of the journal's current id, or a cache file that is not a regular file of ours with mode
+   0600, is not trusted.
+6. On every lookup the root's `lstat` device / inode / mtime must still equal what was recorded **before** its walk
    (a root replaced by a new directory, or touched during the walk, misses).
 
 Only complete reports (no sizing issues, no skipped mount points) on the Data volume are stored. Keys are physical

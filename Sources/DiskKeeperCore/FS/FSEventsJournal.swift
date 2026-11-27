@@ -18,6 +18,17 @@ public protocol FSEventsJournaling: Sendable {
     func volumeUUID(device: dev_t) -> String?
     /// Everything that changed on `device` after `eventID`. Anything uncertain is `.invalidateAll`.
     func changedPaths(since eventID: UInt64, device: dev_t) async -> JournalResult
+    /// A stream kept open for the whole scan, starting at `eventID`, so writes that happen (or are delivered late)
+    /// after the history query are still seen. nil = cannot watch, so the cache must not be used for this scan.
+    func openWatch(device: dev_t, since eventID: UInt64) -> (any JournalWatching)?
+}
+
+/// Live events of one scan.
+public protocol JournalWatching: Sendable {
+    /// Flushes what the daemon still holds, then returns the paths changed since the last call.
+    /// nil = the watch can no longer vouch for anything (drops, wrap, overflow): drop every entry.
+    func drain() -> [String]?
+    func close()
 }
 
 /// Reads the persistent FSEvents history (`sinceWhen`) of one device. Read-only: it never writes to the volume.
@@ -126,6 +137,71 @@ public struct LiveFSEventsJournal: FSEventsJournaling {
                 stream = nil
             }
             cont.resume(returning: result)
+        }
+    }
+
+    public func openWatch(device: dev_t, since eventID: UInt64) -> (any JournalWatching)? {
+        LiveWatch(device: device, since: eventID, maxEvents: maxEvents)
+    }
+
+    private final class LiveWatch: JournalWatching, @unchecked Sendable {
+        let queue = DispatchQueue(label: "adk.fsevents-watch", qos: .utility)
+        let maxEvents: Int
+        var stream: FSEventStreamRef?
+        var paths: [String] = []     // queue-confined
+        var poisoned = false         // queue-confined
+        var total = 0
+
+        init?(device: dev_t, since: UInt64, maxEvents: Int) {
+            self.maxEvents = maxEvents
+            var context = FSEventStreamContext(
+                version: 0, info: Unmanaged.passUnretained(self).toOpaque(), retain: nil, release: nil,
+                copyDescription: nil)
+            let flags = FSEventStreamCreateFlags(
+                kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagFileEvents
+                    | kFSEventStreamCreateFlagNoDefer | kFSEventStreamCreateFlagWatchRoot)
+            let callback: FSEventStreamCallback = { _, info, count, eventPaths, eventFlags, _ in
+                guard let info else { return }
+                let me = Unmanaged<LiveWatch>.fromOpaque(info).takeUnretainedValue()
+                let list = unsafeBitCast(eventPaths, to: CFArray.self) as? [String] ?? []
+                for i in 0..<min(count, list.count) { me.handle(path: list[i], flags: eventFlags[i]) }
+            }
+            guard let s = FSEventStreamCreateRelativeToDevice(
+                nil, callback, &context, device, ["/"] as CFArray, since, 0, flags) else { return nil }
+            stream = s
+            FSEventStreamSetDispatchQueue(s, queue)
+            guard FSEventStreamStart(s) else {
+                FSEventStreamInvalidate(s); FSEventStreamRelease(s); stream = nil
+                return nil
+            }
+        }
+
+        func handle(path: String, flags: FSEventStreamEventFlags) {   // on `queue`
+            if flags & FSEventStreamEventFlags(kFSEventStreamEventFlagHistoryDone) != 0 { return }
+            if flags & Collector.untrusted != 0 { poisoned = true }
+            total += 1
+            if total > maxEvents { poisoned = true; return }
+            paths.append(path.hasPrefix("/") ? path : "/" + path)
+        }
+
+        func drain() -> [String]? {
+            guard let s = stream else { return nil }
+            FSEventStreamFlushSync(s)
+            return queue.sync {
+                if poisoned { return nil }
+                defer { paths = [] }
+                return paths
+            }
+        }
+
+        func close() {
+            queue.sync {
+                guard let s = stream else { return }
+                FSEventStreamStop(s)
+                FSEventStreamInvalidate(s)
+                FSEventStreamRelease(s)
+                stream = nil
+            }
         }
     }
 }

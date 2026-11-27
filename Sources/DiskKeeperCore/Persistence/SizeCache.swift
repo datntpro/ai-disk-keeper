@@ -52,6 +52,13 @@ public actor SizeCache {
     private var prepared = false
     private var clock: UInt64 = 0
     private var dirty = false
+    /// Live watch for the scan in progress (opened right after the event id is captured, closed by `endScan`).
+    private var watch: (any JournalWatching)?
+    private var generation = 0
+    /// Canonical keys of everything the watch reported during this scan, in order (+ cumulative lookup sets).
+    private var liveLog: [String] = []
+    private var liveChanged = Set<String>()
+    private var liveAncestors = Set<String>()
     /// Counters for tests and the benchmark.
     public private(set) var hits = 0
     public private(set) var misses = 0
@@ -92,6 +99,9 @@ public actor SizeCache {
     /// changed since the saved position, and drops every entry that cannot be vouched for.
     public func beginScan(options: FileSizer.Options) async {
         prepared = false
+        closeWatch()
+        generation += 1                       // stamps from any earlier scan can no longer be stored
+        liveLog = []; liveChanged = []; liveAncestors = []
         loadIfNeeded()
         guard let device = dataDevice, let uuid = journal.volumeUUID(device: device) else {
             clearEntries()
@@ -99,9 +109,17 @@ public actor SizeCache {
         }
         // Captured BEFORE the walk and before asking the journal: nothing after this point can be lost.
         let newID = journal.currentEventID()
+        // Stays open until `endScan`: writes made (or delivered late) after the history query below are seen by
+        // every lookup and store of this scan. No watch = no cache for this scan.
+        guard let opened = journal.openWatch(device: device, since: newID) else {
+            clearEntries()
+            return
+        }
+        watch = opened
         let optionsHash = Self.optionsHash(options)
         if let h = header, h.schemaVersion == Self.schemaVersion, h.volumeUUID == uuid,
-           h.sizerOptionsHash == optionsHash, h.appBuild == appBuild, !entries.isEmpty {
+           h.sizerOptionsHash == optionsHash, h.appBuild == appBuild, !entries.isEmpty,
+           h.lastEventID <= newID {            // an id from the future cannot be vouched for
             switch await journal.changedPaths(since: h.lastEventID, device: device) {
             case .invalidateAll:
                 clearEntries()
@@ -119,6 +137,7 @@ public actor SizeCache {
 
     /// Writes the cache (best effort; a failure only costs the next scan its speed).
     public func endScan() {
+        closeWatch()
         evictIfNeeded()
         guard prepared, dirty, let fileURL, let header else { return }
         let body = FileBody(header: header, entries: Array(entries.values))
@@ -131,6 +150,7 @@ public actor SizeCache {
         clearEntries()
         header = nil
         prepared = false
+        closeWatch()
         if let fileURL { remove(fileURL.path) }
     }
 
@@ -140,6 +160,14 @@ public actor SizeCache {
     public func valid(_ url: URL) -> SizeReport? {
         guard prepared, let physical = Self.physicalPath(url) else { misses += 1; return nil }
         let key = Self.key(physical: physical)
+        ingestLive()
+        guard prepared else { misses += 1; return nil }
+        if isTouchedLive(key, after: 0) {   // written during this scan
+            entries[key] = nil
+            dirty = true
+            misses += 1
+            return nil
+        }
         guard var entry = entries[key] else { misses += 1; return nil }
         guard let st = Self.lstat(url.path), Int64(st.st_dev) == entry.rootDevice, UInt64(st.st_ino) == entry.rootInode,
               Int64(st.st_mtimespec.tv_sec) == entry.rootMtimeSec, Int64(st.st_mtimespec.tv_nsec) == entry.rootMtimeNsec
@@ -159,17 +187,26 @@ public actor SizeCache {
     /// What must be captured BEFORE the walk (a change during the walk then makes the next lookup miss).
     public struct RootStamp: Sendable {
         let device: Int64, inode: UInt64, sec: Int64, nsec: Int64
+        /// The scan it was taken in, and how many live events had been seen by then.
+        let generation: Int, liveCount: Int
     }
 
     public func stamp(_ url: URL) -> RootStamp? {
         guard prepared, let st = Self.lstat(url.path), let dev = dataDevice, st.st_dev == dev else { return nil }
+        ingestLive()
+        guard prepared else { return nil }
         return RootStamp(device: Int64(st.st_dev), inode: UInt64(st.st_ino),
-                         sec: Int64(st.st_mtimespec.tv_sec), nsec: Int64(st.st_mtimespec.tv_nsec))
+                         sec: Int64(st.st_mtimespec.tv_sec), nsec: Int64(st.st_mtimespec.tv_nsec),
+                         generation: generation, liveCount: liveLog.count)
     }
 
     public func store(_ report: SizeReport, for url: URL, stamp: RootStamp?) {
         guard prepared, let stamp, report.issueCount == 0, report.skippedMountPoints.isEmpty,
+              stamp.generation == generation,       // a superseded scan's walk must not outlive its scan
               let physical = Self.physicalPath(url) else { return }
+        // Anything written since the stamp (the walk may have read it before or after): do not remember it.
+        ingestLive()
+        guard prepared, !isTouchedLive(Self.key(physical: physical), after: stamp.liveCount) else { return }
         clock += 1
         entries[Self.key(physical: physical)] = Entry(
             path: physical, report: report, rootDevice: stamp.device, rootInode: stamp.inode,
@@ -197,6 +234,44 @@ public actor SizeCache {
     private static func lstat(_ path: String) -> stat? {
         var st = stat()
         return Darwin.lstat(path, &st) == 0 ? st : nil
+    }
+
+    private func closeWatch() { watch?.close(); watch = nil }
+
+    /// Pulls what the live watch has seen (after a flush). A watch that lost events ends caching for this scan.
+    private func ingestLive() {
+        guard let watch else { return }
+        guard let paths = watch.drain() else {
+            closeWatch()
+            clearEntries()
+            prepared = false
+            return
+        }
+        for p in paths {
+            let comps = PathCanonicalizer.key(p).components
+            let key = "/" + comps.joined(separator: "/")
+            liveLog.append(key)
+            liveChanged.insert(key)
+            var prefix = ""
+            for c in comps.dropLast() { prefix += "/" + c; liveAncestors.insert(prefix) }
+        }
+    }
+
+    /// Whether any live event after `index` was at, inside, or above `key`.
+    private func isTouchedLive(_ key: String, after index: Int) -> Bool {
+        if index == 0 {
+            if liveAncestors.contains(key) { return true }
+            var prefix = ""
+            for c in key.split(separator: "/") { prefix += "/" + c; if liveChanged.contains(prefix) { return true } }
+            return false
+        }
+        let comps = key.split(separator: "/")
+        for ev in liveLog[min(index, liveLog.count)...] {
+            let e = ev.split(separator: "/")
+            let n = min(e.count, comps.count)
+            if e[..<n] == comps[..<n] { return true }   // one is a prefix of the other (equal, inside or above)
+        }
+        return false
     }
 
     private func clearEntries() {
@@ -241,7 +316,11 @@ public actor SizeCache {
     private func loadIfNeeded() {
         guard !loaded else { return }
         loaded = true
-        guard let fileURL, let data = try? Data(contentsOf: fileURL),
+        // Only a regular file of ours that nobody else can write is trusted.
+        var st = stat()
+        guard let fileURL, Darwin.lstat(fileURL.path, &st) == 0, (st.st_mode & S_IFMT) == S_IFREG,
+              st.st_uid == getuid(), st.st_mode & 0o077 == 0,
+              let data = try? Data(contentsOf: fileURL),
               let body = try? JSONDecoder().decode(FileBody.self, from: data),
               body.header.schemaVersion == Self.schemaVersion else { return }
         header = body.header

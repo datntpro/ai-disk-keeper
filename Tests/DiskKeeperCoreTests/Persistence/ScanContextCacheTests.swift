@@ -41,8 +41,11 @@ final class ScanContextCacheTests: XCTestCase {
         let loaded = try RuleHarness.loadRules(json: rules, fixture: fx)
         let cacheFile = URL(fileURLWithPath: fx.tempDir + "/size-cache.json")
 
+        var lastCache: SizeCache?
         func scan() async throws -> ScanItem? {
+            try await Task.sleep(for: .seconds(2))           // let fseventsd assign ids to earlier writes
             let cache = SizeCache(fileURL: cacheFile)        // real journal
+            lastCache = cache
             let ctx = ScanContext(environment: fx.env,
                                   pathGuard: try ScanGuard(environment: fx.env, protectPatterns: loaded.protectPatterns),
                                   sizeCache: cache)
@@ -58,6 +61,8 @@ final class ScanContextCacheTests: XCTestCase {
         XCTAssertEqual(first?.tier, .safe)
         let second = try await scan()          // warm, nothing changed: from the cache
         XCTAssertEqual(second?.tier, .safe)
+        let secondHits = await lastCache?.hits
+        XCTAssertEqual(secondHits, 1, "the warm scan must really be served from the cache, or this test proves nothing")
 
         let h = try FileHandle(forWritingTo: URL(fileURLWithPath: file))       // append in place: no directory mtime changes
         try h.seekToEnd(); try h.write(contentsOf: Data("more".utf8)); try h.close()
