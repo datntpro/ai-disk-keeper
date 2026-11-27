@@ -7,7 +7,7 @@ final class AppSettingsMenuBarTests: XCTestCase {
         XCTAssertTrue(s.showMenuBarItem)
         XCTAssertFalse(s.menuBarShowsFreeSpace)
         XCTAssertTrue(s.lowSpaceAlertEnabled)
-        XCTAssertEqual(s.lowSpaceThresholdPercent, 10)
+        XCTAssertEqual(s.lowSpaceThresholdPercent, 15, "H1: a new install warns at 15 %")
     }
 
     func testRoundTripKeepsTheFourFields() throws {
@@ -32,16 +32,22 @@ final class AppSettingsMenuBarTests: XCTestCase {
         XCTAssertTrue(s.showMenuBarItem)
         XCTAssertFalse(s.menuBarShowsFreeSpace)
         XCTAssertTrue(s.lowSpaceAlertEnabled)
-        XCTAssertEqual(s.lowSpaceThresholdPercent, 10)
+        XCTAssertEqual(s.lowSpaceThresholdPercent, 15, "H1: a new install warns at 15 %")
+    }
+
+    func testSavedValuesInsideTheRangeAreKept() throws {
+        let saved = try JSONDecoder().decode(AppSettings.self, from: Data(#"{"lowSpaceThresholdPercent":10}"#.utf8))
+        XCTAssertEqual(saved.lowSpaceThresholdPercent, 10, "a stored 10 stays 10; only new installs get 15")
+        XCTAssertEqual(try JSONDecoder().decode(AppSettings.self, from: JSONEncoder().encode(saved)).lowSpaceThresholdPercent, 10)
     }
 
     func testThresholdIsClamped() throws {
         var s = AppSettings.defaults
         s.setLowSpaceThreshold(percent: 0)
-        XCTAssertEqual(s.lowSpaceThresholdPercent, 1)
+        XCTAssertEqual(s.lowSpaceThresholdPercent, 5)
         s.setLowSpaceThreshold(percent: 99)
-        XCTAssertEqual(s.lowSpaceThresholdPercent, 50)
+        XCTAssertEqual(s.lowSpaceThresholdPercent, 30)
         let wild = #"{"lowSpaceThresholdPercent":-5}"#
-        XCTAssertEqual(try JSONDecoder().decode(AppSettings.self, from: Data(wild.utf8)).lowSpaceThresholdPercent, 1)
+        XCTAssertEqual(try JSONDecoder().decode(AppSettings.self, from: Data(wild.utf8)).lowSpaceThresholdPercent, 5)
     }
 }

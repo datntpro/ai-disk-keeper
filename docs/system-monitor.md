@@ -46,3 +46,5 @@ Never per tick: `StorageModel` refresh (once per popover open), file walks, chil
 `MonitorSchedulerTests`, `MonitorTickWorkTests` (fake samplers + virtual time), `LiveSamplerCostTests` (median tick < 2 ms;
 `ADK_SKIP_PERF=1` skips), `SystemMonitorLintTests` (banned symbols), layout / renderer / render / settings tests.
 VM QA: `scripts/qa/T50.sh` (`cpu`, `mem`, `net`, `energy`, `teardown`; refuses outside a VM).
+
+See also [host-monitor.md](host-monitor.md): disk I/O per worktree and agent, and the free-space trend.

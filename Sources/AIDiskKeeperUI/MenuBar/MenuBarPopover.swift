@@ -14,6 +14,7 @@ struct MenuBarPopover: View {
     let model: MenuBarModel
     let monitor: SystemMonitorModel
     let suite: SuiteModel
+    var hostLoad: DiskActivityModel?
     var open: () -> Void = {}
     @Environment(\.openWindow) private var openWindow
 
@@ -26,8 +27,8 @@ struct MenuBarPopover: View {
         }
         .frame(width: 320)
         .background(WindowAccessor { monitor.popoverWindow = $0 })
-        .onAppear { model.popoverOpened(); monitor.setPopoverOpen(true) }
-        .onDisappear { monitor.setPopoverOpen(false) }
+        .onAppear { model.popoverOpened(); monitor.setPopoverOpen(true); hostLoad?.setPopoverOpen(true) }
+        .onDisappear { monitor.setPopoverOpen(false); hostLoad?.setPopoverOpen(false) }
     }
 
     private var content: some View {
@@ -41,6 +42,8 @@ struct MenuBarPopover: View {
                 Divider()
                 SystemMonitorSection(monitor: monitor)
             }
+            if let text = model.trendText { trendRow(text) }
+            if let hostLoad, !hostLoad.topWorktrees.isEmpty { diskActivity(hostLoad) }
             if let next = model.nextScheduledScan {
                 Text(MenuBarCopy.nextScan(Formatting.absolute(next))).font(.caption).foregroundStyle(.secondary)
             }
@@ -97,6 +100,39 @@ struct MenuBarPopover: View {
                     .font(.callout).foregroundStyle(.secondary)
             }
         }
+    }
+
+    private func trendRow(_ text: String) -> some View {
+        Label(text, systemImage: model.trend?.timeToFull == nil ? "equal.circle" : "chart.line.downtrend.xyaxis")
+            .font(.callout).foregroundStyle(model.freeSpaceLevel == .ok ? Color.secondary : Color.adkReviewInk)
+            .accessibilityElement(children: .combine)
+    }
+
+    /// The three worktrees writing the most; a click opens the Disk Activity screen. Report-only.
+    private func diskActivity(_ hostLoad: DiskActivityModel) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(DiskActivityCopy.popoverTitle).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            ForEach(hostLoad.topWorktrees) { row in
+                Button { openDiskActivity() } label: {
+                    HStack {
+                        Text(verbatim: row.worktree.displayName).lineLimit(1)
+                        Spacer()
+                        Text(verbatim: MonitorFormatting.rate(row.writeBytesPerSec, units: .bytes)).monospacedDigit().foregroundStyle(.secondary)
+                    }
+                    .font(.callout)
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
+            }
+        }
+    }
+
+    private func openDiskActivity() {
+        suite.navigation.selection = .module(.diskActivity)
+        monitor.popoverWindow?.close()   // the popover must not stay open over the window
+        openWindow(id: "main")
+        NSApp.activate()
+        open()
     }
 
     private var topTools: some View {
