@@ -25,6 +25,7 @@ VI = {
     "history.result.trashed": "Đã chuyển vào Thùng rác",
     "history.result.deleted": "Đã xóa",
     "history.result.ran": "Đã xóa bằng công cụ của nó",
+    "history.result.intent": "Đã bắt đầu, chưa ghi nhận kết quả",
 }
 
 PLURALS = {

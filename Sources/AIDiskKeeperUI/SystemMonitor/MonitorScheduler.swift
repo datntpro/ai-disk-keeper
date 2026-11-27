@@ -63,6 +63,7 @@ final class MonitorScheduler {
     let monitor: SystemMonitorModel
     private let menuBar: MenuBarModel
     private let settings: SettingsModel
+    private let hostLoad: DiskActivityModel?
     private let sampler: SystemSampler
     private let clock: () -> Duration
     private let sleeper: (Duration) async -> Void
@@ -77,13 +78,14 @@ final class MonitorScheduler {
 
     static let idleSleep: Duration = .seconds(3600)
 
-    init(monitor: SystemMonitorModel, menuBar: MenuBarModel, settings: SettingsModel, sampler: SystemSampler = SystemSampler(),
+    init(monitor: SystemMonitorModel, menuBar: MenuBarModel, settings: SettingsModel, sampler: SystemSampler = SystemSampler(), hostLoad: DiskActivityModel? = nil,
          clock: @escaping () -> Duration = MonitorScheduler.liveClock,
          sleeper: @escaping (Duration) async -> Void = MonitorScheduler.liveSleep) {
         self.monitor = monitor
         self.menuBar = menuBar
         self.settings = settings
         self.sampler = sampler
+        self.hostLoad = hostLoad
         self.clock = clock
         self.sleeper = sleeper
     }
@@ -113,6 +115,7 @@ final class MonitorScheduler {
         loop?.cancel(); sleeping?.cancel()
         loop = nil; sleeping = nil
         monitor.onDemandChange = nil
+        hostLoad?.stop()
         let center = NSWorkspace.shared.notificationCenter
         for o in observers { center.removeObserver(o) }
         observers = []
@@ -123,6 +126,10 @@ final class MonitorScheduler {
         let plan = SamplingPolicy.plan(monitor.demand)
         if plan != lastPlan, !plan.metrics.isEmpty { planner.sampleMetricsNow() }
         monitor.refreshLabel()
+        // Host load (disk I/O per worktree) runs only while the popover is open, at its own 5 s cadence, never asleep.
+        // The Disk Activity screen asks for it by itself. There is no background sampling.
+        hostLoad?.setPopoverOpen(monitor.popoverOpen && !monitor.systemAsleep && !monitor.displayAsleep)
+        hostLoad?.setSuspended(monitor.systemAsleep || monitor.displayAsleep)
         sleeping?.cancel()
     }
 

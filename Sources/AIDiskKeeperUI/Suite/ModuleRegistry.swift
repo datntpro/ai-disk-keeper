@@ -2,11 +2,11 @@ import Foundation
 
 /// The single list of modules. A new module is a new provider file plus one line here, nothing else.
 public enum ModuleRegistry {
-    /// ALL twelve, in the fixed sidebar order (the order tests pin).
+    /// ALL thirteen, in the fixed sidebar order (the order tests pin).
     public static let providers: [any ModuleProvider.Type] = [
         OverviewModule.self, CareScanModule.self, DiskMapModule.self, LargeOldModule.self, DuplicatesModule.self,
         StorageModule.self, AIToolsModule.self, WorktreesModule.self, ModelsDockerModule.self,
-        UninstallerModule.self, StartupItemsModule.self, HistoryModule.self,
+        UninstallerModule.self, StartupItemsModule.self, DiskActivityModule.self, HistoryModule.self,
     ]
 
     /// Debug builds also list modules that are not built yet (their detail is a stub).

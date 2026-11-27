@@ -163,6 +163,11 @@ final class SystemMonitorModel {
             c.meters = inBar.prefix(3).map { q(meter($0)) }
         }
         if layout.mode == .readout, case .value(let m) = memory, let p = m.pressure, p != .normal { c.pressureDot = true }
+        switch menuBar.freeSpaceLevel {
+        case .ok: break
+        case .warning: c.lowSpace = 1
+        case .critical: c.lowSpace = 2
+        }
         return c
     }
 
@@ -208,7 +213,7 @@ final class SystemMonitorModel {
             case .disk: break
             }
         }
-        let base = s.menuBarShowsFreeSpace ? menuBar.labelAccessibility : StrataGlyph.accessibilityDescription
+        let base = menuBar.lowSpaceAccessibility ?? (s.menuBarShowsFreeSpace ? menuBar.labelAccessibility : StrataGlyph.accessibilityDescription)
         return parts.isEmpty ? base : SystemMonitorCopy.barJoin(base, parts.joined(separator: ", "))
     }
 

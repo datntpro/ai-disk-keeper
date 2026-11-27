@@ -47,8 +47,12 @@ final class MenuBarModelTests: XCTestCase {
     }
 
     private func settings() -> SettingsModel {
-        SettingsModel(store: SettingsStore(fileURL: dir.appendingPathComponent("settings.json")), environment: env,
-                      probe: { .notGranted })
+        let s = SettingsModel(store: SettingsStore(fileURL: dir.appendingPathComponent("settings.json")), environment: env,
+                              probe: { .notGranted })
+        if !FileManager.default.fileExists(atPath: dir.appendingPathComponent("settings.json").path) {
+            s.setLowSpaceThresholdPercent(10)   // these tests were written against the old 10 % default
+        }
+        return s
     }
 
     /// Volume of 494 GB whose free space steps through `freePercents` on each poll (the last one repeats).
@@ -198,7 +202,7 @@ final class MenuBarModelTests: XCTestCase {
         let r = settings()
         XCTAssertTrue(r.settings.menuBarShowsFreeSpace)
         XCTAssertFalse(r.settings.lowSpaceAlertEnabled)
-        XCTAssertEqual(r.settings.lowSpaceThresholdPercent, 50)
+        XCTAssertEqual(r.settings.lowSpaceThresholdPercent, 30)
     }
 
     func testLabelTextFollowsTheSetting() async {
@@ -209,4 +213,51 @@ final class MenuBarModelTests: XCTestCase {
         XCTAssertNotNil(model.labelFreeText)
         XCTAssertTrue(model.labelAccessibility.contains("AI Disk Keeper"))
     }
+
+    // MARK: H1 free-space level, trend, history
+
+    func testLevelUsesTheThresholdAndCriticalFloor() async {
+        let (model, _, _, s) = rig([40, 12, 4])
+        s.setLowSpaceThresholdPercent(15)
+        await model.tick(); XCTAssertEqual(model.freeSpaceLevel, .ok)
+        await model.tick(); XCTAssertEqual(model.freeSpaceLevel, .warning, "12 % is under the 15 % level (10 % saved here would be ok)")
+        s.setLowSpaceThresholdPercent(10)
+        XCTAssertEqual(model.freeSpaceLevel, .ok)
+        await model.tick(); XCTAssertEqual(model.freeSpaceLevel, .critical)
+        XCTAssertEqual(model.lowSpaceAccessibility?.contains("4"), true)
+    }
+
+    func testNewInstallDefaultsToFifteenAndAStoredTenStaysTen() {
+        let fresh = SettingsModel(store: SettingsStore(fileURL: dir.appendingPathComponent("fresh.json")), environment: env, probe: { .notGranted })
+        XCTAssertEqual(fresh.settings.lowSpaceThresholdPercent, 15)
+        let stored = settings()   // the helper saves 10 on first use
+        XCTAssertEqual(stored.settings.lowSpaceThresholdPercent, 10)
+        XCTAssertEqual(settings().settings.lowSpaceThresholdPercent, 10)
+    }
+
+    func testPollFeedsAndPersistsTheHistoryOncePerBucket() async throws {
+        let store = FreeSpaceHistoryStore(fileURL: dir.appendingPathComponent("fsh/history.json"))
+        let steps = Steps([100, 90, 80].map { Int64($0) * gb }, total: 494 * gb)
+        let clock = Box(Date(timeIntervalSince1970: 1_700_000_100))
+        let care = CareRig()
+        let model = MenuBarModel(storage: StorageModel(load: { StorageFix.overview() }, minInterval: 0), care: care.model, scan: care.scan,
+                                 settings: settings(), notifier: FakeNotifier(), defaults: defaults, probe: { steps.next() },
+                                 clock: { clock.value }, historyStore: store)
+        await model.tick()
+        clock.value += 60
+        await model.tick()
+        clock.value += 600
+        await model.tick()
+        var saved = store.load().points
+        for _ in 0..<40 where saved.count < 2 { try await Task.sleep(for: .milliseconds(100)); saved = store.load().points }
+        XCTAssertEqual(saved.count, 2)
+        XCTAssertEqual(saved.first?.freeBytes, 90 * gb, "the minimum of the first bucket")
+        XCTAssertNil(model.trend, "under six hours of history: no estimate")
+        XCTAssertNil(model.trendText)
+    }
+}
+
+final class Box<T>: @unchecked Sendable {
+    var value: T
+    init(_ v: T) { value = v }
 }

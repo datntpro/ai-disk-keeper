@@ -311,6 +311,8 @@ M4 amendments (items 1–11 above are unchanged; numbering continues):
 | **M3 — Background & polish** | Menu bar summary; scheduled scans + notifications; user rules/ignore list; history viewer; performance cache; signed/notarized releases | T21–T26 |
 | **M4 — Disk-management suite** | Disk map, large & old, duplicates, uninstaller + leftovers, startup items, system junk II, storage overview, Care Scan, Strata redesign | T27–T48 |
 
+> **Host monitor (H1).** Disk I/O per agent/worktree and a free-space trend (see [host-monitor.md](host-monitor.md)). New installs warn at 15 % free (range 5–30 %, saved values kept); free space is measured on the Data volume; sampling runs only while the popover or the Disk Activity screen is visible.
+
 ### 8.1 Owner decisions (M4)
 
 Accepted by the owner (suite plan D1–D10):

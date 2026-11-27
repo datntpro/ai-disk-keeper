@@ -9,8 +9,10 @@ public struct AuditRecord: Codable, Sendable, Hashable {
     public let path: String
     public let bytes: Int64
     public let action: CleanupAction
-    /// "trashed" | "deleted" | "ran" | "skipped" | "failed"
+    /// "trashed" | "deleted" | "ran" | "skipped" | "failed" | "intent" (written before a destructive tool command;
+    /// an intent with no later outcome line means the app or the tool died in between).
     public let result: String
+    public static let intentResult = "intent"
     public let trashPath: String?
     public let ruleID: String
     public let tool: ToolID
@@ -140,6 +142,13 @@ public actor AuditLog {
     }
 
     func append(_ record: AuditRecord) throws { try appendLine(record) }
+
+    /// Opens (ref-counted), appends one line, fsyncs, closes.
+    func appendStandalone(_ record: AuditRecord) throws {
+        try open()
+        defer { close() }
+        try appendLine(record)
+    }
 
     /// Opens (ref-counted), appends one quit line, fsyncs, closes. Throws like `open()` / `append`.
     public func appendQuitEvent(_ record: AppQuitAuditRecord) throws {

@@ -1,4 +1,5 @@
 import AppKit
+import DiskKeeperCore
 import Foundation
 import Observation
 import SwiftUI
@@ -14,6 +15,7 @@ public final class AppModels {
     let menuBar: MenuBarModel
     let monitor: SystemMonitorModel
     let scheduler: MonitorScheduler
+    let hostLoad: DiskActivityModel
 
     /// Used by `RootView(env:)` (tests): nothing is posted and nothing polls.
     public convenience init(env: AppEnvironment) {
@@ -30,9 +32,11 @@ public final class AppModels {
         self.menuBar = MenuBarModel(
             storage: StorageModule.model(env: env, suite: suite),
             care: OverviewModule.careModel(env: env, scan: scan, suite: suite),
-            scan: scan, settings: env.settings, notifier: notifier, defaults: defaults)
+            scan: scan, settings: env.settings, notifier: notifier, defaults: defaults,
+            historyStore: FreeSpaceHistoryStore(fileURL: FreeSpaceHistoryStore.defaultFileURL(environment: env.pathEnvironment)))
         self.monitor = SystemMonitorModel(settings: env.settings, menuBar: menuBar)
-        self.scheduler = MonitorScheduler(monitor: monitor, menuBar: menuBar, settings: env.settings)
+        self.hostLoad = DiskActivityModule.model(env: env, suite: suite)
+        self.scheduler = MonitorScheduler(monitor: monitor, menuBar: menuBar, settings: env.settings, hostLoad: hostLoad)
     }
 
     /// The real app: live environment, real notifications, and the one monitor scheduler running (it also drives the 60 s volume poll).
@@ -51,6 +55,6 @@ public final class AppModels {
 // The menu bar's views are internal to the UI module; the App target gets them as opaque views.
 extension AppModels {
     public var menuBarInserted: Binding<Bool> { MenuBarModel.insertedBinding(env.settings) }
-    public var menuBarPopover: some View { MenuBarPopover(model: menuBar, monitor: monitor, suite: suite) }
+    public var menuBarPopover: some View { MenuBarPopover(model: menuBar, monitor: monitor, suite: suite, hostLoad: hostLoad) }
     public var menuBarLabel: some View { MenuBarLabel(monitor: monitor) }
 }

@@ -45,7 +45,8 @@ public struct LiveMemorySampler: MemorySampling {
         return sysctlbyname("vm.swapusage", &usage, &size, nil, 0) == 0 ? usage.xsu_used : nil
     }
 
-    private static func pressure() -> MemoryPressure? {
+    /// `kern.memorystatus_vm_pressure_level` (no subprocess, no root); nil when the sysctl is unavailable.
+    public static func pressure() -> MemoryPressure? {
         var level: Int32 = 0
         var size = MemoryLayout<Int32>.size
         guard sysctlbyname("kern.memorystatus_vm_pressure_level", &level, &size, nil, 0) == 0 else { return nil }

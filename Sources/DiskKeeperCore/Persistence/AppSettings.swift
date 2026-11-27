@@ -43,8 +43,8 @@ public struct AppSettings: Codable, Sendable, Hashable {
 
     public static let historyMinuteChoices = [1, 5]
 
-    public static let lowSpaceThresholdRange = 1...50
-    public static let defaultLowSpaceThresholdPercent = 10
+    public static let lowSpaceThresholdRange = 5...30
+    public static let defaultLowSpaceThresholdPercent = 15
 
     public static let defaultProjectRoots = ["~", "~/orca/workspaces", "~/Developer", "~/code", "~/src", "~/projects"]
 
