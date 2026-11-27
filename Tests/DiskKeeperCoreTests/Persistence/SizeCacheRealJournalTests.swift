@@ -183,7 +183,7 @@ final class SizeCacheRealJournalTests: XCTestCase {
     /// scan captures its id, yet not be returned by the history query -> stale hit, and the header then moves past it.
     func testImmediateRescanAfterAppend() async throws {
         var stale = 0, persisted = 0
-        let n = 5
+        let n = 15
         for i in 0..<n {
             let rel = "home/loop\(i)"
             let f = try fx.file(rel + "/d/f.log", bytes: 4096, modified: old)

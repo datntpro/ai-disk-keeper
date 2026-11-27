@@ -148,9 +148,14 @@ public struct LiveFSEventsJournal: FSEventsJournaling {
         let queue = DispatchQueue(label: "adk.fsevents-watch", qos: .utility)
         let maxEvents: Int
         var stream: FSEventStreamRef?
-        var paths: [String] = []     // queue-confined
-        var poisoned = false         // queue-confined
+        // Shared between the callback queue and `drain`: lock-protected, so a backlog of replayed events on the
+        // queue can never block the caller.
+        let lock = NSLock()
+        var paths: [String] = []
+        var poisoned = false
         var total = 0
+        var historyDone = false
+        var closed = false
 
         init?(device: dev_t, since: UInt64, maxEvents: Int) {
             self.maxEvents = maxEvents
@@ -177,31 +182,48 @@ public struct LiveFSEventsJournal: FSEventsJournaling {
         }
 
         func handle(path: String, flags: FSEventStreamEventFlags) {   // on `queue`
-            if flags & FSEventStreamEventFlags(kFSEventStreamEventFlagHistoryDone) != 0 { return }
+            lock.lock(); defer { lock.unlock() }
+            if closed { return }
+            if flags & FSEventStreamEventFlags(kFSEventStreamEventFlagHistoryDone) != 0 { historyDone = true; return }
             if flags & Collector.untrusted != 0 { poisoned = true }
             total += 1
-            if total > maxEvents { poisoned = true; return }
+            if total > maxEvents { poisoned = true; paths = []; return }
             paths.append(path.hasPrefix("/") ? path : "/" + path)
         }
 
+        private func state() -> (done: Bool, poisoned: Bool) {
+            lock.lock(); defer { lock.unlock() }
+            return (historyDone, poisoned)
+        }
+
         func drain() -> [String]? {
-            guard let s = stream else { return nil }
-            FSEventStreamFlushSync(s)
-            return queue.sync {
-                if poisoned { return nil }
-                defer { paths = [] }
-                return paths
+            lock.lock(); let s = closed ? nil : stream; lock.unlock()
+            guard let s else { return nil }
+            // The replay of old events must be complete before anything is trusted; bounded, then give up.
+            let deadline = Date().addingTimeInterval(5)
+            while true {
+                FSEventStreamFlushSync(s)
+                let st = state()
+                if st.poisoned { return nil }
+                if st.done { break }
+                if Date() > deadline { return nil }
+                Thread.sleep(forTimeInterval: 0.01)
             }
+            lock.lock(); defer { lock.unlock() }
+            if poisoned { return nil }
+            defer { paths = [] }
+            return paths
         }
 
         func close() {
-            queue.sync {
-                guard let s = stream else { return }
-                FSEventStreamStop(s)
-                FSEventStreamInvalidate(s)
-                FSEventStreamRelease(s)
-                stream = nil
-            }
+            lock.lock()
+            guard !closed, let s = stream else { lock.unlock(); return }
+            closed = true
+            stream = nil
+            lock.unlock()
+            FSEventStreamStop(s)
+            FSEventStreamInvalidate(s)
+            FSEventStreamRelease(s)
         }
     }
 }

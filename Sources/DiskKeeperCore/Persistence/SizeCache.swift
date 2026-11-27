@@ -109,18 +109,29 @@ public actor SizeCache {
         }
         // Captured BEFORE the walk and before asking the journal: nothing after this point can be lost.
         let newID = journal.currentEventID()
-        // Stays open until `endScan`: writes made (or delivered late) after the history query below are seen by
-        // every lookup and store of this scan. No watch = no cache for this scan.
-        guard let opened = journal.openWatch(device: device, since: newID) else {
+        let optionsHash = Self.optionsHash(options)
+        let trusted: Header? = {
+            guard let h = header, h.schemaVersion == Self.schemaVersion, h.volumeUUID == uuid,
+                  h.sizerOptionsHash == optionsHash, h.appBuild == appBuild, !entries.isEmpty,
+                  h.lastEventID <= newID else { return nil }   // an id from the future cannot be vouched for
+            return h
+        }()
+        // History first (own stream, 5 s timeout): if it cannot vouch (gap, too many events), nothing is trusted and
+        // the watch starts at `newID` without replaying a huge past.
+        var history: JournalResult = .invalidateAll
+        if let h = trusted { history = await journal.changedPaths(since: h.lastEventID, device: device) }
+        var replayFrom = newID
+        if case .changed = history, let h = trusted { replayFrom = h.lastEventID }
+        // Stays open until `endScan`. It starts at the SAVED id (not at `newID`): an event whose id is below `newID`
+        // but that fseventsd delivers late (a write just before this scan) is replayed to it, and the first drain
+        // below flushes the daemon and waits for the replay to finish. No watch = no cache for this scan.
+        guard let opened = journal.openWatch(device: device, since: replayFrom) else {
             clearEntries()
             return
         }
         watch = opened
-        let optionsHash = Self.optionsHash(options)
-        if let h = header, h.schemaVersion == Self.schemaVersion, h.volumeUUID == uuid,
-           h.sizerOptionsHash == optionsHash, h.appBuild == appBuild, !entries.isEmpty,
-           h.lastEventID <= newID {            // an id from the future cannot be vouched for
-            switch await journal.changedPaths(since: h.lastEventID, device: device) {
+        if trusted != nil {
+            switch history {
             case .invalidateAll:
                 clearEntries()
             case .changed(let paths):
@@ -133,6 +144,7 @@ public actor SizeCache {
                         sizerOptionsHash: optionsHash, appBuild: appBuild)
         prepared = true
         dirty = true
+        ingestLive()   // flush + wait for the replay: entries are only trusted after this returns
     }
 
     /// Writes the cache (best effort; a failure only costs the next scan its speed).

@@ -7127,22 +7127,6 @@
         }
       }
     },
-    "history.result.ran" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Removed by its tool"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Đã xóa bằng công cụ của nó"
-          }
-        }
-      }
-    },
     "history.result.intent" : {
       "localizations" : {
         "en" : {
@@ -7155,6 +7139,22 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Đã bắt đầu, chưa ghi nhận kết quả"
+          }
+        }
+      }
+    },
+    "history.result.ran" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Removed by its tool"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã xóa bằng công cụ của nó"
           }
         }
       }
