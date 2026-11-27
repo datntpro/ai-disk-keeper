@@ -23,6 +23,13 @@ struct GeneralSettingsView: View {
             }
             languageSection
             cacheSection
+            Section(ProcessControlCopy.settingsSection) {
+                Stepper(ProcessControlCopy.settingsAutoResume(model.settings.autoResumeMinutes),
+                        value: Binding(get: { model.settings.autoResumeMinutes }, set: { model.setAutoResumeMinutes($0) }),
+                        in: AppSettings.autoResumeRange)
+                Text(ProcessControlCopy.settingsNote).font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             FullDiskAccessCard(status: model.fdaStatus, recheck: model.refreshFullDiskAccess)
             HostStatusSettingsSection(model: model, status: hostStatus)
             Button(loc("settings.general.showWelcome", "Show welcome screen again")) { model.setOnboardingCompleted(false) }

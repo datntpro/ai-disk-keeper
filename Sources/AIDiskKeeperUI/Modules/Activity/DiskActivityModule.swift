@@ -14,6 +14,6 @@ enum DiskActivityModule: ModuleProvider {
     }
 
     @MainActor static func makeDetail(_ ctx: ModuleContext) -> AnyView {
-        AnyView(DiskActivityView(model: model(env: ctx.env, suite: ctx.suite)))
+        AnyView(DiskActivityView(model: model(env: ctx.env, suite: ctx.suite), control: ctx.env.processControl))
     }
 }

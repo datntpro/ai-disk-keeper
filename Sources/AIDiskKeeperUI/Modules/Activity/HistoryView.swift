@@ -29,6 +29,11 @@ struct HistoryView: View {
             }
             .fixedSize()
             Spacer()
+            Picker(ProcessControlCopy.historyFilterLabel, selection: $model.filter) {
+                Text(ProcessControlCopy.historyFilterAll).tag(HistoryModel.Filter.all)
+                Text(ProcessControlCopy.historyFilterProcesses).tag(HistoryModel.Filter.processes)
+            }
+            .pickerStyle(.segmented).fixedSize()
             Button(HistoryCopy.revealLog) { model.revealLog() }
             Button { exportCSV() } label: { Label(HistoryCopy.exportCSV, systemImage: "square.and.arrow.up") }
                 .disabled(model.runs.isEmpty)
@@ -84,7 +89,18 @@ struct HistoryView: View {
 
     @ViewBuilder private var detail: some View {
         if let run = model.selectedRun {
-            if run.kind == .appQuit {
+            if run.kind == .processControl {
+                Table(run.processes.sorted { $0.timestamp < $1.timestamp }, columns: {
+                    TableColumn(ProcessControlCopy.colProcess) { p in Text(verbatim: "\(p.name) (\(p.pid))").lineLimit(1) }
+                    TableColumn(HistoryCopy.colActions) { p in Text(ProcessControlCopy.historyAction(p.action)) }.width(130)
+                    TableColumn(HistoryCopy.colResult) { p in Text(ProcessControlCopy.historyResult(p.result)) }.width(100)
+                    TableColumn(HistoryCopy.colReason) { p in
+                        Text(verbatim: [p.root.map { "↳ \($0)" }, p.result.hasPrefix("refused:") ? String(p.result.dropFirst(8)) : nil,
+                                        p.errno.map { "errno \($0)" }].compactMap { $0 }.joined(separator: " · "))
+                            .lineLimit(1).foregroundStyle(.adkText2)
+                    }
+                })
+            } else if run.kind == .appQuit {
                 List(Array(run.quits.enumerated()), id: \.offset) { _, q in
                     HStack { Text(q.appPath).lineLimit(1).truncationMode(.middle); Spacer(); Text(q.result ?? q.phase).foregroundStyle(.adkText2) }
                 }
@@ -125,4 +141,8 @@ struct HistoryView: View {
 
 extension AuditRecord: @retroactive Identifiable {
     public var id: String { "\(runID)|\(timestamp.timeIntervalSince1970)|\(path)|\(result)" }
+}
+
+extension ProcessControlAuditRecord: @retroactive Identifiable {
+    public var id: String { "\(flowID)|\(pid)|\(timestamp.timeIntervalSince1970)|\(action)" }
 }
