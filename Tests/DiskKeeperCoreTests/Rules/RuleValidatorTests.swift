@@ -150,7 +150,7 @@ final class RuleValidatorTests: XCTestCase {
 
     func testWildcardishAndContainerProtectPatternsRejected() throws {
         for pattern in ["~/[a-z]*", "~/[!.]*", "~/{a,b}*", "$APP_SUPPORT/**", "$APP_SUPPORT/*", "$APP_SUPPORT",
-                        "$CACHES/**", "~/Library/**", "$TMPDIR/[a-z]*", "$APP_SUPPORT/[!.]*"] {
+                        "$CACHES/**", "~/Library/**", "~/library/**", "~/LIBRARY/*", "$TMPDIR/[a-z]*", "$APP_SUPPORT/[!.]*"] {
             let file = RuleFixtures.file(protect: #"["\#(pattern)"]"#, rules: [RuleFixtures.rule()])
             expectOne(try load([file]), .invalidProtectPattern, path: "protect[0]")
             try? FileManager.default.removeItem(at: tmp.url.appendingPathComponent("user"))

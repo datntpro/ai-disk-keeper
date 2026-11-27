@@ -12,18 +12,19 @@ public enum RuleValidator {
         }
 
         let roots = allowedRoots(env)
+        let foldedRoots = roots.map(PathCanonicalizer.fold)
         let containers = ([env.home + "/Library", env.applicationSupport, env.caches, env.logs, env.containers,
-                           env.groupContainers] + roots).map(aliasNormalized)
+                           env.groupContainers].map { PathCanonicalizer.fold(aliasNormalized($0)) } + foldedRoots)
         // A protect pattern whose literal prefix is a root (or above one) would protect everything under it
         // (`~/**`, `~/*`, `$TMPDIR/**`, `/private/tmp`, ...) and, being a global union, disable other rules.
         for (j, t) in file.protect.enumerated() {
             guard let (prefix, nextGlob) = t.literalPrefix(in: env) else { continue }
-            let norm = aliasNormalized(prefix)
+            let norm = PathCanonicalizer.fold(aliasNormalized(prefix))   // APFS is case-insensitive: `~/library` too
             // Above a root: any glob below could cover it. At a root or a container (`~/Library`,
             // `$APP_SUPPORT`, ...): only a wildcard-ish component (`*`, `**`, `?`, `[a-z]*`, `[!.]*`, `{a,b}*`)
             // or no component at all covers everything; `keep-*` or `.[ab]x` do not.
             let wildcardish = nextGlob.map(isWildcardish) ?? true
-            let above = roots.contains(where: { hasScalarPrefix($0, norm + "/") })
+            let above = foldedRoots.contains(where: { hasScalarPrefix($0, norm + "/") })
             let broadBase = containers.contains(norm)
             if above || (broadBase && wildcardish) {
                 return err(.invalidProtectPattern, "protect[\(j)]",
