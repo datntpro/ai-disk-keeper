@@ -73,6 +73,22 @@ public enum ProcessControlPolicy {
     }
 }
 
+public extension ProcessControlPolicy {
+    /// This process's parent chain read straight from libproc, for any owner (stops at pid <= 1 or a loop).
+    static func liveAncestors(of pid: pid_t = getpid()) -> Set<pid_t> {
+        var out = Set<pid_t>(), cursor = pid
+        while out.count < 64 {
+            var info = proc_bsdinfo()
+            let size = Int32(MemoryLayout<proc_bsdinfo>.size)
+            guard proc_pidinfo(cursor, PROC_PIDTBSDINFO, 0, &info, size) == size else { break }
+            let parent = pid_t(bitPattern: info.pbi_ppid)
+            guard parent > 0, out.insert(parent).inserted else { break }
+            cursor = parent
+        }
+        return out
+    }
+}
+
 public struct ProcessControlPlanRow: Sendable, Hashable {
     public let target: ProcessTarget
     public let ppid: pid_t
@@ -115,6 +131,7 @@ public actor ProcessController {
     private let isGUIApp: @Sendable (pid_t) -> Bool
     private let ownPID: pid_t
     private let ownUID: uid_t
+    private let extraAncestors: @Sendable () -> Set<pid_t>
     private let now: @Sendable () -> Date
     private let audit: @Sendable (ProcessControlAuditRecord) async -> Void
     private var autoResumeMinutes: Int
@@ -128,11 +145,12 @@ public actor ProcessController {
 
     public init(table: any ProcessTableReading, signaler: any ProcessSignaling, store: PausedProcessStore,
                 isGUIApp: @escaping @Sendable (pid_t) -> Bool, ownPID: pid_t = getpid(), ownUID: uid_t = getuid(),
+                extraAncestors: @escaping @Sendable () -> Set<pid_t> = { [] },
                 now: @escaping @Sendable () -> Date = { Date() },
                 autoResumeMinutes: Int = AppSettings.defaultAutoResumeMinutes,
                 audit: @escaping @Sendable (ProcessControlAuditRecord) async -> Void = { _ in }) {
         self.table = table; self.signaler = signaler; self.store = store; self.isGUIApp = isGUIApp
-        self.ownPID = ownPID; self.ownUID = ownUID; self.now = now; self.autoResumeMinutes = autoResumeMinutes
+        self.ownPID = ownPID; self.ownUID = ownUID; self.extraAncestors = extraAncestors; self.now = now; self.autoResumeMinutes = autoResumeMinutes
         self.audit = audit
         self.paused = store.load()
     }
@@ -154,7 +172,7 @@ public actor ProcessController {
             }, includeDescendants: includeDescendants)
         }
         let byPID = Dictionary(snap.records.map { ($0.pid, $0) }, uniquingKeysWith: { a, _ in a })
-        let ancestors = Set(snap.ancestors(of: ownPID).map(\.pid))
+        let ancestors = ownAncestors(in: snap)
         var rows: [ProcessControlPlanRow] = []
         var seen = Set<pid_t>()
         for t in targets {
@@ -198,7 +216,7 @@ public actor ProcessController {
     private func perform(_ action: ProcessAction, _ t: ProcessTarget) -> ProcessControlResult.Outcome {
         guard let snap = table.snapshot(), let rec = snap.records.first(where: { $0.pid == t.pid }) else { return .refused(.vanished) }
         guard rec.startID == t.startID else { return .refused(.identityChanged) }
-        let ancestors = Set(snap.ancestors(of: ownPID).map(\.pid))
+        let ancestors = ownAncestors(in: snap)
         if let r = ProcessControlPolicy.refusal(rec, action: action, ownPID: ownPID, ownAncestors: ancestors,
                                                 isGUIApp: isGUIApp(rec.pid), ownUID: ownUID) { return .refused(r) }
         switch action {
@@ -227,6 +245,12 @@ public actor ProcessController {
             if rc == 0 { paused.removeAll { $0.key == t.key }; persist() }
             return rc == 0 ? .done : .failed(errno: rc)
         }
+    }
+
+    /// Our ancestor chain from the (own-uid) table, plus the live chain (`extraAncestors`), which also crosses root-owned
+    /// hops such as `login` that an own-uid table can't see.
+    private func ownAncestors(in snap: ProcessTableSnapshot) -> Set<pid_t> {
+        Set(snap.ancestors(of: ownPID).map(\.pid)).union(extraAncestors())
     }
 
     private func resumeMinutes() -> Int {
@@ -283,10 +307,9 @@ public actor ProcessController {
         for e in entries.sorted(by: { depth($0) > depth($1) }) {
             let t = ProcessTarget(pid: e.pid, startID: e.startID, name: e.name)
             let outcome = perform(.resume, t)
-            if case .refused(let why) = outcome, why == .vanished || why == .identityChanged {
-                paused.removeAll { $0.key == e.key }
-                persist()
-            }
+            // One audited attempt per entry: done, refused, vanished or failed, it is not retried (and not re-audited).
+            paused.removeAll { $0.key == e.key }
+            persist()
             let result = ProcessControlResult(target: t, action: .resume, outcome: outcome)
             results.append(result)
             await record(result, root: nil)
@@ -299,7 +322,10 @@ public actor ProcessController {
         let snap = table.snapshot()
         let live = Dictionary((snap?.records ?? []).map { ($0.pid, $0) }, uniquingKeysWith: { a, _ in a })
         paused = paused.filter {
-            guard let r = live[$0.pid] else { return false }
+            guard $0.pid > 1, let r = live[$0.pid] else { return false }
+            // Same policy as a resume: another user's process or pid <= 1 is never offered.
+            guard ProcessControlPolicy.refusal(r, action: .resume, ownPID: ownPID, ownAncestors: [], isGUIApp: false,
+                                               ownUID: ownUID) == nil else { return false }
             return r.startID == $0.startID && r.status == ProcessControlPolicy.stoppedStatus
         }
         persist()
@@ -315,8 +341,16 @@ public actor ProcessController {
 
     // MARK: Keep new children in background (D9)
 
+    /// Turning it on records the descendants that exist right now as already handled: children the user left out of the
+    /// plan ("Include child processes" off) are never touched, only processes that appear later.
     public func setKeepChildrenInBackground(_ roots: [ProcessTarget], on: Bool) {
-        for r in roots { if on { keepRoots[r.key] = r } else { keepRoots[r.key] = nil } }
+        let snap = on ? table.snapshot() : nil
+        for r in roots {
+            if on {
+                keepRoots[r.key] = r
+                for d in snap?.descendants(of: r.pid) ?? [] { keptHandled.insert(ProcessKey(pid: d.pid, startID: d.startID)) }
+            } else { keepRoots[r.key] = nil }
+        }
     }
 
     /// One sampler tick: a root that exited (or whose pid was reused) lapses; every descendant not seen before is put

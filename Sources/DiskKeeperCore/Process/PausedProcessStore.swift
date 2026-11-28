@@ -42,7 +42,16 @@ public struct PausedProcessStore: Sendable {
         let dir = fileURL.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         let data = try DiskKeeperJSON.makeEncoder().encode(File(paused: entries))
-        try data.write(to: fileURL, options: .atomic)
-        chmod(fileURL.path, 0o600)
+        // Created 0600 from the start (never world-readable, not even briefly), then renamed over the target: a symlink
+        // sitting at `fileURL` is replaced, never written through.
+        let tmp = dir.appendingPathComponent(".paused-\(UUID().uuidString).tmp")
+        guard FileManager.default.createFile(atPath: tmp.path, contents: data, attributes: [.posixPermissions: 0o600]) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        guard rename(tmp.path, fileURL.path) == 0 else {
+            let code = errno
+            try? FileManager.default.removeItem(at: tmp)
+            throw POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO)
+        }
     }
 }

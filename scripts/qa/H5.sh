@@ -1,39 +1,84 @@
 #!/bin/bash
 # H5 QA fixtures (process control). Run in the Tart VM only, never on the owner's Mac.
-# Starts a process tree that THIS SCRIPT owns and writes only under ~/ADKQA-H5. stop/teardown signal only the pids this
-# script recorded (never by name).
-#   start     bash -> writer loop (dd in a loop) + sleep; pids in ~/ADKQA-H5/pids
-#   status    show state (ps stat) of the recorded pids
-#   stop      kill the recorded pids (the script's own fixtures)
+# Everything lives under ~/ADKQA-H5. The fixtures must NOT be system binaries: pause and background are refused for
+# anything under /bin, /usr, /sbin or /System, so `start` compiles a tiny writer into ~/ADKQA-H5/bin (needs `cc`, i.e.
+# the Xcode command line tools already in adk-base) and runs that. It forks one child (the same binary, exec'd) so
+# there is a tree and a way to check background inheritance.
+# stop/teardown signal ONLY the two pids this script recorded (never by name or pattern).
+#   start     adk-writer parent + child; pids in ~/ADKQA-H5/{parent,child}.pid
+#   status    ps state of the two recorded pids
+#   stop      SIGCONT then SIGTERM to the two recorded pids (fixtures only), remove the pid files
 #   teardown  stop + remove ~/ADKQA-H5
 set -euo pipefail
 
 ROOT="$HOME/ADKQA-H5"
+BIN="$ROOT/bin/adk-writer"
 guard() { [ "$(sysctl -n kern.hv_vmm_present 2>/dev/null)" = "1" ] || { echo "refusing to run outside a VM" >&2; exit 1; }; }
+
+build() {
+  mkdir -p "$ROOT/bin"
+  cat > "$ROOT/bin/adk-writer.c" <<'C'
+// adk-writer parent <dir>: forks+execs itself as "child", then both write 64 MB, fsync, rewind, forever.
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
+static void write_loop(const char *path) {
+  static char buf[1 << 20];
+  memset(buf, '0', sizeof buf);
+  int fd = open(path, O_WRONLY | O_CREAT, 0644);
+  if (fd < 0) _exit(1);
+  for (;;) {
+    lseek(fd, 0, SEEK_SET);
+    for (int i = 0; i < 64; i++) if (write(fd, buf, sizeof buf) < 0) _exit(1);
+    fsync(fd);
+  }
+}
+int main(int argc, char **argv) {
+  if (argc < 3) return 2;
+  char path[1024];
+  if (strcmp(argv[1], "child") == 0) { snprintf(path, sizeof path, "%s/child.dat", argv[2]); write_loop(path); }
+  pid_t kid = fork();
+  if (kid == 0) { execl(argv[0], argv[0], "child", argv[2], (char *)NULL); _exit(127); }
+  snprintf(path, sizeof path, "%s/child.pid", argv[2]);
+  FILE *f = fopen(path, "w"); if (f) { fprintf(f, "%d\n", kid); fclose(f); }
+  snprintf(path, sizeof path, "%s/parent.dat", argv[2]);
+  write_loop(path);
+}
+C
+  cc -O1 -o "$BIN" "$ROOT/bin/adk-writer.c"
+}
 
 case "${1:-}" in
   start)
     guard
     mkdir -p "$ROOT"
+    [ -x "$BIN" ] || build
     cd "$ROOT"
-    nohup bash -c 'while true; do dd if=/dev/zero of="$HOME/ADKQA-H5/w" bs=1m count=256 2>/dev/null; sync; done & sleep 100000 & wait' >/dev/null 2>&1 &
-    echo $! > "$ROOT/pids"
-    echo "fixture tree started (root pid $(cat "$ROOT/pids")). In AI Disk Keeper: Disk activity -> the bash/dd rows."
-    echo "Steps: background (tree) and note the write rate before/after; pause -> ps shows T and 0 MB/s; auto-resume (set 1 min);"
-    echo "pause then quit the app -> running again; pause then 'kill -9' the app -> relaunch -> recovery sheet; Finder -> refused."
-    echo "Does a newly spawned dd inherit background? Check with: ps -o pid,nice,stat,command -p \$(pgrep -P \$(cat $ROOT/pids)) (record in docs/process-control.md)"
+    nohup "$BIN" parent "$ROOT" >/dev/null 2>&1 &
+    echo $! > "$ROOT/parent.pid"
+    sleep 1
+    echo "fixture started: parent $(cat "$ROOT/parent.pid"), child $(cat "$ROOT/child.pid" 2>/dev/null || echo '?') (binary under $ROOT/bin, not a system path)."
+    echo "Steps: Disk activity -> adk-writer rows. Background (tree): note the write rate before/after. Pause: ps stat = T, 0 MB/s."
+    echo "Auto-resume (set 1 min). Pause then quit the app -> running again. Pause then 'kill -9' the app PID -> relaunch -> recovery sheet."
+    echo "Finder -> refused with the message. Background inheritance: new child of a backgrounded parent: use 'status'."
     ;;
   status)
-    [ -f "$ROOT/pids" ] || { echo "not started"; exit 0; }
-    ps -o pid,ppid,stat,command -g "$(cat "$ROOT/pids")" 2>/dev/null || ps -o pid,ppid,stat,command -p "$(cat "$ROOT/pids")"
+    for f in parent child; do
+      [ -f "$ROOT/$f.pid" ] && ps -o pid,ppid,stat,nice,command -p "$(cat "$ROOT/$f.pid")" || echo "$f: not recorded"
+    done
     ;;
   stop)
-    if [ -f "$ROOT/pids" ]; then
-      root=$(cat "$ROOT/pids")
-      # Children of our recorded root only; SIGCONT first so stopped fixtures can die, then SIGTERM (test fixtures, not app code).
-      for p in $(pgrep -P "$root" 2>/dev/null || true) "$root"; do kill -CONT "$p" 2>/dev/null || true; kill "$p" 2>/dev/null || true; done
-      rm -f "$ROOT/pids"
-    fi
+    for f in child parent; do
+      if [ -f "$ROOT/$f.pid" ]; then
+        p=$(cat "$ROOT/$f.pid")
+        kill -CONT "$p" 2>/dev/null || true   # fixtures only: a stopped process can't act on SIGTERM
+        kill "$p" 2>/dev/null || true
+        rm -f "$ROOT/$f.pid"
+      fi
+    done
     ;;
   teardown)
     guard

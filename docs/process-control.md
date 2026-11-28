@@ -24,6 +24,9 @@ pause.** Resume and Restore priority are one click: they only undo what this app
 | Auto-resume | Every pause stores `resumeAt` (default 15 min, setting 1–60, never "forever") in `paused.json` (mode 0600) **before** the signal. A 5 s timer runs only while something is paused or watched. |
 | Quit | `applicationShouldTerminate` answers `.terminateLater`, resumes everything, then replies. |
 | Crash | At launch, entries still `SSTOP` with the same `startID` are offered: **Resume all** (default) or **Leave paused** (the clock restarts). Others are dropped. |
+| Recovery policy | Entries go through the same resume check as a click (own uid, pid > 1, same `startID`, still `SSTOP`); a tampered or foreign entry is dropped without a signal. Every entry gets **one** audited resume attempt (done, refused or failed) and is then dropped, so a failing resume never repeats every tick. |
+| Ancestors | The own-uid table can't see through a root-owned hop such as `login`, so the app's live parent chain (libproc, any owner) is added to the ancestor set. |
+| Known gap | There is a small window between the identity check and `kill()` in which a pid could in theory be reused; it can't be closed from user space. `paused.json` is created 0600 and renamed into place (never written through a symlink). |
 | Audit | One `processControl` line per process in `audit.jsonl` (`action`, `pid`, `name`, `root`, `result`, `errno`). History shows them (filter **Processes**); they never count toward bytes. |
 
 ## Keep new child processes in background
@@ -32,7 +35,10 @@ Ticking the option on the background sheet remembers the picked roots (in memory
 backgrounded too (through the policy, audited once per pid); a root that exits drops out. Whether `PRIO_DARWIN_BG` is
 inherited across fork/exec is not assumed: the VM QA records the answer below.
 
-QA result (fill in after `scripts/qa/H5.sh`): _not yet recorded_.
+**Result (VM, verifier run on PR #153): background is inherited across fork and exec.** A bash was put in background and then
+forked and exec'd `/bin/sleep`: the new child had `PROC_FLAG_DARWINBG` (`pbi_flags & 0x10000`) set. The keep-children loop is
+therefore only a backstop for processes that were reparented or started another way. Note: `getpriority(PRIO_DARWIN_PROCESS,
+otherPid)` reads 0 on this macOS even when the process is in background; read `pbi_flags` instead.
 
 ## Pieces
 
