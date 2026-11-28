@@ -20135,6 +20135,22 @@
         }
       }
     },
+    "wt.ev.un.gitFailed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't check: git couldn't read this worktree"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không kiểm tra được: git không đọc được worktree này"
+          }
+        }
+      }
+    },
     "wt.ev.un.head" : {
       "localizations" : {
         "en" : {
@@ -20227,6 +20243,22 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Không kiểm tra được: chưa đủ thông tin"
+          }
+        }
+      }
+    },
+    "wt.ev.un.probeFailed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't check: a git command failed or timed out"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không kiểm tra được: một lệnh git bị lỗi hoặc quá thời gian"
           }
         }
       }
@@ -20325,22 +20357,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "wt.ev.unknown" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Couldn't check: %@"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Không kiểm tra được: %@"
           }
         }
       }
