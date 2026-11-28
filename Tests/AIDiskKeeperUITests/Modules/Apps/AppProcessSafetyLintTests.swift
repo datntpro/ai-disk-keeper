@@ -18,6 +18,7 @@ final class AppProcessSafetyLintTests: XCTestCase {
         let forbidden = try NSRegularExpression(pattern: #"forceTerminate\(|\.terminate\(\)|\bkill\(|\bkillpg\(|NSRunningApplication\(processIdentifier:"#)
         let files = swiftFiles("Sources").filter {
             !$0.path.hasSuffix("Modules/Apps/AppProcessController.swift") && !$0.path.hasSuffix("Git/ProcessRunner.swift") // ProcessRunner times out its own child
+                && !$0.path.hasSuffix("Process/ProcessControl.swift") // H5: SIGSTOP/SIGCONT only, pinned by ProcessControlSourceLintTests
         }
         XCTAssertFalse(files.isEmpty)
         for f in files {

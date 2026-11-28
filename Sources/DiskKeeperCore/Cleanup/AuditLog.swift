@@ -100,6 +100,33 @@ public struct AppQuitAuditRecord: Codable, Sendable, Hashable {
     }
 }
 
+/// One line of `audit.jsonl` per process touched by process control (H5). `kind == "processControl"`; `AuditLog.read`
+/// skips these by design. Never counted in byte totals.
+public struct ProcessControlAuditRecord: Codable, Sendable, Hashable {
+    public let schemaVersion: Int
+    public let kind: String
+    public let timestamp: Date
+    /// One confirmed action = one flow; History groups the lines by it.
+    public let flowID: UUID
+    /// `ProcessAction` raw value.
+    public let action: String
+    public let pid: Int32
+    public let name: String
+    /// Name of the process the user picked, when this line is one of its descendants.
+    public let root: String?
+    /// "done" | "failed" | "refused:<code>"
+    public let result: String
+    public let errno: Int32?
+
+    public init(schemaVersion: Int = 1, timestamp: Date, flowID: UUID, action: String, pid: Int32, name: String,
+                root: String?, result: String, errno: Int32?) {
+        self.schemaVersion = schemaVersion
+        self.kind = "processControl"
+        self.timestamp = timestamp; self.flowID = flowID; self.action = action; self.pid = pid; self.name = name
+        self.root = root; self.result = result; self.errno = errno
+    }
+}
+
 public enum AuditLogError: Error, Equatable {
     case notOpen
     case unsafePath(String)
@@ -155,6 +182,13 @@ public actor AuditLog {
 
     /// Opens (ref-counted), appends one quit line, fsyncs, closes. Throws like `open()` / `append`.
     public func appendQuitEvent(_ record: AppQuitAuditRecord) throws {
+        try open()
+        defer { close() }
+        try appendLine(record)
+    }
+
+    /// Opens (ref-counted), appends one process-control line, fsyncs, closes.
+    public func appendProcessControlEvent(_ record: ProcessControlAuditRecord) throws {
         try open()
         defer { close() }
         try appendLine(record)

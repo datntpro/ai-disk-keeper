@@ -3,6 +3,7 @@ import SwiftUI
 
 struct DiskActivityView: View {
     let model: DiskActivityModel
+    var control: ProcessControlModel?
 
     var body: some View {
         Group {
@@ -11,6 +12,7 @@ struct DiskActivityView: View {
                     VStack(alignment: .leading, spacing: ADKTheme.Spacing.lg) {
                         Text(DiskActivityCopy.title).font(.headline)
                         header(snap)
+                        if let control, !control.state.paused.isEmpty { pausedSection(control) }
                         worktreeTable(snap)
                         agentTable(snap)
                         processTable(snap)
@@ -96,7 +98,15 @@ struct DiskActivityView: View {
     private func processTable(_ snap: HostLoadSnapshot) -> some View {
         section(DiskActivityCopy.topProcesses) {
             Table(snap.processes) {
-                TableColumn(DiskActivityCopy.colProcess) { r in Text(verbatim: r.name).lineLimit(1) }
+                TableColumn(DiskActivityCopy.colProcess) { r in
+                    HStack(spacing: 6) {
+                        Text(verbatim: r.name).lineLimit(1)
+                        if control?.isBackground(r.id) == true {
+                            Text(ProcessControlCopy.chipBackground).font(.caption2).padding(.horizontal, 5)
+                                .background(.adkReviewSoft, in: Capsule())
+                        }
+                    }
+                }
                 TableColumn(DiskActivityCopy.colAgent) { r in
                     Text(verbatim: r.agent.map(DiskActivityCopy.kindName) ?? "—").foregroundStyle(.adkText2)
                 }.width(110)
@@ -106,8 +116,43 @@ struct DiskActivityView: View {
                 TableColumn(DiskActivityCopy.colWrites) { r in rate(r.writeBytesPerSec) }.width(90)
                 TableColumn(DiskActivityCopy.colReads) { r in rate(r.readBytesPerSec) }.width(90)
                 TableColumn(DiskActivityCopy.colWritten) { r in Text(Formatting.bytes(Int64(clamping: r.totalBytesWritten))).monospacedDigit() }.width(120)
+                TableColumn(ProcessControlCopy.colActions) { r in actionsMenu(r) }.width(56)
             }
             .frame(height: tableHeight(snap.processes.count))
+        }
+    }
+
+    @ViewBuilder private func actionsMenu(_ r: HostProcessIO) -> some View {
+        if let control {
+            let target = ProcessTarget(pid: r.pid, startID: r.startID, name: r.name)
+            Menu {
+                if control.isBackground(r.id) {
+                    Button(ProcessControlCopy.restorePriority) { Task { await control.restorePriority(target) } }
+                } else {
+                    Button(ProcessControlCopy.background) { Task { await control.request(.background, [target]) } }
+                }
+                Button(ProcessControlCopy.pause) { Task { await control.request(.pause, [target]) } }
+            } label: { Image(systemName: "ellipsis.circle") }
+            .menuStyle(.borderlessButton).menuIndicator(.hidden)
+            .help(ProcessControlCopy.actionsHelp).accessibilityLabel(ProcessControlCopy.actionsHelp)
+        }
+    }
+
+    /// Paused processes have no disk activity, so they would vanish from the table above: list them here.
+    private func pausedSection(_ control: ProcessControlModel) -> some View {
+        section(ProcessControlCopy.pausedSection) {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(control.state.paused, id: \.key) { entry in
+                    HStack {
+                        Text(verbatim: "\(entry.name) (\(entry.pid))").lineLimit(1)
+                        Text(ProcessControlCopy.chipPaused(ProcessControlModel.remaining(until: entry.resumeAt)))
+                            .font(.caption).foregroundStyle(.adkReviewInk)
+                        Spacer()
+                        Button(ProcessControlCopy.resume) { Task { await control.resume(entry) } }
+                    }
+                }
+                Button(ProcessControlCopy.resumeAll) { Task { await control.resumeAll() } }
+            }
         }
     }
 

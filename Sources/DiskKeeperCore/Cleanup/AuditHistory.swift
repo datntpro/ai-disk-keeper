@@ -5,18 +5,21 @@ import Foundation
 public enum AuditEntry: Sendable, Hashable {
     case cleanup(AuditRecord)
     case quit(AppQuitAuditRecord)
+    case process(ProcessControlAuditRecord)
     /// A well-formed line from a newer schema this build can't interpret. Counted, never dropped silently.
     case unknown
 }
 
 /// Lines grouped by `runID` (cleanup) or `flowID` (app quit).
 public struct AuditRun: Sendable, Hashable, Identifiable {
-    public enum Kind: Sendable, Hashable { case cleanup, appQuit }
+    public enum Kind: Sendable, Hashable { case cleanup, appQuit, processControl }
     public let id: UUID
     public let kind: Kind
     public let date: Date
     public let records: [AuditRecord]
     public let quits: [AppQuitAuditRecord]
+    /// Process-control lines (H5). Never counted in bytes or items.
+    public let processes: [ProcessControlAuditRecord]
     /// Items acted on: trashed, deleted or run by their tool.
     public let items: Int
     /// `trashed` + `deleted` bytes only.
@@ -84,6 +87,8 @@ public enum AuditHistoryReader {
             if let v = probe.schemaVersion, v > 1 { entries.append(.unknown); unknown += 1; continue }
             if probe.kind == "appQuit" {
                 if let q = try? decoder.decode(AppQuitAuditRecord.self, from: bytes) { entries.append(.quit(q)) } else { malformed += 1 }
+            } else if probe.kind == "processControl" {
+                if let p = try? decoder.decode(ProcessControlAuditRecord.self, from: bytes) { entries.append(.process(p)) } else { malformed += 1 }
             } else if probe.kind != nil {
                 entries.append(.unknown); unknown += 1
             } else if let r = try? decoder.decode(AuditRecord.self, from: bytes) {
@@ -122,23 +127,29 @@ public enum AuditHistoryReader {
     static func group(_ entries: [AuditEntry]) -> [AuditRun] {
         var cleanup: [UUID: [AuditRecord]] = [:]
         var quits: [UUID: [AppQuitAuditRecord]] = [:]
+        var procs: [UUID: [ProcessControlAuditRecord]] = [:]
         for e in entries {
             switch e {
             case .cleanup(let r): cleanup[r.runID, default: []].append(r)
             case .quit(let q): quits[q.flowID, default: []].append(q)
+            case .process(let p): procs[p.flowID, default: []].append(p)
             case .unknown: break
             }
         }
         var runs: [AuditRun] = cleanup.map { id, recs in
             let reclaimed = recs.filter { $0.result == "trashed" || $0.result == "deleted" }.reduce(Int64(0)) { $0 + $1.bytes }
             let acted = recs.filter { ["trashed", "deleted", "ran"].contains($0.result) }.count
-            return AuditRun(id: id, kind: .cleanup, date: recs.map(\.timestamp).min() ?? .distantPast, records: recs, quits: [],
+            return AuditRun(id: id, kind: .cleanup, date: recs.map(\.timestamp).min() ?? .distantPast, records: recs, quits: [], processes: [],
                             items: acted, bytesReclaimed: reclaimed, skipped: recs.filter { $0.result == "skipped" }.count,
                             failed: recs.filter { $0.result == "failed" }.count, action: recs.first?.action)
         }
         runs += quits.map { id, qs in
-            AuditRun(id: id, kind: .appQuit, date: qs.map(\.timestamp).min() ?? .distantPast, records: [], quits: qs,
+            AuditRun(id: id, kind: .appQuit, date: qs.map(\.timestamp).min() ?? .distantPast, records: [], quits: qs, processes: [],
                      items: 0, bytesReclaimed: 0, skipped: 0, failed: qs.filter { $0.result == "stillRunning" }.count, action: nil)
+        }
+        runs += procs.map { id, ps in
+            AuditRun(id: id, kind: .processControl, date: ps.map(\.timestamp).min() ?? .distantPast, records: [], quits: [], processes: ps,
+                     items: 0, bytesReclaimed: 0, skipped: 0, failed: ps.filter { $0.result == "failed" }.count, action: nil)
         }
         return runs.sorted { $0.date != $1.date ? $0.date > $1.date : $0.id.uuidString < $1.id.uuidString }
     }
@@ -161,6 +172,9 @@ public enum AuditCSV {
             case .quit(let q):
                 row = [stamp(q.timestamp), q.flowID.uuidString, q.result ?? q.phase, "quit:\(q.mode)", "0", q.appPath, "", "", "",
                        q.reasons.joined(separator: ";"), q.error ?? "", q.bundleID, "", ""]
+            case .process(let p):
+                row = [stamp(p.timestamp), p.flowID.uuidString, p.result, "process:\(p.action)", "0", "\(p.name) (pid \(p.pid))", "", "", "",
+                       "", p.errno.map { "errno \($0)" } ?? "", "", "", ""]
             case .unknown: continue
             }
             out += row.map(field).joined(separator: ",") + "\r\n"

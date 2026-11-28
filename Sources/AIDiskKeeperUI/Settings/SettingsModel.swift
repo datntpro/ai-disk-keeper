@@ -119,6 +119,8 @@ public final class SettingsModel {
     public func setLowSpaceThresholdPercent(_ percent: Int) { mutate { $0.setLowSpaceThreshold(percent: percent) } }
 
     public func setPublishHostStatus(_ on: Bool) { mutate { $0.publishHostStatus = on } }
+    /// Clamped to 1…60.
+    public func setAutoResumeMinutes(_ minutes: Int) { mutate { $0.autoResumeMinutes = AppSettings.clampAutoResume(minutes) } }
 
     // System monitor (T50)
     public func setMetric(_ m: MetricID, monitored: Bool) { mutate { $0.setMetric(m, monitored: monitored) } }

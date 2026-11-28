@@ -60,13 +60,20 @@ public final class AppModels {
         models.scheduler.start()
         models.hostStatus.start()
         models.scheduledScans.start()
+        Task { await models.env.processControl.checkRecovery() }   // still-paused processes from a crashed run
         return models
     }
+}
+
+// H5: the App target's quit hook (processes this app paused are resumed before it exits).
+extension AppModels {
+    public var pausedProcessCount: Int { env.processControl.pausedCount }
+    public func resumeAllPausedProcesses() async { await env.processControl.resumeAllForQuit() }
 }
 
 // The menu bar's views are internal to the UI module; the App target gets them as opaque views.
 extension AppModels {
     public var menuBarInserted: Binding<Bool> { MenuBarModel.insertedBinding(env.settings) }
-    public var menuBarPopover: some View { MenuBarPopover(model: menuBar, monitor: monitor, suite: suite, hostLoad: hostLoad) }
+    public var menuBarPopover: some View { MenuBarPopover(model: menuBar, monitor: monitor, suite: suite, hostLoad: hostLoad, processControl: env.processControl) }
     public var menuBarLabel: some View { MenuBarLabel(monitor: monitor) }
 }

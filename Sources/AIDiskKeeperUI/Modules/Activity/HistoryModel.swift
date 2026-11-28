@@ -10,6 +10,8 @@ final class HistoryModel {
     private(set) var phase: Phase = .idle
     private(set) var history: AuditHistory = .empty
     var selectedRunID: UUID?
+    enum Filter: Hashable { case all, processes }
+    var filter: Filter = .all
     var finder: any FinderRevealing = SystemFinder()
 
     let logURL: URL
@@ -29,7 +31,7 @@ final class HistoryModel {
     }
 
     var lifetimeReclaimed: Int64 { history.lifetimeReclaimed }
-    var runs: [AuditRun] { history.runs }
+    var runs: [AuditRun] { filter == .processes ? history.runs.filter { $0.kind == .processControl } : history.runs }
     var selectedRun: AuditRun? { runs.first { $0.id == selectedRunID } }
 
     func refresh() async {

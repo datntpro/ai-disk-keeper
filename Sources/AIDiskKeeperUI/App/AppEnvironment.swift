@@ -17,6 +17,9 @@ public final class AppEnvironment {
     /// T42: builds the one disk indexer for a map run. Called OFF the main actor (it loads rule JSON).
     public var makeDiskIndexer: @Sendable () throws -> any DiskIndexing
 
+    /// H5: lower priority / pause. Does nothing until the user confirms an action.
+    let processControl: ProcessControlModel
+
     public init(pathEnvironment: PathEnvironment,
                 settings: SettingsModel? = nil,
                 makeScanEngine: @escaping @Sendable () throws -> any ScanEngineProtocol,
@@ -28,6 +31,7 @@ public final class AppEnvironment {
             store: SettingsStore(environment: pathEnvironment), environment: pathEnvironment, probe: { .unknown })
         self.cleanup = cleanup
         self.makeDiskIndexer = makeDiskIndexer
+        self.processControl = ProcessControlModel.live(environment: pathEnvironment, settings: self.settings)
     }
 
     public static func live() -> AppEnvironment {

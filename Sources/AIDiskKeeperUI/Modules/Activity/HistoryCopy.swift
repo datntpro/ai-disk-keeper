@@ -39,6 +39,10 @@ enum HistoryCopy {
         }
     }
     static func run(_ run: AuditRun) -> String {
-        run.kind == .appQuit ? quitApp : items(run.items)
+        switch run.kind {
+        case .appQuit: quitApp
+        case .processControl: ProcessControlCopy.historyRun
+        case .cleanup: items(run.items)
+        }
     }
 }

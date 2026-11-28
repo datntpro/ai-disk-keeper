@@ -289,6 +289,13 @@ M4 amendments (items 1–11 above are unchanged; numbering continues):
     shell, no user- or rule-supplied argument, and no `--force`-style flag that overrides the tool's own in-use
     checks. JSON rules cannot create runnable tool commands. Every run writes one audit line with the full argv,
     exit status and duration.
+20. **Process control (H5) is narrow, confirmed and reversible.** The only signals ever sent are `SIGSTOP` and `SIGCONT`
+    (never `SIGKILL`, `SIGTERM`, `SIGINT` or `SIGHUP`); the only other call is `setpriority(PRIO_DARWIN_BG)`. Only own-uid
+    processes the user picked and confirmed; never pid ≤ 1, this app or its ancestors, system paths or the Dock/Finder family;
+    GUI apps can be backgrounded but never paused. Every member of a tree is checked on its own, and `(pid, startID)` is
+    re-verified right before each signal. A pause always has an auto-resume time (default 15 min, 1–60), everything is
+    resumed on quit, and processes still stopped after a crash are offered for resume at the next launch. Priority changes
+    are session-only. Nothing is automatic. Design: [docs/process-control.md](process-control.md).
 
 ### 7.1 Deliberately not built
 

@@ -6,6 +6,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Set by the App: true while the menu bar item is shown, so closing the window keeps the app (and its poll) alive.
     nonisolated(unsafe) static var keepRunningWithoutWindows: @MainActor () -> Bool = { false }
 
+    /// H5: how many processes this app has paused right now, and the call that resumes them all. Set by the App.
+    nonisolated(unsafe) static var pausedProcessCount: @MainActor () -> Int = { 0 }
+    nonisolated(unsafe) static var resumeAllPaused: @MainActor () async -> Void = {}
+
+    /// Quit never leaves a process stopped: resume everything first (asking AppKit to wait for it).
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard Self.pausedProcessCount() > 0 else { return .terminateNow }
+        Task { @MainActor in
+            await Self.resumeAllPaused()
+            NSApp.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
+    }
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         !Self.keepRunningWithoutWindows()
     }
@@ -25,6 +39,8 @@ struct AIDiskKeeperApp: App {
         let models = AppModels.live()
         _models = State(initialValue: models)
         AppDelegate.keepRunningWithoutWindows = { models.env.settings.settings.showMenuBarItem }
+        AppDelegate.pausedProcessCount = { models.pausedProcessCount }
+        AppDelegate.resumeAllPaused = { await models.resumeAllPausedProcesses() }
     }
 
     var body: some Scene {

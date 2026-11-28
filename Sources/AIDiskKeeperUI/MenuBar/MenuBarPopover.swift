@@ -15,6 +15,7 @@ struct MenuBarPopover: View {
     let monitor: SystemMonitorModel
     let suite: SuiteModel
     var hostLoad: DiskActivityModel?
+    var processControl: ProcessControlModel?
     var open: () -> Void = {}
     @Environment(\.openWindow) private var openWindow
 
@@ -44,6 +45,7 @@ struct MenuBarPopover: View {
             }
             if let text = model.trendText { trendRow(text) }
             if let hostLoad, !hostLoad.topWorktrees.isEmpty { diskActivity(hostLoad) }
+            if let processControl, processControl.pausedCount > 0 { pausedRow(processControl) }
             if let next = model.nextScheduledScan {
                 Text(MenuBarCopy.nextScan(Formatting.absolute(next))).font(.caption).foregroundStyle(.secondary)
             }
@@ -124,6 +126,14 @@ struct MenuBarPopover: View {
                 .buttonStyle(.plain)
                 .accessibilityElement(children: .combine)
             }
+        }
+    }
+
+    private func pausedRow(_ control: ProcessControlModel) -> some View {
+        HStack {
+            Label(ProcessControlCopy.pausedCount(control.pausedCount), systemImage: "pause.circle").font(.callout)
+            Spacer()
+            Button(ProcessControlCopy.resumeAll) { Task { await control.resumeAll() } }
         }
     }
 

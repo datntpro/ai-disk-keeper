@@ -45,6 +45,10 @@ public struct AppSettings: Codable, Sendable, Hashable {
     public var scheduledSafeAlertGB = 5
     public var scheduledGrowthAlertGB = 2
     public var scheduledSkipOnBattery = true
+    /// Process control (H5): minutes until a paused process is resumed by itself. Always 1...60, never "forever".
+    public var autoResumeMinutes = AppSettings.defaultAutoResumeMinutes
+    public static let autoResumeRange = 1...60
+    public static let defaultAutoResumeMinutes = 15
 
     /// H2: publish `status.json` for coding agents while the app runs (D10: on by default).
     public var publishHostStatus = true
@@ -73,7 +77,7 @@ public struct AppSettings: Codable, Sendable, Hashable {
         case monitorOrder, monitorDisabled, menuBarMetrics, menuBarStyle, menuBarRefreshSeconds, networkUnits
         case popoverShowsTopProcesses, popoverHistoryMinutes, useScanCache
         case publishHostStatus
-        case scanFrequency, scheduledSafeAlertGB, scheduledGrowthAlertGB, scheduledSkipOnBattery
+        case scanFrequency, scheduledSafeAlertGB, scheduledGrowthAlertGB, scheduledSkipOnBattery, autoResumeMinutes
     }
 
     /// Lenient: unknown keys are ignored and missing keys take defaults.
@@ -104,6 +108,7 @@ public struct AppSettings: Codable, Sendable, Hashable {
         scheduledSafeAlertGB = min(max(try c.decodeIfPresent(Int.self, forKey: .scheduledSafeAlertGB) ?? 5, 1), 500)
         scheduledGrowthAlertGB = min(max(try c.decodeIfPresent(Int.self, forKey: .scheduledGrowthAlertGB) ?? 2, 1), 500)
         scheduledSkipOnBattery = try c.decodeIfPresent(Bool.self, forKey: .scheduledSkipOnBattery) ?? true
+        autoResumeMinutes = Self.clampAutoResume(try c.decodeIfPresent(Int.self, forKey: .autoResumeMinutes) ?? Self.defaultAutoResumeMinutes)
     }
 
     /// Unknown and duplicate ids are dropped; missing ones are appended in the default order.
@@ -146,6 +151,10 @@ public struct AppSettings: Codable, Sendable, Hashable {
 
     public static func clampThreshold(_ percent: Int) -> Int {
         min(max(percent, lowSpaceThresholdRange.lowerBound), lowSpaceThresholdRange.upperBound)
+    }
+
+    public static func clampAutoResume(_ minutes: Int) -> Int {
+        min(max(minutes, autoResumeRange.lowerBound), autoResumeRange.upperBound)
     }
 
     public mutating func setLowSpaceThreshold(percent: Int) { lowSpaceThresholdPercent = Self.clampThreshold(percent) }
