@@ -1,3 +1,4 @@
+import DiskKeeperCore
 import Foundation
 import UserNotifications
 
@@ -16,7 +17,7 @@ final class SilentLowSpaceNotifier: LowSpaceNotifying {
 /// `UNUserNotificationCenter` adapter. Asks for permission the first time an alert would fire (never at launch).
 /// A no-op without an app bundle (`swift run`), where `UNUserNotificationCenter.current()` traps.
 @MainActor
-final class LiveLowSpaceNotifier: NSObject, LowSpaceNotifying, UNUserNotificationCenterDelegate {
+final class LiveLowSpaceNotifier: NSObject, AppNotifying, UNUserNotificationCenterDelegate {
     /// Called when the user clicks the notification: bring the app up on Overview.
     var onOpen: @MainActor () -> Void = {}
 
@@ -42,6 +43,28 @@ final class LiveLowSpaceNotifier: NSObject, LowSpaceNotifying, UNUserNotificatio
         content.body = MenuBarCopy.lowSpaceBody(free: Formatting.bytes(freeBytes), percent: Formatting.count(percent))
         content.sound = .default
         try? await center.add(UNNotificationRequest(identifier: "adk.lowSpace", content: content, trigger: nil))
+    }
+
+    func requestPermission() async -> Bool {
+        guard let center else { return false }
+        let status = await center.notificationSettings().authorizationStatus
+        if status == .notDetermined { _ = try? await center.requestAuthorization(options: [.alert, .sound]) }
+        let now = await center.notificationSettings().authorizationStatus
+        return now == .authorized || now == .provisional
+    }
+
+    func notifyScheduled(_ alert: ScheduledAlert) async {
+        guard let center else { return }
+        let status = await center.notificationSettings().authorizationStatus
+        guard status == .authorized || status == .provisional else { return }
+        let content = UNMutableNotificationContent()
+        content.title = ScheduleCopy.notificationTitle
+        switch alert {
+        case .safeToFree(let bytes): content.body = ScheduleCopy.safeBody(Formatting.bytes(bytes))
+        case .aiToolsGrew(let bytes): content.body = ScheduleCopy.growthBody(Formatting.bytes(bytes))
+        }
+        content.userInfo = ["target": "careScan"]
+        try? await center.add(UNNotificationRequest(identifier: "adk.scheduledScan", content: content, trigger: nil))
     }
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,

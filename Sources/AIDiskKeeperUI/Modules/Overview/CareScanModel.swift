@@ -172,6 +172,16 @@ final class CareScanModel {
         }
     }
 
+    /// A scheduled run (T22): the same read-only Care Scan, awaited to its end. It never changes the selection and never
+    /// reaches a cleanup. Nil when a scan was already running or this one did not finish.
+    func startScheduled() async -> ScheduledScanOutcome? {
+        guard phase != .scanning else { return nil }
+        start()
+        await runTask?.value
+        guard phase == .results, let totals else { return nil }
+        return ScheduledScanOutcome(totals: totals, growth: growth)
+    }
+
     /// Asks the scan to stop; the partial results are kept (`phase == .stopped`).
     func stop() {
         guard phase == .scanning else { return }

@@ -40,6 +40,11 @@ public struct AppSettings: Codable, Sendable, Hashable {
 
     /// T25: reuse sizes of unchanged items between scans (validated against the file system journal).
     public var useScanCache = true
+    // Scheduled scans (T22). Off by default; a scheduled run is the read-only Care Scan.
+    public var scanFrequency: ScanFrequency = .off
+    public var scheduledSafeAlertGB = 5
+    public var scheduledGrowthAlertGB = 2
+    public var scheduledSkipOnBattery = true
 
     /// H2: publish `status.json` for coding agents while the app runs (D10: on by default).
     public var publishHostStatus = true
@@ -68,6 +73,7 @@ public struct AppSettings: Codable, Sendable, Hashable {
         case monitorOrder, monitorDisabled, menuBarMetrics, menuBarStyle, menuBarRefreshSeconds, networkUnits
         case popoverShowsTopProcesses, popoverHistoryMinutes, useScanCache
         case publishHostStatus
+        case scanFrequency, scheduledSafeAlertGB, scheduledGrowthAlertGB, scheduledSkipOnBattery
     }
 
     /// Lenient: unknown keys are ignored and missing keys take defaults.
@@ -94,6 +100,10 @@ public struct AppSettings: Codable, Sendable, Hashable {
         popoverHistoryMinutes = Self.snapHistoryMinutes(try c.decodeIfPresent(Int.self, forKey: .popoverHistoryMinutes) ?? 1)
         useScanCache = try c.decodeIfPresent(Bool.self, forKey: .useScanCache) ?? true
         publishHostStatus = try c.decodeIfPresent(Bool.self, forKey: .publishHostStatus) ?? true
+        scanFrequency = (try c.decodeIfPresent(String.self, forKey: .scanFrequency)).flatMap(ScanFrequency.init(rawValue:)) ?? .off
+        scheduledSafeAlertGB = min(max(try c.decodeIfPresent(Int.self, forKey: .scheduledSafeAlertGB) ?? 5, 1), 500)
+        scheduledGrowthAlertGB = min(max(try c.decodeIfPresent(Int.self, forKey: .scheduledGrowthAlertGB) ?? 2, 1), 500)
+        scheduledSkipOnBattery = try c.decodeIfPresent(Bool.self, forKey: .scheduledSkipOnBattery) ?? true
     }
 
     /// Unknown and duplicate ids are dropped; missing ones are appended in the default order.
