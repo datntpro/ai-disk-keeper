@@ -41,7 +41,8 @@ struct CareScanLive: Sendable {
                 leftovers: { inventory in
                     ScanEngine(context: context, scanners: [
                         AppLeftoverScanner(inventory: { inventory }, library: roots.library, lookup: LaunchServicesBundleLookup()),
-                    ], adjusters: [InUseAdjuster(source: LibprocUsageSource())])
+                    ], adjusters: [UserPolicyAdjuster(policy: UserPolicy.load(environment: env)),
+                                  InUseAdjuster(source: LibprocUsageSource())])
                 }),
             CareStages.scannerRun(.startup, modules: [.startup]) {
                 ScanEngine(context: context, scanners: [
@@ -56,7 +57,7 @@ struct CareScanLive: Sendable {
 
     private static func loadGuard(_ env: PathEnvironment) throws -> ScanGuard {
         let loaded = RuleLoader(environment: env, bundledRulesDirectory: CoreResources.rulesDirectoryURL,
-                                userRulesDirectory: nil, guardFactory: ScanGuard.loaderFactory(environment: env)).load()
+                                userRulesDirectory: UserRulesDirectory.activeURL(environment: env), guardFactory: ScanGuard.loaderFactory(environment: env)).load()
         return try ScanGuard(environment: env, protectPatterns: loaded.protectPatterns)
     }
 

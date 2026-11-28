@@ -240,6 +240,8 @@ public enum CleanupCopy {
             loc("inuse.blocker.unknown", "Couldn't check whether something is using this, so it was left alone. Try again.")
         case .modifiedRecently:
             loc("inuse.blocker.recent", "Modified in the last hour, so it was left alone. Rescan later.")
+        case .ignoredByUser:
+            loc("rules.blocker.ignoredByUser", "You chose to hide this item or switch its rule off, so it was left alone.")
         case .inUseByTool: loc("cleanup.blocker.inUseByTool", "The tool says this is in use right now. Rescan to review it again.")
         }
     }

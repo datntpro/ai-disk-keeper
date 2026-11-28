@@ -17,7 +17,8 @@ final class RuleValidatorTests: XCTestCase {
         var e = env!
         e.variables = variables
         for (i, j) in jsons.enumerated() { try tmp.file("user/f\(i).json", contents: Data(j.utf8)) }
-        return RuleFixtures.loader(e, user: tmp.url.appendingPathComponent("user"), recorder: recorder).load()
+        return RuleFixtures.withoutCapWarnings(
+            RuleFixtures.loader(e, user: tmp.url.appendingPathComponent("user"), recorder: recorder).load())
     }
 
     private func expectOneWarning(_ r: RuleLoadResult, path: String? = nil, line: UInt = #line) {
@@ -195,7 +196,7 @@ final class RuleValidatorTests: XCTestCase {
             let weird = PathEnvironment(home: home, temporaryDirectory: "/T", variables: [:])
             let file = RuleFixtures.file(protect: #"["~/.foo/**"]"#, rules: [RuleFixtures.rule(paths: #"["~/.foo/cache"]"#)])
             try tmp.file("w/f.json", contents: Data(file.utf8))
-            let r = RuleFixtures.loader(weird, user: tmp.url.appendingPathComponent("w"), recorder: rec).load()
+            let r = RuleFixtures.withoutCapWarnings(RuleFixtures.loader(weird, user: tmp.url.appendingPathComponent("w"), recorder: rec).load())
             let escaped = home.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "*", with: "\\*")
                 .replacingOccurrences(of: "?", with: "\\?").replacingOccurrences(of: "[", with: "\\[")
                 .replacingOccurrences(of: "]", with: "\\]") + "/.foo/**"

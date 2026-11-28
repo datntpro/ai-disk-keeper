@@ -118,7 +118,7 @@ public struct RootView: View {
         if let id = selection.moduleID, let custom = ModuleRegistry.provider(for: id).makeInspector(ctx) {
             custom
         } else {
-            ItemDetailView(item: inspectedID.flatMap { scan.item(id: $0) })
+            ItemDetailView(item: inspectedID.flatMap { scan.item(id: $0) }, settings: env.settings)
         }
     }
 

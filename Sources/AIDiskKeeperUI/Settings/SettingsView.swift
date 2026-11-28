@@ -4,7 +4,7 @@ public struct SettingsView: View {
     let model: SettingsModel
     @State private var tab = Tab.general
 
-    private enum Tab: Hashable { case general, scope, tools, menuBar, schedule }
+    private enum Tab: Hashable { case general, scope, tools, rules, menuBar, schedule }
 
     public init(model: SettingsModel) { self.model = model }
 
@@ -22,6 +22,8 @@ public struct SettingsView: View {
                 .tabItem { Label(loc("settings.tab.scope", "Scan scope"), systemImage: "folder.badge.gearshape") }
             ToolsSettingsView(model: model).tag(Tab.tools)
                 .tabItem { Label(loc("settings.tab.tools", "Tools"), systemImage: "wrench.and.screwdriver") }
+            RulesSettingsView(model: model).tag(Tab.rules)
+                .tabItem { Label(loc("settings.rules.tab", "Rules"), systemImage: "list.bullet.rectangle") }
             MenuBarSettingsView(model: model).tag(Tab.menuBar)
                 .tabItem { Label(loc("settings.tab.menubar", "Menu bar"), systemImage: "menubar.rectangle") }
             ScheduleSettingsView(model: model).tag(Tab.schedule)

@@ -13,6 +13,9 @@ public actor CleanupEngine {
     private let toolCommands: ToolCommandPerformer?
     private let options: CleanupOptions
     private let now: @Sendable () -> Date
+    /// Read fresh at the start of every `plan` and `execute`, then held for that call.
+    private let userPolicySource: @Sendable () -> UserPolicy
+    private var userPolicy = UserPolicy.empty
     private struct Issued {
         let plan: CleanupPlan
         let monotonic: ContinuousClock.Instant
@@ -37,6 +40,7 @@ public actor CleanupEngine {
                 appPolicy: ApplicationBundlePolicy? = nil,
                 toolCommands: ToolCommandPerformer? = nil,
                 inUse: (any ProcessUsageSource)? = nil,
+                userPolicy: @escaping @Sendable () -> UserPolicy = { .empty },
                 now: @escaping @Sendable () -> Date = { Date() }) {
         self.validator = ItemValidator(pathGuard: pathGuard, userID: userID, runningApps: runningApps,
                                        tolerance: options.tolerance, appPolicy: appPolicy,
@@ -48,6 +52,7 @@ public actor CleanupEngine {
         self.remover = remover
         self.options = options
         self.now = now
+        self.userPolicySource = userPolicy
     }
 
     // MARK: Plan (dry run)
@@ -62,6 +67,7 @@ public actor CleanupEngine {
     /// keep-one invariant: at least one unselected copy must still exist and hold the same content.
     public func plan(_ items: [ScanItem], duplicateGroups: [String: DuplicateGroup]) async -> CleanupPlan {
         let action: CleanupAction = options.requestPermanentDelete ? .deletePermanently : .trash
+        let policy = userPolicySource()
         var blockers: [[CleanupBlocker]] = []
         var fingerprints: [ItemFingerprint?] = []
         var appBundles: [AppBundleFingerprint?] = []
@@ -79,7 +85,7 @@ public actor CleanupEngine {
                 snapshots.append(nil)
                 continue
             }
-            var b = validator.policyBlockers(item, action: action, options: options)
+            var b = validator.policyBlockers(item, action: action, options: options, userPolicy: policy)
             let fast: (blockers: [CleanupBlocker], fingerprint: ItemFingerprint?)
             var bundle: AppBundleFingerprint?
             if case .trashApplication = item.cleanupMethod {
@@ -197,6 +203,7 @@ public actor CleanupEngine {
 
         runInUse = nil
         defer { runInUse = nil }
+        userPolicy = userPolicySource()   // fresh: the plan may be minutes old
         let startedAt = now()
         var results: [CleanupItemResult] = []
         var wasCancelled = false
@@ -271,7 +278,7 @@ public actor CleanupEngine {
         let planned = ToolRunRecord(command: entry.toolCommand?.command, exitStatus: nil, durationMs: nil,
                                     stderrTail: nil, target: entry.toolCommand?.targetLabel)
         if !entry.blockers.isEmpty { return (.skipped(entry.blockers), planned) }
-        var blockers = validator.policyBlockers(item, action: entry.action, options: options)
+        var blockers = validator.policyBlockers(item, action: entry.action, options: options, userPolicy: userPolicy)
         if !item.isVirtual {
             blockers += await validator.changeCheck(item)
             blockers += validator.fastChecks(item, expected: entry.fingerprint).blockers
@@ -294,7 +301,7 @@ public actor CleanupEngine {
         let item = entry.item
 
         // Slow checks first, fast checks last: the window before the action is as short as possible.
-        var blockers = validator.policyBlockers(item, action: entry.action, options: options)
+        var blockers = validator.policyBlockers(item, action: entry.action, options: options, userPolicy: userPolicy)
         blockers += await validator.changeCheck(item)
         var bundleID: String?
         if case .trashApplication(let id) = item.cleanupMethod {

@@ -34,12 +34,13 @@ enum UninstallerModule: ModuleProvider {
     static func liveLeftovers(_ env: PathEnvironment) -> UninstallerModel.Leftovers {
         { inventory in
             let loaded = RuleLoader(environment: env, bundledRulesDirectory: CoreResources.rulesDirectoryURL,
-                                    userRulesDirectory: nil, guardFactory: ScanGuard.loaderFactory(environment: env)).load()
+                                    userRulesDirectory: UserRulesDirectory.activeURL(environment: env), guardFactory: ScanGuard.loaderFactory(environment: env)).load()
             let pathGuard = try ScanGuard(environment: env, protectPatterns: loaded.protectPatterns)
             let context = ScanContext(environment: env, pathGuard: pathGuard, now: Date())
             let scanner = AppLeftoverScanner(inventory: { inventory }, library: env.home + "/Library",
                                              lookup: LaunchServicesBundleLookup())
-            let engine = ScanEngine(context: context, scanners: [scanner])
+            let engine = ScanEngine(context: context, scanners: [scanner],
+                                    adjusters: [UserPolicyAdjuster(policy: UserPolicy.load(environment: env))])
             for await event in try await engine.scan() {
                 switch event {
                 case .finished(let result), .cancelled(let result): return result

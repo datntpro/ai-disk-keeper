@@ -3,6 +3,8 @@ import SwiftUI
 
 struct ItemDetailView: View {
     let item: ScanItem?
+    /// nil = no "your rules" actions (previews, tests).
+    var settings: SettingsModel? = nil
 
     var body: some View {
         if let item {
@@ -40,6 +42,7 @@ struct ItemDetailView: View {
                         section(loc("detail.notes", "Notes")) { ForEach(notes, id: \.self) { Label($0, systemImage: "info.circle").font(.callout) } }
                     }
                     section(loc("detail.cleanup", "Cleanup")) { Text(cleanupText(item.cleanupMethod)) }
+                    if let settings { UserPolicyMenu.section(item: item, settings: settings) }
                 }
                 .padding().frame(maxWidth: .infinity, alignment: .leading)
             }

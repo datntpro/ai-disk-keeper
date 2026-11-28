@@ -445,3 +445,16 @@ extension RuleCleanup: Decodable {
         }
     }
 }
+
+extension ScannerRule {
+    /// Copy with every Safe tier (the rule's own and each `tierWhen`) raised to Review, or nil when nothing was Safe.
+    /// Used for user rules: only bundled rules may produce Safe items.
+    func cappedAtReview() -> ScannerRule? {
+        guard tier == .safe || tierWhen.contains(where: { $0.tier == .safe }) else { return nil }
+        return ScannerRule(
+            id: id, title: title, category: category, paths: paths, match: match, project: project,
+            tier: max(tier, .review),
+            tierWhen: tierWhen.map { TierWhen(condition: $0.condition, tier: max($0.tier, .review)) },
+            explanation: explanation, cleanup: cleanup, localized: localized)
+    }
+}

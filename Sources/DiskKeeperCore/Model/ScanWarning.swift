@@ -25,6 +25,8 @@ public struct ScanWarning: Codable, Sendable, Hashable {
         case inUseUnknown
         /// An adjuster tried to do more than lower an item toward Keep; its changes were discarded.
         case adjusterRejected(name: String)
+        /// A tier override that would make an item less strict was ignored (`key` = item id or rule id).
+        case looserOverrideIgnored(key: String)
     }
 
     public enum AppSkipReason: String, Codable, Sendable, Hashable { case noInfoPlist, damagedInfoPlist, noBundleID }

@@ -21,7 +21,7 @@ enum DuplicatesModule: ModuleProvider {
     /// Loading rule JSON reads disk; the model calls this off the main actor.
     private static func liveGuard(_ env: PathEnvironment) throws -> ScanGuard {
         let loaded = RuleLoader(environment: env, bundledRulesDirectory: CoreResources.rulesDirectoryURL,
-                                userRulesDirectory: nil, guardFactory: ScanGuard.loaderFactory(environment: env)).load()
+                                userRulesDirectory: UserRulesDirectory.activeURL(environment: env), guardFactory: ScanGuard.loaderFactory(environment: env)).load()
         return try ScanGuard(environment: env, protectPatterns: loaded.protectPatterns)
     }
 

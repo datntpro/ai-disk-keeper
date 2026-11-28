@@ -35,9 +35,13 @@ struct ItemValidator: Sendable {
     }
 
     /// Policy checks that need no filesystem access.
-    func policyBlockers(_ item: ScanItem, action: CleanupAction, options: CleanupOptions) -> [CleanupBlocker] {
+    func policyBlockers(_ item: ScanItem, action: CleanupAction, options: CleanupOptions,
+                        userPolicy: UserPolicy = .empty) -> [CleanupBlocker] {
         var out: [CleanupBlocker] = []
-        if item.tier == .keep { out.append(.keepTier) }
+        // The user's current settings are re-read at execute time: an item hidden, a rule switched off or a stricter
+        // override set after the plan was made still stops it. Overrides only ever add Keep, never lift anything.
+        if userPolicy.hides(item) { out.append(.ignoredByUser) }
+        if item.tier == .keep || userPolicy.effectiveTier(for: item) == .keep { out.append(.keepTier) }
         switch item.cleanupMethod {
         case .none: out.append(.notActionable)
         case .trashWorktree: out.append(.methodNotSupported("trashWorktree"))

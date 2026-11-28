@@ -11,6 +11,8 @@ struct ItemTableView: View {
     var scopeName: String? = nil
     /// Shown over the table body (below the chips and search field) when a search matches nothing.
     var filteredEmpty: FilteredEmpty? = nil
+    /// nil = no item menu.
+    var settings: SettingsModel? = nil
 
     private var sortOrder: Binding<[ItemSortComparator]> {
         Binding(
@@ -64,6 +66,11 @@ struct ItemTableView: View {
                 TableColumn(loc("column.path", "Path")) { item in
                     Text(item.path).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                 }.width(min: 120, ideal: 220)
+            }
+            .contextMenu(forSelectionType: ScanItem.ID.self) { ids in
+                if let settings, let id = ids.first, let item = rows.first(where: { $0.id == id }) {
+                    UserPolicyMenu.buttons(item: item, settings: settings)
+                }
             }
             .overlay {
                 if let filteredEmpty {

@@ -142,6 +142,22 @@ public final class SettingsModel {
     public func setWorktreeIdleHours(_ hours: Int) { mutate { $0.worktreeIdleHours = AppSettings.clampWorktreeIdleHours(hours) } }
     public func setUseGitHubCLIForPRs(_ on: Bool) { mutate { $0.useGitHubCLIForPRs = on } }
 
+    // User rules (T23)
+    public func setUserRulesEnabled(_ on: Bool) { mutate { $0.userRulesEnabled = on } }
+    public func ignoreItem(_ id: String) { mutate { $0.ignoredItemIDs.insert(id) } }
+    public func unignoreItem(_ id: String) { mutate { $0.ignoredItemIDs.remove(id) } }
+    public func isRuleDisabled(_ id: String) -> Bool { settings.disabledRuleIDs.contains(id) }
+    public func setRule(_ id: String, disabled: Bool) {
+        mutate { if disabled { $0.disabledRuleIDs.insert(id) } else { $0.disabledRuleIDs.remove(id) } }
+    }
+    /// Only a stricter tier than `item.tier` is stored (Review for Safe items; Keep for Safe/Review items).
+    public func overrideTier(of item: ScanItem, to tier: RiskTier) {
+        guard UserPolicyChoices.offered(for: item.tier).contains(tier) else { return }
+        mutate { $0.tierOverrides[item.id] = tier }
+    }
+    public func resetOverride(_ key: String) { mutate { $0.tierOverrides[key] = nil } }
+    public func hasOverride(_ item: ScanItem) -> Bool { settings.userPolicy.override(for: item) != nil }
+
     public func setOnboardingCompleted(_ done: Bool) { mutate { $0.hasCompletedOnboarding = done } }
 
     /// Applies `change` to a copy; on failure the settings stay unchanged and `lastError` explains why.

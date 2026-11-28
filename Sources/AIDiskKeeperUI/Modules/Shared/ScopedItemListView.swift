@@ -37,7 +37,7 @@ struct ScopedItemListView: View {
                 }
                 ItemTableView(rows: ctx.list.rows, tierCounts: ctx.list.tierCounts, query: ctx.query,
                               inspectedID: ctx.inspectedID, selection: ctx.scanSelection, scopeName: scopeName,
-                              filteredEmpty: Self.filteredEmpty(state, scanning: scan.isScanning))
+                              filteredEmpty: Self.filteredEmpty(state, scanning: scan.isScanning), settings: ctx.env.settings)
             }
         }
     }

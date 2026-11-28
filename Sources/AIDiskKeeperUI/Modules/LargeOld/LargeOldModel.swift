@@ -188,7 +188,7 @@ extension LargeOldModel {
     static func live(environment env: PathEnvironment) -> Scanning {
         { tree in
             let loaded = RuleLoader(
-                environment: env, bundledRulesDirectory: CoreResources.rulesDirectoryURL, userRulesDirectory: nil,
+                environment: env, bundledRulesDirectory: CoreResources.rulesDirectoryURL, userRulesDirectory: UserRulesDirectory.activeURL(environment: env),
                 guardFactory: ScanGuard.loaderFactory(environment: env)).load()
             let pathGuard = try ScanGuard(environment: env, protectPatterns: loaded.protectPatterns)
             let scanner = LargeFileScanner(options: LargeFileOptions(environment: env), lastOpened: SpotlightLastOpenedProvider(),
