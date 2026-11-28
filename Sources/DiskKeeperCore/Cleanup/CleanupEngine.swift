@@ -68,7 +68,8 @@ public actor CleanupEngine {
         var snapshots: [ToolCommandSnapshot?] = []
         var seenIDs: Set<String> = []
         var accepted: [(key: PathKey, id: String)] = []
-        let inUseSnapshot = validator.takeInUseSnapshot()   // one per plan; execute takes its own
+        // One per plan, and none when no item is file-backed (apps and virtual items are checked elsewhere); execute takes its own.
+        let inUseSnapshot = items.contains(where: Self.needsInUseCheck) ? validator.takeInUseSnapshot() : nil
 
         for item in items {
             if !seenIDs.insert(item.id).inserted {
@@ -154,6 +155,11 @@ public actor CleanupEngine {
         let plan = CleanupPlan(createdAt: now(), entries: entries)
         issued[plan.id] = Issued(plan: plan, monotonic: ContinuousClock.now)
         return plan
+    }
+
+    private static func needsInUseCheck(_ item: ScanItem) -> Bool {
+        if case .trashApplication = item.cleanupMethod { return false }
+        return !item.isVirtual
     }
 
     private static func isVirtualToolCommand(_ item: ScanItem) -> Bool {

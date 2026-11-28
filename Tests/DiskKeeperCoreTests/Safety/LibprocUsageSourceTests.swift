@@ -8,8 +8,8 @@ final class LibprocUsageSourceTests: XCTestCase {
     private var child: Process?
 
     override func tearDown() {
-        child?.terminate()
-        child?.waitUntilExit()
+        if let c = child { stopChild(c) }
+
         child = nil
     }
 
@@ -43,7 +43,7 @@ final class LibprocUsageSourceTests: XCTestCase {
         XCTAssertTrue(ours.contains(holder(cwd)), "cwd counts")
         XCTAssertNil(index.holder(of: dir.path("elsewhere")))
         // After the child exits it holds nothing.
-        p.terminate(); p.waitUntilExit()
+        stopChild(p)
         let after = InUseIndex(source.snapshot(userID: getuid()) ?? [], currentUID: getuid())
         XCTAssertNil(after.holder(of: dir.path("held")))
     }

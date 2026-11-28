@@ -15,3 +15,13 @@ final class FakeUsageSource: ProcessUsageSource, @unchecked Sendable {
 func setMTime(_ path: String, _ date: Date) throws {
     try FileManager.default.setAttributes([.modificationDate: date], ofItemAtPath: path)
 }
+
+/// Stops a child this test spawned (only that pid) without ever blocking: `waitUntilExit` can hang when the
+/// process's exit notification is starved on a loaded machine.
+func stopChild(_ p: Process) {
+    guard p.isRunning else { return }
+    p.terminate()
+    for _ in 0..<30 where p.isRunning { usleep(100_000) }
+    if p.isRunning { kill(p.processIdentifier, SIGKILL) }
+    for _ in 0..<30 where p.isRunning { usleep(100_000) }
+}

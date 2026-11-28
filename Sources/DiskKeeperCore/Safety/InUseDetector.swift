@@ -34,11 +34,16 @@ public struct LibprocUsageSource: ProcessUsageSource {
         self.selfPID = selfPID
     }
 
+    /// The region walk dominates (about 4 us per memory region, ~0.5 M regions on a busy Mac), so the per-process reads
+    /// run on all cores. Semantics are unchanged: every own-uid process is read, any refusal makes the snapshot nil.
     public func snapshot(userID: uid_t) -> [ProcessHold]? {
         guard let snap = table.snapshot() else { return nil }
+        let records = snap.records.filter { $0.pid > 1 && $0.pid != selfPID && $0.uid == userID }
+        let reads = Self.parallelMap(records) { files.read(pid: $0.pid) }
         var out: [ProcessHold] = []
-        for r in snap.records where r.pid > 1 && r.pid != selfPID && r.uid == userID {
-            switch files.read(pid: r.pid) {
+        out.reserveCapacity(records.count)
+        for (r, read) in zip(records, reads) {
+            switch read {
             case .gone: continue
             case .denied: return nil   // this process may hold files we cannot see: fail closed
             case .files(let f):
@@ -49,6 +54,29 @@ public struct LibprocUsageSource: ProcessUsageSource {
         }
         return out
     }
+
+    /// Order-preserving map over `workers` threads (largest processes are not clustered: indices are strided).
+    static func parallelMap<T, R>(_ input: [T], workers: Int = min(8, ProcessInfo.processInfo.activeProcessorCount),
+                                  _ body: (T) -> R) -> [R] {
+        let n = input.count
+        guard n > 1, workers > 1 else { return input.map(body) }
+        let box = ResultBox<R>(count: n)
+        withoutActuallyEscaping(body) { body in
+            DispatchQueue.concurrentPerform(iterations: workers) { w in
+                var i = w
+                while i < n { box.set(i, body(input[i])); i += workers }
+            }
+        }
+        return box.values()
+    }
+}
+
+private final class ResultBox<R>: @unchecked Sendable {
+    private var slots: [R?]
+    private let lock = NSLock()
+    init(count: Int) { slots = [R?](repeating: nil, count: count) }
+    func set(_ i: Int, _ v: R) { lock.lock(); slots[i] = v; lock.unlock() }
+    func values() -> [R] { slots.map { $0! } }
 }
 
 /// Which process holds a path. Trie of path components: a lookup walks the item's own components, so a held path

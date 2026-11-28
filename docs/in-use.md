@@ -52,8 +52,12 @@ tests that never read real processes.
 
 ## Timing
 
-One snapshot is a `proc_listallpids` walk plus one fd-table read per process. Measure on your machine with
-`ADK_BENCH=1 swift test --filter InUseDetectorBenchmarkTests` (budget: under 2 s).
+A snapshot is a `proc_listallpids` walk plus, per process, one fd-table read and a walk of its memory regions. The region
+walk dominates (about 4 µs per region, roughly 0.5 M regions across 500 processes: about 2 s on one core), so the
+per-process reads run on up to 8 threads. `plan` takes a snapshot only when it holds a file-backed item, and `execute`
+takes one right before the first removal and reuses it for 5 s. Measure with
+`ADK_BENCH=1 swift test --filter InUseDetectorBenchmarkTests` (budget: under 1 s on a busy machine, typically a few
+hundred ms).
 
 ## Limits
 

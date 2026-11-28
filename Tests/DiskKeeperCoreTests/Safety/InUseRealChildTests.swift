@@ -9,7 +9,7 @@ final class InUseRealChildTests: CleanupTestCase {
     private var children: [Process] = []
 
     override func tearDown() {
-        for p in children where p.isRunning { p.terminate(); p.waitUntilExit() }
+        for p in children { stopChild(p) }
         children = []
         super.tearDown()
     }
