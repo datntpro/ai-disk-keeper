@@ -17,7 +17,7 @@ import Foundation
 /// - The cache only stores sizes and paths of the user's own items. It is never used by the cleanup engine, the
 ///   item validator or the disk indexer, and it never decides what is protected: the guard runs before sizing.
 public actor SizeCache {
-    public static let schemaVersion = 1
+    public static let schemaVersion = 2   // 2 (H6): SizeReport carries privateBytes / sharedOutsideBytes / probedBytes
     public static let defaultCapacity = 50_000
 
     struct Entry: Codable, Sendable, Equatable {
@@ -89,7 +89,7 @@ public actor SizeCache {
     }
 
     /// Only these options change what a report contains.
-    public static func optionsHash(_ o: FileSizer.Options) -> String { "cv=\(o.crossVolumes);mi=\(o.maxRecordedIssues)" }
+    public static func optionsHash(_ o: FileSizer.Options) -> String { "cv=\(o.crossVolumes);mi=\(o.maxRecordedIssues);pb=\(o.measurePrivateBytes)" }
 
     public var count: Int { entries.count }
 

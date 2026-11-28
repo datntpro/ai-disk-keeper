@@ -98,6 +98,12 @@ public struct ScanResult: Codable, Sendable, Hashable {
     public var reclaimable: UsageTotals { sum { $0.isSelectable } }
     public var bulkReclaimable: UsageTotals { sum { $0.isBulkSelectable } }
 
+    /// H6: what cleaning every selectable item would really free (see ``ReclaimEstimate``), next to `reclaimable`'s
+    /// shown size. Information only.
+    public var reclaimableEstimate: ReclaimEstimate {
+        ReclaimEstimate.make(items: items.filter(\.isSelectable))
+    }
+
     /// Largest first by `sizeAllocated`; ties broken by id ascending. `limit <= 0` gives [].
     public func topItems(limit: Int) -> [ScanItem] {
         guard limit > 0 else { return [] }

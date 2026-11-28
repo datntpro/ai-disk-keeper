@@ -13401,6 +13401,118 @@
         }
       }
     },
+    "reclaim.freesAbout" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frees about %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Giải phóng khoảng %@"
+          }
+        }
+      }
+    },
+    "reclaim.mayFreeLess" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "May free less"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Có thể giải phóng ít hơn"
+          }
+        }
+      }
+    },
+    "reclaim.sharedLinks" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Files also linked from outside stay used"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Các tệp còn liên kết từ bên ngoài vẫn chiếm dung lượng"
+          }
+        }
+      }
+    },
+    "reclaim.sharedWithClones" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocks shared with clones stay used"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Các khối dùng chung với bản sao (clone) vẫn chiếm dung lượng"
+          }
+        }
+      }
+    },
+    "reclaim.shown" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shown %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hiển thị %@"
+          }
+        }
+      }
+    },
+    "reclaim.snapshots" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Local snapshots may keep this space used for a while"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bản chụp cục bộ có thể giữ dung lượng này trong một thời gian"
+          }
+        }
+      }
+    },
+    "reclaim.trashReturns" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Space returns when you empty the Trash"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dung lượng được trả lại khi bạn làm trống Thùng rác"
+          }
+        }
+      }
+    },
     "row.a11y" : {
       "localizations" : {
         "en" : {

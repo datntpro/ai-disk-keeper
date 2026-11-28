@@ -254,11 +254,13 @@ public struct RuleScanner: Scanner {
 
         let name = rule.match.kind == .self
             ? rule.title : PathNormalization.components(path).last.map(String.init) ?? path
+        let reclaim = ScanItem.reclaim(from: report)
         return ScanItem(
             url: URL(fileURLWithPath: path), displayName: name, tool: p.rule.tool, category: rule.category,
             project: p.project, sizeAllocated: report.allocatedBytes, sizeLogical: report.logicalBytes,
             fileCount: report.fileCount, lastModified: report.newestModification, tier: tier,
             explanation: rule.explanation, ruleID: rule.id, cleanupMethod: rule.cleanup.cleanupMethod,
-            requiresAppQuit: appQuit, flags: flags)
+            requiresAppQuit: appQuit, flags: flags,
+            reclaimableBytes: reclaim.bytes, reclaimIsEstimate: reclaim.estimate)
     }
 }

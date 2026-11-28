@@ -16,7 +16,8 @@ public enum FileSizerError: Error, Sendable, Equatable {
 /// - **Hardlinks** are deduplicated per call only (no cross-call dedupe). A hardlink whose other name
 ///   lives outside the tree is still counted once here; deleting it frees nothing.
 /// - **APFS clones** are overcounted: shared extents are invisible to `stat`, so `allocatedBytes` is an
-///   upper bound on reclaimable space when clones exist.
+///   upper bound on reclaimable space when clones exist. With `measurePrivateBytes`, `SizeReport.privateBytes`
+///   is the lower, honest number (see docs/reclaimable.md).
 /// - **Mount points** on other devices are not crossed unless `Options.crossVolumes` is set.
 /// - **Dataless** (iCloud / File Provider) directories are not materialized or descended.
 /// - `progress` is called on a background (walker) thread.
@@ -30,25 +31,39 @@ public struct FileSizer: Sendable {
         public var progressInterval: Int
         /// Dispatch QoS of the walker thread for the async API. Default .utility.
         public var qos: DispatchQoS.QoSClass
+        /// H6: also measure how many bytes deleting the tree would really free on APFS (one `getattrlist` per file of
+        /// at least ``privateProbeMinFileSize``; never reads contents). Default false.
+        public var measurePrivateBytes: Bool
+        /// Files smaller than this count as private without a probe. Default 1 MiB.
+        public var privateProbeMinFileSize: Int64
         /// TEST-ONLY hook invoked once per entry on the walker thread.
         var _entryHook: (@Sendable () -> Void)?
+        /// TEST-ONLY replacement for the clone probe (e.g. to simulate a non-APFS volume).
+        var _cloneProbe: (@Sendable (String) -> CloneInfo)?
 
         public init(
             crossVolumes: Bool = false,
             maxRecordedIssues: Int = 100,
             progressInterval: Int = 10_000,
-            qos: DispatchQoS.QoSClass = .utility
+            qos: DispatchQoS.QoSClass = .utility,
+            measurePrivateBytes: Bool = false,
+            privateProbeMinFileSize: Int64 = FileSizer.defaultPrivateProbeMinFileSize
         ) {
             self.crossVolumes = crossVolumes
             self.maxRecordedIssues = maxRecordedIssues
             self.progressInterval = max(1, progressInterval)
             self.qos = qos
+            self.measurePrivateBytes = measurePrivateBytes
+            self.privateProbeMinFileSize = max(1, privateProbeMinFileSize)
             self._entryHook = nil
+            self._cloneProbe = nil
         }
 
         public static func == (lhs: Options, rhs: Options) -> Bool {
             lhs.crossVolumes == rhs.crossVolumes && lhs.maxRecordedIssues == rhs.maxRecordedIssues
                 && lhs.progressInterval == rhs.progressInterval && lhs.qos == rhs.qos
+                && lhs.measurePrivateBytes == rhs.measurePrivateBytes
+                && lhs.privateProbeMinFileSize == rhs.privateProbeMinFileSize
         }
 
         public func hash(into hasher: inout Hasher) {
@@ -56,8 +71,13 @@ public struct FileSizer: Sendable {
             hasher.combine(maxRecordedIssues)
             hasher.combine(progressInterval)
             hasher.combine(qos)
+            hasher.combine(measurePrivateBytes)
+            hasher.combine(privateProbeMinFileSize)
         }
     }
+
+    /// D11: files below 1 MiB count as private (allocated) without a probe.
+    public static let defaultPrivateProbeMinFileSize: Int64 = 1 << 20
 
     public let options: Options
 
@@ -109,5 +129,63 @@ public struct FileSizer: Sendable {
         }
         return try FileTreeWalker(options: options, path: path, rootStat: rootStat)
             .run(shouldCancel: shouldCancel, progress: progress)
+    }
+}
+
+// MARK: H6: private-bytes rules shared by the walk and the cheap refresh
+
+extension FileSizer {
+    /// `UF_COMPRESSED` (sys/stat.h): a decmpfs file; `getattrlist` reports PRIVATESIZE 0 for it.
+    static let ufCompressed: UInt32 = 0x20
+
+    /// What deleting one regular file frees, given what the probe said. Never above `allocated`. A compressed file
+    /// (PRIVATESIZE 0 and no clone refcount) or an unknown probe counts at its allocated size and is flagged
+    /// "estimate" (the real number may be lower): never a confident 0 and never a confident full number.
+    static func privateBytes(_ info: CloneInfo, allocated: Int64, flags: UInt32)
+        -> (bytes: Int64, probed: Bool, estimate: Bool) {
+        if flags & ufCompressed != 0 { return (allocated, false, true) }
+        switch info {
+        case .known(_, let refCount, let priv, _, _):
+            if priv == 0 && refCount == 0 && allocated > 0 { return (allocated, false, true) }
+            return (min(max(0, priv), allocated), true, false)
+        case .unknown:
+            return (allocated, false, true)
+        }
+    }
+
+    /// Cheap refresh of the probe fields for a cached report: `lstat` (+ `getattrlist` for probed files) on the
+    /// ``ReclaimPlan`` entries only, no tree walk. Returns nil when anything no longer matches (the caller then
+    /// walks again).
+    static func refreshReclaim(_ report: SizeReport, probe: (String) -> CloneInfo = { CloneProbe.probe($0) }) -> SizeReport? {
+        guard let plan = report.reclaimPlan, report.rootKind == .directory else { return nil }
+        var out = report
+        var priv = plan.baseBytes
+        var shared: Int64 = 0, probedBytes: Int64 = 0
+        var estimate = false
+        var extCount = 0
+        var extBytes: Int64 = 0
+        for e in plan.entries {
+            var st = stat()
+            guard lstat(e.path, &st) == 0, st.st_dev == e.device, st.st_ino == e.inode else { return nil }
+            if Int(st.st_nlink) > e.seenInside {          // another name exists outside the item: frees nothing
+                shared += e.allocated; extCount += 1; extBytes += e.allocated
+                continue
+            }
+            if e.probed {
+                let r = privateBytes(probe(e.path), allocated: e.allocated, flags: st.st_flags)
+                priv += r.bytes
+                if r.probed { probedBytes += e.allocated }
+                if r.estimate { estimate = true }
+            } else {
+                priv += e.allocated
+            }
+        }
+        out.privateBytes = priv
+        out.sharedOutsideBytes = shared
+        out.probedBytes = probedBytes
+        out.privateIsEstimate = estimate
+        out.externallyLinkedFileCount = extCount
+        out.externallyLinkedBytes = extBytes
+        return out
     }
 }

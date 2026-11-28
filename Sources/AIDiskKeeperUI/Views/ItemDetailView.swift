@@ -16,6 +16,7 @@ struct ItemDetailView: View {
                     section(loc("detail.why", "Why this tier")) { Text(item.uiExplanation()) }
                     section(loc("detail.size", "Size")) {
                         Text(Formatting.bytes(item.sizeAllocated)).font(.title3)
+                        ReclaimLine(items: item.isSelectable ? [item] : [], trashes: item.cleanupMethod.isActionable && !item.isVirtual)
                         Text(loc("detail.sizeDetail", "\(Formatting.bytes(item.sizeLogical)) apparent · \(item.fileCount) files · modified \(Formatting.absolute(item.lastModified))"))
                             .font(.caption).foregroundStyle(.secondary)
                     }

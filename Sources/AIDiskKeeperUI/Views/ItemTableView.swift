@@ -53,8 +53,13 @@ struct ItemTableView: View {
                     .accessibilityLabel(item.a11yLabel)
                 }.width(min: 180, ideal: 260)
                 TableColumn(loc("column.size", "Size"), sortUsing: ItemSortComparator(key: .size)) { item in
-                    Text(Formatting.bytes(item.sizeAllocated)).monospacedDigit()
-                        .frame(maxWidth: .infinity, alignment: .trailing)
+                    VStack(alignment: .trailing, spacing: 0) {
+                        Text(Formatting.bytes(item.sizeAllocated)).monospacedDigit()
+                        if let r = ReclaimCopy.compact(for: ReclaimEstimate.make(items: [item])) {
+                            Text(r).font(.caption2).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.6)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .trailing)
                 }.width(min: 70, ideal: 80, max: 100)
                 TableColumn(loc("column.lastUsed", "Last used"), sortUsing: ItemSortComparator(key: .lastUsed)) { item in
                     Text(Formatting.relative(item.lastModified)).foregroundStyle(.secondary)

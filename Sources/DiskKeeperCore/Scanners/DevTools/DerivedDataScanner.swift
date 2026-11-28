@@ -72,11 +72,13 @@ public struct DerivedDataScanner: Scanner {
             let workspace = Self.workspacePath(inFolder: path)
             let (tier, variant) = classify(workspace: workspace, newest: size.newestModification, now: context.now)
             let project = workspace.map { ProjectRef(rootURL: URL(fileURLWithPath: ($0 as NSString).deletingLastPathComponent)) }
+            let reclaim = ScanItem.reclaim(from: size)
             await sink.item(ScanItem(
                 url: URL(fileURLWithPath: path), displayName: name, tool: Self.toolID, category: .systemJunk, project: project,
                 sizeAllocated: size.allocatedBytes, sizeLogical: size.logicalBytes, fileCount: size.fileCount,
                 lastModified: size.newestModification, tier: tier, explanation: variant.explanation,
-                ruleID: Self.ruleID, cleanupMethod: .trash))
+                ruleID: Self.ruleID, cleanupMethod: .trash,
+                reclaimableBytes: reclaim.bytes, reclaimIsEstimate: reclaim.estimate))
         }
     }
 
