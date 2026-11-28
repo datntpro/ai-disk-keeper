@@ -42,21 +42,25 @@ public struct DerivedDataScanner: Scanner {
 
     public let id = "build-caches.deriveddata"
     private let root: String
+    private let home: String
     private let mountsRoot: String
 
-    public init(root: String, mountsRoot: String = "/Volumes") {
+    /// `root` must lie below `home`; it is scanned only if neither it nor a parent is a symlink that leads elsewhere.
+    public init(root: String, home: String, mountsRoot: String = "/Volumes") {
         self.root = root
+        self.home = home
         self.mountsRoot = mountsRoot
     }
 
     public static func live(environment: PathEnvironment) -> DerivedDataScanner {
-        DerivedDataScanner(root: environment.home + "/Library/Developer/Xcode/DerivedData")
+        DerivedDataScanner(root: environment.home + "/Library/Developer/Xcode/DerivedData", home: environment.home)
     }
 
     public func scan(context: ScanContext, sink: ScanSink) async throws {
         var st = stat()
-        // A symlinked DerivedData may point anywhere (another volume, a shared folder): leave it alone.
-        guard lstat(root, &st) == 0, (st.st_mode & S_IFMT) == S_IFDIR, st.st_uid == context.userID else { return }
+        // A symlinked DerivedData, or a symlinked parent (Xcode), may point anywhere (another volume, Documents): leave it alone.
+        guard lstat(root, &st) == 0, (st.st_mode & S_IFMT) == S_IFDIR, st.st_uid == context.userID,
+              BuildCacheRoot.resolvesToItself(root, home: home) else { return }
         for name in Self.childNames(of: root).sorted() {
             try Task.checkCancellation()
             guard !name.hasPrefix("."), name.lowercased() != Self.moduleCacheName.lowercased() else { continue }

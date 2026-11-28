@@ -89,15 +89,6 @@ final class BuildCachesRulesTests: XCTestCase {
         }
     }
 
-    func testTartTmpIsSafeWhenOldElseKept() async throws {
-        let f = try FixtureHome()
-        try make(f, ".tart/tmp/old-pull", days: 3)
-        try make(f, ".tart/tmp/fresh-pull", days: 0.5)
-        let r = try await run(f)
-        XCTAssertEqual(r.tier(f.abs(".tart/tmp/old-pull")), .safe)
-        XCTAssertEqual(r.tier(f.abs(".tart/tmp/fresh-pull")), .keep)
-    }
-
     func testAbsentGivesNothing() async throws {
         let r = try await run(try FixtureHome())
         XCTAssertTrue(r.items.isEmpty)
@@ -107,7 +98,7 @@ final class BuildCachesRulesTests: XCTestCase {
         let url = try XCTUnwrap(CoreResources.rulesDirectoryURL?.appendingPathComponent(file))
         let json = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any]
         let rules = try XCTUnwrap(json?["rules"] as? [[String: Any]])
-        XCTAssertEqual(rules.count, 5)
+        XCTAssertEqual(rules.count, 4)
         for rule in rules {
             let id = try XCTUnwrap(rule["id"] as? String)
             let e = try XCTUnwrap(rule["explanation"] as? String)

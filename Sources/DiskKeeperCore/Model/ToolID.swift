@@ -92,6 +92,7 @@ public struct ToolID: RawRepresentable, Codable, Sendable, Hashable, Comparable,
         case "docker": "Docker"
         case "git": "Git"
         case "system": "System"
+        case "build-caches": "Build caches"
         case "files": "Your files"
         case "apps": "Applications"
         default: nil

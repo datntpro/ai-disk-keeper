@@ -67,7 +67,7 @@ private struct BuildCachesCard: View {
                 }
                 Spacer(minLength: 0)
             }
-            if !summary.hints.isEmpty { CleanupHintCard(title: BuildCachesCopy.hintsTitle, hints: summary.hints.map(\.command)) }
+            if !summary.hints.isEmpty { CleanupHintCard(title: BuildCachesCopy.hintsTitle, hints: summary.hints.map { ($0.command, $0.copyable) }) }
             if summary.hints.contains(where: { $0.ruleIDs.contains("build-caches.tart-vms") }) {
                 Text(BuildCachesCopy.reportOnly).font(.caption).foregroundStyle(.secondary)
             }

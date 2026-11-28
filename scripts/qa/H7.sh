@@ -28,7 +28,13 @@ case "${1:-}" in
       fake "$DD/$name" 5 "$days"; plist "$ws" >"$DD/$name/info.plist"
       touch -t "$(date -v-"$days"d +%Y%m%d%H%M)" "$DD/$name/info.plist" "$DD/$name"
     done
-    [[ -e "$HOME/Library/pnpm/store" ]] && [[ ! -e "$PNPM" ]] && echo "pnpm store exists already; not adding to it" || fake "$PNPM" 5 20
+    if [[ -e "$HOME/Library/pnpm/store" && ! -e "$PNPM" ]]; then
+      echo "pnpm store exists already; not adding to it"
+    else
+      fake "$PNPM" 5 20
+      # Age the parents too, so the store shows Review (a freshly created store dir is Keep).
+      touch -t "$(date -v-20d +%Y%m%d%H%M)" "$HOME/Library/pnpm/store/v10" "$HOME/Library/pnpm/store"
+    fi
     fake "$OCI" 5 20
     fake "$TART/tmp/adkqa-pull" 2 3
     fake "$TART/vms/adkqa-vm" 2 20

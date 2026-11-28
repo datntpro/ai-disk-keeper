@@ -36,12 +36,19 @@ public enum BuildCacheCatalog {
         public let ruleIDs: [String]
         /// The exact text the copy button puts on the pasteboard.
         public let command: String
+        /// False for a command with a placeholder that is destructive when pasted (`tart delete <name>`): shown as text only.
+        public let copyable: Bool
+        init(ruleIDs: [String], command: String, copyable: Bool = true) {
+            self.ruleIDs = ruleIDs
+            self.command = command
+            self.copyable = copyable
+        }
     }
 
     public static let hints: [Hint] = [
         Hint(ruleIDs: ["build-caches.pnpm-store", "system.pnpm-store-cache"], command: "pnpm store prune"),
         Hint(ruleIDs: ["build-caches.tart-oci"], command: "tart prune --entries=caches --older-than=7"),
-        Hint(ruleIDs: ["build-caches.tart-vms"], command: "tart delete <name>"),
+        Hint(ruleIDs: ["build-caches.tart-vms"], command: "tart delete <name>", copyable: false),
         Hint(ruleIDs: ["dev-caches.go-build"], command: "go clean -cache"),
         Hint(ruleIDs: ["system.npm-cache"], command: "npm cache verify"),
     ]

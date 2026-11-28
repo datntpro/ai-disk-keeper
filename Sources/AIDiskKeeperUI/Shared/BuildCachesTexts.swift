@@ -5,7 +5,7 @@ enum BuildCachesCopy {
     static var hintsTitle: String { loc("caches.hints.title", "Run this in Terminal if you want the tool to clean itself:") }
     static var copyCommand: String { loc("caches.hints.copy", "Copy command") }
     static func copyCommandA11y(_ command: String) -> String { loc("caches.hints.copy.a11y", "Copy command: \(command)") }
-    static var reportOnly: String { loc("caches.vms.reportOnly", "Report only: delete VMs with `tart delete`") }
+    static var reportOnly: String { loc("caches.vms.reportOnly", "Report only: delete VMs with tart delete") }
 
     static func family(_ f: BuildCacheCatalog.Family) -> String {
         switch f {
@@ -25,8 +25,18 @@ enum BuildCachesCopy {
 /// Translated explanations for the DerivedData scanner's items (the rules in `build-caches.json` carry their own `vi`).
 enum BuildCachesTexts: Sendable {
     nonisolated static func text(for item: ScanItem) -> ScannerTexts.Text? {
-        guard let variant = DerivedDataVariant.of(item) else { return nil }
-        return ScannerTexts.Text(name: nil, explanation: explanation(variant))
+        if let variant = DerivedDataVariant.of(item) { return ScannerTexts.Text(name: nil, explanation: explanation(variant)) }
+        if let variant = TartTmpVariant.of(item) { return ScannerTexts.Text(name: nil, explanation: explanation(variant)) }
+        return nil
+    }
+
+    nonisolated static func explanation(_ v: TartTmpVariant) -> String {
+        switch v {
+        case .active:
+            loc("caches.tmp.active", "Regenerable: a partial download or scratch file Tart is writing or wrote in the last day. A pull or clone may be using it. Kept.")
+        case .old:
+            loc("caches.tmp.old", "Regenerable: a partial download or scratch file Tart left behind when a pull or clone was interrupted. Tart starts it again.")
+        }
     }
 
     nonisolated static func explanation(_ v: DerivedDataVariant) -> String {

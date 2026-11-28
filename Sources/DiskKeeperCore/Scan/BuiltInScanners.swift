@@ -8,6 +8,7 @@ public enum BuiltInScanners {
             DockerScanner(layout: { DockerRuntimeLayout.live(environment: $0) }),
             UnavailableSimulatorScanner.live(environment: environment),
             DerivedDataScanner.live(environment: environment),
+            TartTmpScanner.live(environment: environment),
         ]
     }
 }

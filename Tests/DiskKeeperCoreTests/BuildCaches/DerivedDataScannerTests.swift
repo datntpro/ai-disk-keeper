@@ -123,7 +123,7 @@ final class DerivedDataScannerTests: XCTestCase {
         let f = try FixtureHome()
         let mounts = try f.dir("mounts")
         try f.dir("mounts/Mounted")
-        let scanner = DerivedDataScanner(root: f.abs(rootRel), mountsRoot: mounts)
+        let scanner = DerivedDataScanner(root: f.abs(rootRel), home: f.home, mountsRoot: mounts)
         XCTAssertFalse(scanner.projectIsGone(mounts + "/Unplugged/App.xcodeproj"))
         XCTAssertTrue(scanner.projectIsGone(mounts + "/Mounted/App.xcodeproj"))
         XCTAssertTrue(scanner.projectIsGone(f.abs("Proj/Nope.xcodeproj")))

@@ -43,9 +43,23 @@ final class BuildCachesModuleTests: XCTestCase {
     func testCopyButtonCopiesTheExactCommand() {
         let pb = NSPasteboard(name: NSPasteboard.Name("adk.h7.test.\(UUID().uuidString)"))
         defer { pb.releaseGlobally() }
-        for hint in BuildCacheCatalog.hints {
+        for hint in BuildCacheCatalog.hints where hint.copyable {
             CleanupHintCard.copy(hint.command, to: pb)
             XCTAssertEqual(pb.string(forType: .string), hint.command)
+        }
+    }
+
+    func testTheDestructiveDeleteHintHasNoCopyButton() {
+        let hint = BuildCacheCatalog.hints.first { $0.command.hasPrefix("tart delete") }
+        XCTAssertEqual(hint?.copyable, false)
+        XCTAssertTrue(BuildCacheCatalog.hints.filter { !$0.copyable }.count == 1)
+    }
+
+    func testTartTmpExplanationsTranslate() {
+        for v in TartTmpVariant.allCases {
+            let en = L10n.withLanguage(.en) { BuildCachesTexts.explanation(v) }
+            XCTAssertEqual(en, v.explanation)
+            XCTAssertNotEqual(en, L10n.withLanguage(.vi) { BuildCachesTexts.explanation(v) })
         }
     }
 

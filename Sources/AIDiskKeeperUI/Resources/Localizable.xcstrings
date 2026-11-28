@@ -2019,18 +2019,50 @@
         }
       }
     },
-    "caches.vms.reportOnly" : {
+    "caches.tmp.active" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Report only: delete VMs with `tart delete`"
+            "value" : "Regenerable: a partial download or scratch file Tart is writing or wrote in the last day. A pull or clone may be using it. Kept."
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Chỉ báo cáo: xóa máy ảo bằng `tart delete`"
+            "value" : "Tạo lại được: bản tải dở hoặc tệp nháp mà Tart đang ghi hoặc đã ghi trong ngày gần nhất. Có thể một lệnh pull hoặc clone đang dùng. Được giữ lại."
+          }
+        }
+      }
+    },
+    "caches.tmp.old" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regenerable: a partial download or scratch file Tart left behind when a pull or clone was interrupted. Tart starts it again."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tạo lại được: bản tải dở hoặc tệp nháp mà Tart để lại khi lệnh pull hoặc clone bị gián đoạn. Tart sẽ bắt đầu lại."
+          }
+        }
+      }
+    },
+    "caches.vms.reportOnly" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report only: delete VMs with tart delete"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chỉ báo cáo: xóa máy ảo bằng tart delete"
           }
         }
       }
