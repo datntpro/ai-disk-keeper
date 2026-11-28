@@ -41,7 +41,7 @@ struct CareScanLive: Sendable {
                 leftovers: { inventory in
                     ScanEngine(context: context, scanners: [
                         AppLeftoverScanner(inventory: { inventory }, library: roots.library, lookup: LaunchServicesBundleLookup()),
-                    ])
+                    ], adjusters: [InUseAdjuster(source: LibprocUsageSource())])
                 }),
             CareStages.scannerRun(.startup, modules: [.startup]) {
                 ScanEngine(context: context, scanners: [

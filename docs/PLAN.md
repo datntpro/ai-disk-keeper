@@ -240,7 +240,7 @@ paths intersect protected paths. Full reference: `docs/rules.md` (T03).
    no untracked files, no stash, upstream up to date, not the main worktree, not the current
    working dir of a running agent. The explanation names every reason it isn't Safe.
 5. **In-use detection** (T20) — items held open or owned by a running tool process, or modified
-   in the last hour, are downgraded to Keep.
+   in the last hour, are downgraded to Keep. See [docs/in-use.md](in-use.md).
 6. **Dry run first.** The UI cannot execute without showing a `CleanupPlan` (paths, bytes,
    blockers, exact commands for `toolCommand` actions).
 7. **Re-validation at execute time** — exists, not protected, not in use, not changed since scan

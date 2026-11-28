@@ -31,6 +31,9 @@ public enum ScanEvent: Sendable {
     case itemFound(ScanItem)
     case progress(ScanProgress)
     case warning(ScanWarning)
+    /// Items (same ids, paths and sizes) an ``ItemAdjuster`` moved toward Keep; sent once, before the terminal event,
+    /// and already reflected in the terminal result. Consumers replace their items by id.
+    case itemsAdjusted([ScanItem])
     /// `wasCancelled == false`.
     case finished(ScanResult)
     /// Partial result; `wasCancelled == true`, `finishedAt` set.

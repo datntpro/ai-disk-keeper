@@ -31,6 +31,10 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
     /// Duplicate group (`"dup:<sha256-prefix>:<size>"`) or an app and its leftovers (`"app:<bundleID>"`).
     /// Free-form, at most 200 characters; nil for items that belong to no group.
     public var groupID: String?
+    /// Name and pid of the process that keeps this item busy (set only by the in-use adjuster, with ``ItemFlag/inUse``).
+    /// The UI words the sentence; no English is stored in `explanation`.
+    public var inUseBy: String?
+    public var inUsePID: Int32?
 
     public init(id: ID? = nil,
                 url: URL,
@@ -48,7 +52,9 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
                 cleanupMethod: CleanupMethod = .trash,
                 requiresAppQuit: String? = nil,
                 flags: Set<ItemFlag> = [],
-                groupID: String? = nil) {
+                groupID: String? = nil,
+                inUseBy: String? = nil,
+                inUsePID: Int32? = nil) {
         precondition(url.isFileURL, "ScanItem requires a file URL")
         let normalized = URL(fileURLWithPath: PathNormalization.lexical(url.absoluteURL.path))
         self.url = normalized
@@ -68,6 +74,8 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
         self.requiresAppQuit = requiresAppQuit
         self.flags = flags
         self.groupID = groupID
+        self.inUseBy = inUseBy
+        self.inUsePID = inUsePID
     }
 
     /// "<ruleID>|<lexically normalized absolute path>"
@@ -89,7 +97,7 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
 
     private enum CodingKeys: String, CodingKey {
         case id, path, displayName, tool, category, project, sizeAllocated, sizeLogical
-        case fileCount, lastModified, tier, explanation, ruleID, cleanup, requiresAppQuit, flags, groupID
+        case fileCount, lastModified, tier, explanation, ruleID, cleanup, requiresAppQuit, flags, groupID, inUseBy, inUsePID
     }
 
     public init(from decoder: Decoder) throws {
@@ -132,7 +140,9 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
             cleanupMethod: try c.decode(CleanupMethod.self, forKey: .cleanup),
             requiresAppQuit: try c.decodeIfPresent(String.self, forKey: .requiresAppQuit),
             flags: Set(flagStrings.compactMap(ItemFlag.init(rawValue:))),
-            groupID: try c.decodeIfPresent(String.self, forKey: .groupID)
+            groupID: try c.decodeIfPresent(String.self, forKey: .groupID),
+            inUseBy: try c.decodeIfPresent(String.self, forKey: .inUseBy),
+            inUsePID: try c.decodeIfPresent(Int32.self, forKey: .inUsePID)
         )
     }
 
@@ -155,5 +165,7 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
         try c.encodeIfPresent(requiresAppQuit, forKey: .requiresAppQuit)
         try c.encode(flags.map(\.rawValue).sorted(), forKey: .flags)
         try c.encodeIfPresent(groupID, forKey: .groupID)
+        try c.encodeIfPresent(inUseBy, forKey: .inUseBy)
+        try c.encodeIfPresent(inUsePID, forKey: .inUsePID)
     }
 }

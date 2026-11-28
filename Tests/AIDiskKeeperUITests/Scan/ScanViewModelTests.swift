@@ -29,6 +29,26 @@ final class ScanViewModelTests: XCTestCase {
         XCTAssertNotNil(vm.lastScanFinishedAt)
     }
 
+    func testItemsAdjustedReplacesByIdAndRetotals() async {
+        let a = F.item("a", tier: .safe, size: 300), b = F.item("b", tier: .safe, size: 200)
+        var held = a; held.tier = .keep; held.flags.insert(.inUse); held.inUseBy = "tail"
+        let engine = FakeScanEngine(.gated)
+        let vm = ScanViewModel { engine }
+        vm.startScan()
+        await until("scanning") { vm.phase == .scanning }
+        await engine.send(.itemFound(a))
+        await engine.send(.progress(F.progress(found: 1)))
+        await until("flush") { vm.items.count == 1 }
+        await engine.send(.itemFound(b))
+        await engine.send(.itemsAdjusted([held]))
+        await until("adjusted") { vm.items.first?.tier == .keep }
+        XCTAssertEqual(vm.items.count, 2, "the still-pending item is flushed too")
+        XCTAssertEqual(vm.totals.byTier[.safe]?.itemCount, 1)
+        XCTAssertEqual(vm.items.first?.inUseBy, "tail")
+        await engine.send(.finished(F.result([held, b])))
+        await until("finished") { vm.phase == .finished }
+    }
+
     func testItemsBatchedUntilProgressOrTerminal() async {
         let a = F.item("a"), b = F.item("b")
         let engine = FakeScanEngine(.gated)

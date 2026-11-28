@@ -7,7 +7,8 @@ extension CleanupEngine {
     public static func makeDefault(environment: PathEnvironment,
                                    bundledRulesDirectory: URL? = CoreResources.rulesDirectoryURL,
                                    runningApps: any RunningAppChecking,
-                                   toolCommands: ToolCommandPerformer? = nil) throws -> CleanupEngine {
+                                   toolCommands: ToolCommandPerformer? = nil,
+                                   inUse: (any ProcessUsageSource)? = nil) throws -> CleanupEngine {
         let loaded = RuleLoader(
             environment: environment, bundledRulesDirectory: bundledRulesDirectory,
             guardFactory: ScanGuard.loaderFactory(environment: environment)).load()
@@ -17,6 +18,6 @@ extension CleanupEngine {
                              runningApps: runningApps,
                              appPolicy: ApplicationBundlePolicy(roots: .live(environment), userID: getuid(),
                                                                 probe: LiveAppBundleProbe()),
-                             toolCommands: toolCommands)
+                             toolCommands: toolCommands, inUse: inUse ?? LibprocUsageSource())
     }
 }

@@ -4,8 +4,8 @@ public enum ScanEngineError: Error, Equatable { case alreadyRunning }
 
 /// Runs scanners concurrently and turns what they report into one ordered, cancellable event stream.
 ///
-/// The engine only ever drops items: it re-checks every item with the guard and rejects overlaps (the first
-/// item to arrive wins). It never changes a tier. Callers should create a new engine per scan from the UI
+/// Scanners' items are only ever dropped by the engine: it re-checks every item with the guard and rejects overlaps
+/// (the first item to arrive wins). Only ``ItemAdjuster``s may change a tier, and only toward Keep. Callers should create a new engine per scan from the UI
 /// (cheap); a second scan through the same engine reuses the same context, including `now`.
 public actor ScanEngine {
     private let context: ScanContext
@@ -13,6 +13,7 @@ public actor ScanEngine {
     private let initialWarnings: [ScanWarning]
     private let progressInterval: Duration
     private let scope: ScanScope
+    private let adjusters: [any ItemAdjuster]
 
     private var runTask: Task<Void, Never>?
     private var continuation: AsyncStream<ScanEvent>.Continuation?
@@ -35,8 +36,10 @@ public actor ScanEngine {
     private let physicalPaths = PhysicalPathResolver()
 
     public init(context: ScanContext, scanners: [any Scanner], initialWarnings: [ScanWarning] = [],
-                progressInterval: Duration = .milliseconds(100), scope: ScanScope = .unrestricted) {
+                progressInterval: Duration = .milliseconds(100), scope: ScanScope = .unrestricted,
+                adjusters: [any ItemAdjuster] = []) {
         self.scope = scope
+        self.adjusters = adjusters
         self.context = context
         self.scanners = scanners
         self.initialWarnings = initialWarnings
@@ -53,7 +56,8 @@ public actor ScanEngine {
                                    maxConcurrentSizing: Int = ScanContext.defaultConcurrentSizing,
                                    now: Date = Date(),
                                    scope: ScanScope = .unrestricted,
-                                   sizeCache: SizeCache? = nil) throws -> ScanEngine {
+                                   sizeCache: SizeCache? = nil,
+                                   adjusters: [any ItemAdjuster] = []) throws -> ScanEngine {
         let loaded = RuleLoader(
             environment: environment, bundledRulesDirectory: bundledRulesDirectory,
             userRulesDirectory: userRulesDirectory,
@@ -68,10 +72,13 @@ public actor ScanEngine {
         // Disabled tools are never scanned at all.
         let rules = loaded.allRules.filter { !scope.disabledTools.contains($0.tool) }
         return ScanEngine(context: context, scanners: [RuleScanner(rules: rules)] + extraScanners,
-                          initialWarnings: warnings, scope: scope)
+                          initialWarnings: warnings, scope: scope, adjusters: adjusters)
     }
 
     public var isRunning: Bool { runTask != nil }
+
+    /// True when adjusters will still change the item list at the end of the scan.
+    public nonisolated var adjustsItems: Bool { !adjusters.isEmpty }
 
     /// Starts a scan. Throws `.alreadyRunning` if one is in progress. The stream is unbounded; terminating it
     /// (the consumer cancels its `for await` task or drops the stream) cancels the scan.
@@ -171,7 +178,7 @@ public actor ScanEngine {
         }
         ticker.cancel()
         await context.sizeCache?.endScan()
-        finish(generation: gen)
+        await finish(generation: gen)
     }
 
     private func heartbeat(generation gen: Int) {
@@ -247,7 +254,36 @@ public actor ScanEngine {
                      itemsFound: items.count, bytesFound: bytes)
     }
 
-    private func finish(generation gen: Int) {
+    /// Runs the adjusters over the finished list (never on a cancelled scan). An adjuster whose output breaks the
+    /// monotonic contract is ignored as a whole and reported as a warning.
+    private func applyAdjusters(generation gen: Int) async {
+        guard !cancelRequested, !Task.isCancelled else { return }
+        let before = items
+        var current = items
+        var extra: [ScanWarning] = []
+        for adjuster in adjusters {
+            let out = await adjuster.adjust(current, context: context)
+            extra += out.warnings
+            if AdjusterValidation.isMonotonic(before: current, after: out.items) {
+                current = out.items
+            } else {
+                extra.append(ScanWarning(kind: .other, message: "\(adjuster.name): adjustment rejected",
+                                         code: .adjusterRejected(name: adjuster.name)))
+            }
+        }
+        // The scan may have been cancelled or replaced while the adjusters ran.
+        guard gen == generation, !terminated, !cancelRequested else { return }
+        for w in extra { accept(w, generation: gen) }
+        let original = Dictionary(before.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        let changed = current.filter { original[$0.id] != $0 }
+        items = current
+        bytesFound = current.reduce(0) { $0 + $1.sizeAllocated }
+        if !changed.isEmpty { continuation?.yield(.itemsAdjusted(changed)) }
+    }
+
+    private func finish(generation gen: Int) async {
+        guard gen == generation, !terminated else { return }
+        await applyAdjusters(generation: gen)
         guard gen == generation, !terminated else { return }
         let wasCancelled = cancelRequested || Task.isCancelled
         continuation?.yield(.progress(snapshot(live: false)))

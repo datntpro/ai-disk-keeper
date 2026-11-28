@@ -14,10 +14,17 @@ struct ItemValidator: Sendable {
     let appPolicy: ApplicationBundlePolicy?
     /// False = every `.toolCommand` entry is blocked (fail closed).
     let toolCommandsAvailable: Bool
+    /// nil = in-use detection is not wired (tests only; `CleanupEngine.makeDefault` always wires it). When set, every
+    /// file item is checked against a fresh process snapshot and a newest mtime under an hour old blocks.
+    let inUse: (any ProcessUsageSource)?
+    let now: @Sendable () -> Date
 
     init(pathGuard: ProtectedPaths, userID: uid_t, runningApps: any RunningAppChecking,
          tolerance: ChangeTolerance = .default, sizer: FileSizer = FileSizer(),
-         appPolicy: ApplicationBundlePolicy? = nil, toolCommandsAvailable: Bool = false) {
+         appPolicy: ApplicationBundlePolicy? = nil, toolCommandsAvailable: Bool = false,
+         inUse: (any ProcessUsageSource)? = nil, now: @escaping @Sendable () -> Date = { Date() }) {
+        self.inUse = inUse
+        self.now = now
         self.toolCommandsAvailable = toolCommandsAvailable
         self.appPolicy = appPolicy
         self.pathGuard = pathGuard
@@ -136,14 +143,45 @@ struct ItemValidator: Sendable {
         }
         let detail = ChangeDetail(scannedBytes: item.sizeAllocated, currentBytes: report.allocatedBytes,
                                   scannedModified: item.lastModified, currentModified: report.newestModification)
-        guard let scannedModified = item.lastModified else { return [.changedSinceScan(detail)] }
+        var out: [CleanupBlocker] = []
+        if inUse != nil, let current = report.newestModification,
+           now().timeIntervalSince(current) < InUseAdjuster.recentWindow {
+            out.append(.modifiedRecently)   // also a future mtime: unknown clock, treat as recent
+        }
+        guard let scannedModified = item.lastModified else { return out + [.changedSinceScan(detail)] }
         if let current = report.newestModification,
            current.timeIntervalSince(scannedModified) > tolerance.mtimeSlack {
-            return [.changedSinceScan(detail)]
+            return out + [.changedSinceScan(detail)]
         }
         let slack = max(tolerance.sizeSlackBytes, Int64(tolerance.sizeSlackFraction * Double(item.sizeAllocated)))
         let delta = report.allocatedBytes - item.sizeAllocated
-        if (delta < 0 ? -delta : delta) > slack { return [.changedSinceScan(detail)] }
+        if (delta < 0 ? -delta : delta) > slack { return out + [.changedSinceScan(detail)] }
+        return out
+    }
+
+    // MARK: In use
+
+    /// One reading of the process table. `index == nil` = unreadable (every file item is then blocked).
+    struct InUseSnapshot: Sendable {
+        let index: InUseIndex?
+        let taken: ContinuousClock.Instant
+    }
+
+    /// A fresh snapshot, or nil when detection is not wired.
+    func takeInUseSnapshot() -> InUseSnapshot? {
+        guard let inUse else { return nil }
+        let taken = ContinuousClock.now
+        return InUseSnapshot(index: inUse.snapshot(userID: userID).map { InUseIndex($0, currentUID: userID) }, taken: taken)
+    }
+
+    /// Fails closed: an unreadable snapshot blocks. Apps (own running check) and virtual tool items (the tool refuses
+    /// in-use objects itself) are not checked here.
+    func inUseBlockers(_ item: ScanItem, snapshot: InUseSnapshot?) -> [CleanupBlocker] {
+        guard inUse != nil else { return [] }
+        if case .trashApplication = item.cleanupMethod { return [] }
+        if item.isVirtual { return [] }
+        guard let index = snapshot?.index else { return [.inUseUnknown] }
+        if let holder = index.holder(of: item.path) { return [.inUse(process: holder.name, pid: holder.pid)] }
         return []
     }
 }

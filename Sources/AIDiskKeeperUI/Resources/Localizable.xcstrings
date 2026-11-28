@@ -8297,6 +8297,134 @@
         }
       }
     },
+    "inuse.adjusterRejected.warning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A safety check returned an invalid result and was ignored."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Một bước kiểm tra an toàn trả về kết quả không hợp lệ và đã bị bỏ qua."
+          }
+        }
+      }
+    },
+    "inuse.blocker.inUse" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In use by %@ (process %@). Close it, then try again."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đang được %@ sử dụng (tiến trình %@). Hãy đóng nó rồi thử lại."
+          }
+        }
+      }
+    },
+    "inuse.blocker.recent" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modified in the last hour, so it was left alone. Rescan later."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã thay đổi trong vòng một giờ qua nên đã giữ nguyên. Hãy quét lại sau."
+          }
+        }
+      }
+    },
+    "inuse.blocker.unknown" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't check whether something is using this, so it was left alone. Try again."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không kiểm tra được có gì đang dùng mục này nên đã giữ nguyên. Hãy thử lại."
+          }
+        }
+      }
+    },
+    "inuse.by" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In use by %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đang được %@ sử dụng"
+          }
+        }
+      }
+    },
+    "inuse.byPid" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In use by %@ (process %@)"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đang được %@ sử dụng (tiến trình %@)"
+          }
+        }
+      }
+    },
+    "inuse.recent" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modified in the last hour"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã thay đổi trong vòng một giờ qua"
+          }
+        }
+      }
+    },
+    "inuse.unknown.warning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't check which apps are using files. Items were not marked in use."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không kiểm tra được ứng dụng nào đang dùng các tệp. Các mục chưa được đánh dấu là đang dùng."
+          }
+        }
+      }
+    },
     "largeOld.action.copyPath" : {
       "localizations" : {
         "en" : {
@@ -10805,22 +10933,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Đang hiển thị %@ trong danh sách"
-          }
-        }
-      }
-    },
-    "note.inUse" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "In use by a running app."
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Đang được một ứng dụng sử dụng."
           }
         }
       }

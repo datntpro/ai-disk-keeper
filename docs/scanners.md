@@ -26,7 +26,7 @@ Scanners need not coordinate with each other. For each item the engine:
    The **first item to arrive wins** across scanners; the loser produces one `.ruleError` warning;
 3. then emits `.itemFound`. Events after the terminal `finished` or `cancelled` are never delivered.
 
-The engine only drops items; it never changes a tier or any other field.
+The engine only drops items. Only an `ItemAdjuster` (the in-use detector, see [in-use.md](in-use.md)) may change an item, and only toward Keep.
 
 ## Tiers
 

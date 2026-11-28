@@ -15,12 +15,12 @@ enum CleanupNextStep: Equatable {
     /// An exhaustive switch: a new `CleanupBlocker` fails the build until it is classified.
     static func step(for blocker: CleanupBlocker) -> CleanupNextStep {
         switch blocker {
-        case .changedSinceScan, .identityChanged, .missing, .inUseByTool: .rescan
+        case .changedSinceScan, .identityChanged, .missing, .inUseByTool, .modifiedRecently: .rescan
         case .appRunning(let id), .appStateUnknown(let id): .quitApp(bundleID: id)
         case .needsAppManagementPermission: .openAppManagement
         case .requiresAdmin: .revealInFinder
         case .protectedPath, .keepTier, .notActionable, .wouldRemoveAllCopies, .appBundleRefused, .toolCommandNotAllowed: .protected
-        case .toolUnavailable, .toolNotRunning: .tryLater
+        case .toolUnavailable, .toolNotRunning, .inUse, .inUseUnknown: .tryLater
         case .methodNotSupported, .isSymlink, .notOwnedByUser, .symlinkInParentChain, .nestedInAnotherItem,
              .duplicate, .permanentDeleteDisabled, .sizingFailed, .survivorChanged, .duplicateGroupUnknown, .toolCommandUnavailable, .auditIntentNotWritten:
             .sentenceOnly

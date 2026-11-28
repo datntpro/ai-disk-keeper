@@ -21,6 +21,10 @@ public struct ScanWarning: Codable, Sendable, Hashable {
         case appSkipped(reason: AppSkipReason)
         /// Some files inside an item couldn't be read, so its size may be too low.
         case sizeIncomplete
+        /// The process list could not be read, so no item was checked for being in use.
+        case inUseUnknown
+        /// An adjuster tried to do more than lower an item toward Keep; its changes were discarded.
+        case adjusterRejected(name: String)
     }
 
     public enum AppSkipReason: String, Codable, Sendable, Hashable { case noInfoPlist, damagedInfoPlist, noBundleID }

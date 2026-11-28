@@ -22,6 +22,10 @@ public actor CleanupEngine {
     /// `execute` is serialized: an actor is reentrant across `await`, and runs share one audit log.
     private var isExecuting = false
     private var waiters: [CheckedContinuation<Void, Never>] = []
+    /// In-use snapshot of the current `execute` call, taken right before the first removal and never kept between runs.
+    private var runInUse: ItemValidator.InUseSnapshot?
+    /// A snapshot older than this is replaced before the next removal (long plans must not rely on a stale reading).
+    private static let inUseMaxAge: Duration = .seconds(5)
 
     public init(pathGuard: ProtectedPaths,
                 auditLog: AuditLog,
@@ -32,10 +36,12 @@ public actor CleanupEngine {
                 userID: uid_t = getuid(),
                 appPolicy: ApplicationBundlePolicy? = nil,
                 toolCommands: ToolCommandPerformer? = nil,
+                inUse: (any ProcessUsageSource)? = nil,
                 now: @escaping @Sendable () -> Date = { Date() }) {
         self.validator = ItemValidator(pathGuard: pathGuard, userID: userID, runningApps: runningApps,
                                        tolerance: options.tolerance, appPolicy: appPolicy,
-                                       toolCommandsAvailable: toolCommands != nil)
+                                       toolCommandsAvailable: toolCommands != nil,
+                                       inUse: inUse, now: now)
         self.toolCommands = toolCommands
         self.auditLog = auditLog
         self.trash = trash
@@ -62,6 +68,8 @@ public actor CleanupEngine {
         var snapshots: [ToolCommandSnapshot?] = []
         var seenIDs: Set<String> = []
         var accepted: [(key: PathKey, id: String)] = []
+        // One per plan, and none when no item is file-backed (apps and virtual items are checked elsewhere); execute takes its own.
+        let inUseSnapshot = items.contains(where: Self.needsInUseCheck) ? validator.takeInUseSnapshot() : nil
 
         for item in items {
             if !seenIDs.insert(item.id).inserted {
@@ -83,7 +91,7 @@ public actor CleanupEngine {
             } else {
                 fast = validator.fastChecks(item, expected: nil)
             }
-            b = (b + fast.blockers).uniqued()
+            b = (b + fast.blockers + validator.inUseBlockers(item, snapshot: inUseSnapshot)).uniqued()
             if b.isEmpty {
                 let key = PathCanonicalizer.key(item.path)
                 if let other = accepted.first(where: { Self.overlaps($0.key, key) }) {
@@ -149,6 +157,11 @@ public actor CleanupEngine {
         return plan
     }
 
+    private static func needsInUseCheck(_ item: ScanItem) -> Bool {
+        if case .trashApplication = item.cleanupMethod { return false }
+        return !item.isVirtual
+    }
+
     private static func isVirtualToolCommand(_ item: ScanItem) -> Bool {
         if case .toolCommand = item.cleanupMethod { return item.isVirtual }
         return false
@@ -182,6 +195,8 @@ public actor CleanupEngine {
 
         do { try await auditLog.open() } catch { throw CleanupError.auditLogUnavailable("\(error)") }
 
+        runInUse = nil
+        defer { runInUse = nil }
         let startedAt = now()
         var results: [CleanupItemResult] = []
         var wasCancelled = false
@@ -263,6 +278,10 @@ public actor CleanupEngine {
         }
         blockers = blockers.uniqued()
         if !blockers.isEmpty { return (.skipped(blockers), planned) }
+        if !item.isVirtual {
+            let inUse = validator.inUseBlockers(item, snapshot: freshInUseSnapshot())
+            if !inUse.isEmpty { return (.skipped(inUse), planned) }
+        }
         guard let toolCommands else { return (.skipped([.toolCommandUnavailable]), planned) }
         switch await toolCommands.execute(item, expected: entry.toolCommand) {
         case .blocked(let b, let record): return (.skipped(b), record)
@@ -291,6 +310,9 @@ public actor CleanupEngine {
         blockers = blockers.uniqued()
         if !blockers.isEmpty { return (.skipped(blockers), nil) }
         if let gate = await keepOneGate(entry, trashedKeys: trashedKeys, claimed: claimed) { return (.skipped([gate]), nil) }
+        // Last gate before anything is removed: is a process holding it right now?
+        let held = validator.inUseBlockers(item, snapshot: freshInUseSnapshot())
+        if !held.isEmpty { return (.skipped(held), nil) }
 
         switch entry.action {
         case .trash:
@@ -323,6 +345,13 @@ public actor CleanupEngine {
                 return (.failed(error.localizedDescription), nil)
             }
         }
+    }
+
+    /// The run's snapshot, replaced when it is older than ``inUseMaxAge``. nil when detection is not wired.
+    private func freshInUseSnapshot() -> ItemValidator.InUseSnapshot? {
+        if let s = runInUse, ContinuousClock.now - s.taken < Self.inUseMaxAge { return s }
+        runInUse = validator.takeInUseSnapshot()
+        return runInUse
     }
 
     /// The POSIX errno behind a Foundation error (`NSUnderlyingErrorKey` chain), if any.

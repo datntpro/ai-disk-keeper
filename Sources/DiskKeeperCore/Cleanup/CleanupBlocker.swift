@@ -101,6 +101,12 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
     case toolNotRunning(tool: String, target: String)
     /// The tool reports the object is in use now.
     case inUseByTool(detail: String)
+    /// A process of the user holds the item (working directory or open file).
+    case inUse(process: String, pid: Int32)
+    /// The process list could not be read, so "in use" can't be ruled out (fail closed).
+    case inUseUnknown
+    /// The newest file inside changed less than an hour ago.
+    case modifiedRecently
 
     /// Stable machine code used in audit lines and tests.
     public var code: String {
@@ -133,6 +139,9 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
         case .toolUnavailable: "toolUnavailable"
         case .toolNotRunning: "toolNotRunning"
         case .inUseByTool: "inUseByTool"
+        case .inUse: "inUse"
+        case .inUseUnknown: "inUseUnknown"
+        case .modifiedRecently: "modifiedRecently"
         }
     }
 
@@ -173,6 +182,9 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
         case .toolUnavailable(let t): "\(t) wasn't found or isn't safe to run."
         case .toolNotRunning(let t, _): "\(t) isn't running."
         case .inUseByTool: "The tool says this is in use right now."
+        case .inUse(let p, _): "In use by \(p)."
+        case .inUseUnknown: "Could not tell whether something is using this."
+        case .modifiedRecently: "Modified in the last hour."
         }
     }
 }
