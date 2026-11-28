@@ -52,6 +52,7 @@ struct StorageView: View {
                             .font(.caption).foregroundStyle(.adkReviewInk)
                     }
                     StorageCapacityCard(model: model)
+                    StorageSSDCard(model: model.ssdHealth)
                     StorageExplainCard()
                     StorageSnapshotsCard(listing: overview.snapshots, openTimeMachine: {
                         NSWorkspace.shared.open(Self.timeMachineSettingsURL)

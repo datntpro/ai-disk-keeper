@@ -14425,6 +14425,182 @@
         }
       }
     },
+    "ssd.loading" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading drive health…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đang đọc thông tin sức khỏe ổ đĩa…"
+          }
+        }
+      }
+    },
+    "ssd.note" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wear is the drive's own estimate (Percentage Used). It is read-only; nothing is written to the drive."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hao mòn là ước tính của chính ổ đĩa (Percentage Used). Chỉ đọc; không có gì được ghi vào ổ đĩa."
+          }
+        }
+      }
+    },
+    "ssd.sinceStartup" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Written since startup"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đã ghi từ khi khởi động"
+          }
+        }
+      }
+    },
+    "ssd.spare" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spare"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dự phòng"
+          }
+        }
+      }
+    },
+    "ssd.temperature" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temperature"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nhiệt độ"
+          }
+        }
+      }
+    },
+    "ssd.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSD health"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sức khỏe SSD"
+          }
+        }
+      }
+    },
+    "ssd.unavailable" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Health data isn't available for this disk"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không có dữ liệu sức khỏe cho ổ đĩa này"
+          }
+        }
+      }
+    },
+    "ssd.warning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The drive reports wear or a warning. Back up your Mac."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ổ đĩa báo hao mòn hoặc có cảnh báo. Hãy sao lưu máy Mac của bạn."
+          }
+        }
+      }
+    },
+    "ssd.wear" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wear"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hao mòn"
+          }
+        }
+      }
+    },
+    "ssd.written" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data written"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dữ liệu đã ghi"
+          }
+        }
+      }
+    },
+    "ssd.writtenHuge" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "more than 9 EB"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "hơn 9 EB"
+          }
+        }
+      }
+    },
     "startup.a11y.row" : {
       "localizations" : {
         "en" : {
