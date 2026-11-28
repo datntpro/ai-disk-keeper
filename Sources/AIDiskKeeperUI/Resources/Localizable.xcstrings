@@ -1731,6 +1731,342 @@
         }
       }
     },
+    "caches.dd.active" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regenerable: build output for an Xcode project. It changed in the last day, so a build or the editor may be using it. Kept."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tạo lại được: kết quả build của một dự án Xcode. Nó thay đổi trong ngày gần nhất nên có thể đang được build hoặc trình soạn thảo sử dụng. Được giữ lại."
+          }
+        }
+      }
+    },
+    "caches.dd.exists" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regenerable: build output, indexes and logs for an Xcode project that still exists. Xcode rebuilds it, so the next build of that project is slower and its indexing starts again."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tạo lại được: kết quả build, chỉ mục và nhật ký của một dự án Xcode vẫn còn tồn tại. Xcode dựng lại, nên lần build sau của dự án sẽ chậm hơn và việc lập chỉ mục bắt đầu lại."
+          }
+        }
+      }
+    },
+    "caches.dd.gone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regenerable: build output, indexes and logs for an Xcode project that no longer exists on this Mac. Nothing will ask for it again, and Xcode rebuilds it if the project comes back."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tạo lại được: kết quả build, chỉ mục và nhật ký của một dự án Xcode không còn tồn tại trên máy Mac này. Sẽ không còn gì cần đến nó, và Xcode dựng lại nếu dự án quay lại."
+          }
+        }
+      }
+    },
+    "caches.dd.goneRecent" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regenerable: build output for an Xcode project that was removed or moved less than a week ago. Xcode rebuilds it if the project comes back, so check that you do not still need the project first."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tạo lại được: kết quả build của một dự án Xcode đã bị xóa hoặc di chuyển chưa đầy một tuần. Xcode dựng lại nếu dự án quay lại, vì vậy hãy chắc chắn bạn không còn cần dự án đó."
+          }
+        }
+      }
+    },
+    "caches.dd.unreadable" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regenerable: build output for an Xcode project, but Disk Keeper couldn't read the project path from this folder, so it can't tell whether the project still exists. Xcode rebuilds it on the next build."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tạo lại được: kết quả build của một dự án Xcode, nhưng Disk Keeper không đọc được đường dẫn dự án trong thư mục này nên không biết dự án còn tồn tại hay không. Xcode dựng lại ở lần build sau."
+          }
+        }
+      }
+    },
+    "caches.family.go" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Go"
+          }
+        }
+      }
+    },
+    "caches.family.javascript" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JavaScript"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "JavaScript"
+          }
+        }
+      }
+    },
+    "caches.family.jvm" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JVM"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "JVM"
+          }
+        }
+      }
+    },
+    "caches.family.other" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Khác"
+          }
+        }
+      }
+    },
+    "caches.family.python" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Python"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Python"
+          }
+        }
+      }
+    },
+    "caches.family.rust" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rust"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Rust"
+          }
+        }
+      }
+    },
+    "caches.family.swift" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Swift"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Swift"
+          }
+        }
+      }
+    },
+    "caches.family.vms" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VMs"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Máy ảo"
+          }
+        }
+      }
+    },
+    "caches.family.xcode" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xcode"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Xcode"
+          }
+        }
+      }
+    },
+    "caches.hints.copy" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy command"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sao chép lệnh"
+          }
+        }
+      }
+    },
+    "caches.hints.copy.a11y" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy command: %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sao chép lệnh: %@"
+          }
+        }
+      }
+    },
+    "caches.hints.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Run this in Terminal if you want the tool to clean itself:"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chạy lệnh này trong Terminal nếu bạn muốn chính công cụ tự dọn:"
+          }
+        }
+      }
+    },
+    "caches.module.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Build caches"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cache build"
+          }
+        }
+      }
+    },
+    "caches.tmp.active" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regenerable: a partial download or scratch file Tart is writing or wrote in the last day. A pull or clone may be using it. Kept."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tạo lại được: bản tải dở hoặc tệp nháp mà Tart đang ghi hoặc đã ghi trong ngày gần nhất. Có thể một lệnh pull hoặc clone đang dùng. Được giữ lại."
+          }
+        }
+      }
+    },
+    "caches.tmp.old" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regenerable: a partial download or scratch file Tart left behind when a pull or clone was interrupted. Tart starts it again."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tạo lại được: bản tải dở hoặc tệp nháp mà Tart để lại khi lệnh pull hoặc clone bị gián đoạn. Tart sẽ bắt đầu lại."
+          }
+        }
+      }
+    },
+    "caches.vms.reportOnly" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report only: delete VMs with tart delete"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chỉ báo cáo: xóa máy ảo bằng tart delete"
+          }
+        }
+      }
+    },
     "care.announce.finished" : {
       "localizations" : {
         "en" : {

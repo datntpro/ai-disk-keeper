@@ -8,6 +8,7 @@ enum ScannerTexts {
     static let providers: [@Sendable (ScanItem) -> Text?] = [
         { DockerTexts.text(for: $0) },
         { DevToolsTexts.text(for: $0) },
+        { BuildCachesTexts.text(for: $0) },
     ]
 
     static func text(for item: ScanItem) -> Text? {

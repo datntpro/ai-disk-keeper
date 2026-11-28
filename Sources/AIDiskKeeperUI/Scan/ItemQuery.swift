@@ -100,13 +100,18 @@ public struct ItemQuery: Sendable, Equatable {
         let needle = searchText.trimmingCharacters(in: .whitespaces)
         // Screen modules draw their own content, so they list no scan items.
         var moduleCategories: Set<ItemCategory> = []
+        var modulePrefixes: [String]?
         if case .module(let id) = scope {
-            guard let categories = ModuleRegistry.descriptor(for: id).listCategories else { return [] }
+            let descriptor = ModuleRegistry.descriptor(for: id)
+            guard let categories = descriptor.listCategories else { return [] }
             moduleCategories = categories
+            modulePrefixes = descriptor.listRulePrefixes
         }
         return items.filter { item in
             switch scope {
-            case .module: if !moduleCategories.contains(item.category) { return false }
+            case .module:
+                if !moduleCategories.contains(item.category) { return false }
+                if let modulePrefixes, !modulePrefixes.contains(where: item.ruleID.hasPrefix) { return false }
             case .overview: break
             case .tool(let t): if item.tool != t { return false }
             case .category(let c): if item.category != c { return false }
