@@ -13433,6 +13433,22 @@
         }
       }
     },
+    "reclaim.sharedLinks" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Files also linked from outside stay used"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Các tệp còn liên kết từ bên ngoài vẫn chiếm dung lượng"
+          }
+        }
+      }
+    },
     "reclaim.sharedWithClones" : {
       "localizations" : {
         "en" : {
