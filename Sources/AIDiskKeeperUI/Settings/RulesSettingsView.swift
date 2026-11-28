@@ -12,6 +12,19 @@ struct RulesSettingsView: View {
 
     var body: some View {
         Form {
+            if model.userPolicyUnreadable {
+                Section {
+                    Label(loc("rules.policy.unreadable", "Your settings file couldn't be read, so your Keep and hidden-item choices are unknown. Nothing is cleaned until you continue."),
+                          systemImage: "exclamationmark.octagon").foregroundStyle(.red)
+                    Button(loc("rules.policy.continue", "Continue with empty rules")) { model.acknowledgeUnreadablePolicy() }
+                }
+            }
+            if model.userPolicySaveFailed {
+                Section {
+                    Label(loc("rules.policy.saveFailed", "Your last rules change couldn't be saved. It applies until you quit the app."),
+                          systemImage: "exclamationmark.triangle").foregroundStyle(.orange)
+                }
+            }
             Section {
                 Toggle(loc("settings.rules.enabled", "Read my own rule files"),
                        isOn: Binding(get: { model.settings.userRulesEnabled }, set: { model.setUserRulesEnabled($0) }))
@@ -88,7 +101,7 @@ struct RulesSettingsView: View {
             }
             Text(loc("settings.changesApplyNextScan", "Changes apply to the next scan.")).font(.caption).foregroundStyle(.secondary)
         }
-        .padding(20)
+        .formStyle(.grouped)   // scrolls: the file list is long and everything below it must stay reachable
         .task { await rules.reload() }
     }
 }

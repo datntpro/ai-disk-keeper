@@ -2,6 +2,10 @@ PREFIXES = ("rules.", "settings.rules.")
 
 VI = {
     "rules.blocker.ignoredByUser": "Bạn đã chọn ẩn mục này hoặc tắt quy tắc của nó, nên mục này được giữ nguyên.",
+    "rules.blocker.policyUnavailable": "Không đọc được quy tắc của bạn, nên chưa dọn gì cho đến khi bạn kiểm tra trong Cài đặt › Quy tắc.",
+    "rules.policy.continue": "Tiếp tục với quy tắc trống",
+    "rules.policy.saveFailed": "Không lưu được thay đổi quy tắc gần nhất. Thay đổi vẫn có hiệu lực cho đến khi bạn thoát ứng dụng.",
+    "rules.policy.unreadable": "Không đọc được tệp cài đặt, nên các lựa chọn Giữ lại và mục đã ẩn của bạn không rõ. Chưa dọn gì cho đến khi bạn tiếp tục.",
     "rules.markKeep": "Đánh dấu là Giữ lại",
     "rules.markReview": "Đánh dấu là Cần xem lại",
     "rules.neverShow": "Không bao giờ hiện mục này",

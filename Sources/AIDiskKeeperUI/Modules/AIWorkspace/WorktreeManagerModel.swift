@@ -147,7 +147,7 @@ enum WorktreeInventoryFactory {
             guard let gitURL = GitInspector.locateGit() else { return nil }
             let git = GitInspector(configuration: .init(homeDirectory: env.home, gitExecutable: gitURL))
             let loaded = RuleLoader(
-                environment: env, bundledRulesDirectory: CoreResources.rulesDirectoryURL, userRulesDirectory: nil,
+                environment: env, bundledRulesDirectory: CoreResources.rulesDirectoryURL, userRulesDirectory: settings.userRulesEnabled ? UserRulesDirectory.defaultURL(environment: env) : nil,
                 guardFactory: ScanGuard.loaderFactory(environment: env)).load()
             let guardian = try? ScanGuard(environment: env, protectPatterns: loaded.protectPatterns).protectedPaths
             let scope = settings.scanScope(environment: env)

@@ -59,12 +59,13 @@ public final class AppEnvironment {
             await MainActor.run { settings.availableTools = tools }
         }
         let cleanup = CleanupEngineHolder()
+        let policyProvider = settings.userPolicyProvider
         // Rule loading reads disk: build the one cleanup engine off the main actor.
         Task.detached {
             let result = Result { try CleanupEngine.makeDefault(
-                environment: env, userRulesDirectory: UserRulesDirectory.activeURL(environment: env),
+                environment: env, userRulesDirectory: UserRulesDirectory.defaultURL(environment: env),   // read again at every plan
                 runningApps: WorkspaceRunningApps(), toolCommands: ToolCommandPerformer.live(environment: env),
-                userPolicy: { UserPolicy.load(environment: env) }) }
+                userPolicy: { policyProvider.policy }, userPolicyTrusted: { policyProvider.isTrusted }) }
             await MainActor.run {
                 switch result {
                 case .success(let engine): cleanup.install(engine)
@@ -78,7 +79,7 @@ public final class AppEnvironment {
             try ScanEngine.makeDefault(environment: env, userRulesDirectory: UserRulesDirectory.activeURL(environment: env),
                                        extraScanners: BuiltInScanners.live(environment: env), scope: provider.current,
                                        sizeCache: cacheProvider.current,
-                                       adjusters: [UserPolicyAdjuster(policy: UserPolicy.load(environment: env)),   // monotone; before in-use
+                                       adjusters: [UserPolicyAdjuster(policy: policyProvider.policy),   // monotone; before in-use
                                                    InUseAdjuster(source: LibprocUsageSource())])
         }, cleanup: cleanup, makeDiskIndexer: {
             let loaded = RuleLoader(

@@ -6,7 +6,9 @@ import Foundation
 /// One `CleanupEngine` per app: `execute` is serialized per instance, so two engines on the same audit log and
 /// the same disk would run plans concurrently. `CleanupEngineHolder.install` enforces it.
 public actor CleanupEngine {
-    private let validator: ItemValidator
+    private var validator: ItemValidator
+    /// Rebuilds the protected-path guard (bundled + user protects) at the start of every plan/execute; nil = fixed guard.
+    private let guardRefresh: (@Sendable () throws -> ProtectedPaths)?
     private let auditLog: AuditLog
     private let trash: any TrashAdapter
     private let remover: any ItemRemover
@@ -15,7 +17,9 @@ public actor CleanupEngine {
     private let now: @Sendable () -> Date
     /// Read fresh at the start of every `plan` and `execute`, then held for that call.
     private let userPolicySource: @Sendable () -> UserPolicy
+    private let userPolicyTrustedSource: @Sendable () -> Bool
     private var userPolicy = UserPolicy.empty
+    private var policyTrusted = true
     private struct Issued {
         let plan: CleanupPlan
         let monotonic: ContinuousClock.Instant
@@ -41,6 +45,8 @@ public actor CleanupEngine {
                 toolCommands: ToolCommandPerformer? = nil,
                 inUse: (any ProcessUsageSource)? = nil,
                 userPolicy: @escaping @Sendable () -> UserPolicy = { .empty },
+                userPolicyTrusted: @escaping @Sendable () -> Bool = { true },
+                guardRefresh: (@Sendable () throws -> ProtectedPaths)? = nil,
                 now: @escaping @Sendable () -> Date = { Date() }) {
         self.validator = ItemValidator(pathGuard: pathGuard, userID: userID, runningApps: runningApps,
                                        tolerance: options.tolerance, appPolicy: appPolicy,
@@ -53,6 +59,15 @@ public actor CleanupEngine {
         self.options = options
         self.now = now
         self.userPolicySource = userPolicy
+        self.userPolicyTrustedSource = userPolicyTrusted
+        self.guardRefresh = guardRefresh
+    }
+
+    /// A protect added in Settings → Rules after launch guards items that are already listed. If rebuilding fails the
+    /// previous guard stays (it was built from rules that loaded).
+    private func refreshGuard() {
+        guard let guardRefresh, let fresh = try? guardRefresh() else { return }
+        validator.pathGuard = fresh
     }
 
     // MARK: Plan (dry run)
@@ -67,7 +82,9 @@ public actor CleanupEngine {
     /// keep-one invariant: at least one unselected copy must still exist and hold the same content.
     public func plan(_ items: [ScanItem], duplicateGroups: [String: DuplicateGroup]) async -> CleanupPlan {
         let action: CleanupAction = options.requestPermanentDelete ? .deletePermanently : .trash
+        refreshGuard()
         let policy = userPolicySource()
+        let trusted = userPolicyTrustedSource()
         var blockers: [[CleanupBlocker]] = []
         var fingerprints: [ItemFingerprint?] = []
         var appBundles: [AppBundleFingerprint?] = []
@@ -85,7 +102,7 @@ public actor CleanupEngine {
                 snapshots.append(nil)
                 continue
             }
-            var b = validator.policyBlockers(item, action: action, options: options, userPolicy: policy)
+            var b = validator.policyBlockers(item, action: action, options: options, userPolicy: policy, policyTrusted: trusted)
             let fast: (blockers: [CleanupBlocker], fingerprint: ItemFingerprint?)
             var bundle: AppBundleFingerprint?
             if case .trashApplication = item.cleanupMethod {
@@ -203,7 +220,9 @@ public actor CleanupEngine {
 
         runInUse = nil
         defer { runInUse = nil }
+        refreshGuard()
         userPolicy = userPolicySource()   // fresh: the plan may be minutes old
+        policyTrusted = userPolicyTrustedSource()
         let startedAt = now()
         var results: [CleanupItemResult] = []
         var wasCancelled = false
@@ -278,7 +297,7 @@ public actor CleanupEngine {
         let planned = ToolRunRecord(command: entry.toolCommand?.command, exitStatus: nil, durationMs: nil,
                                     stderrTail: nil, target: entry.toolCommand?.targetLabel)
         if !entry.blockers.isEmpty { return (.skipped(entry.blockers), planned) }
-        var blockers = validator.policyBlockers(item, action: entry.action, options: options, userPolicy: userPolicy)
+        var blockers = validator.policyBlockers(item, action: entry.action, options: options, userPolicy: userPolicy, policyTrusted: policyTrusted)
         if !item.isVirtual {
             blockers += await validator.changeCheck(item)
             blockers += validator.fastChecks(item, expected: entry.fingerprint).blockers
@@ -301,7 +320,7 @@ public actor CleanupEngine {
         let item = entry.item
 
         // Slow checks first, fast checks last: the window before the action is as short as possible.
-        var blockers = validator.policyBlockers(item, action: entry.action, options: options, userPolicy: userPolicy)
+        var blockers = validator.policyBlockers(item, action: entry.action, options: options, userPolicy: userPolicy, policyTrusted: policyTrusted)
         blockers += await validator.changeCheck(item)
         var bundleID: String?
         if case .trashApplication(let id) = item.cleanupMethod {

@@ -10,7 +10,8 @@ extension CleanupEngine {
                                    runningApps: any RunningAppChecking,
                                    toolCommands: ToolCommandPerformer? = nil,
                                    inUse: (any ProcessUsageSource)? = nil,
-                                   userPolicy: @escaping @Sendable () -> UserPolicy = { .empty }) throws -> CleanupEngine {
+                                   userPolicy: @escaping @Sendable () -> UserPolicy = { .empty },
+                                   userPolicyTrusted: @escaping @Sendable () -> Bool = { true }) throws -> CleanupEngine {
         let loaded = RuleLoader(
             environment: environment, bundledRulesDirectory: bundledRulesDirectory,
             userRulesDirectory: userRulesDirectory,
@@ -22,6 +23,13 @@ extension CleanupEngine {
                              appPolicy: ApplicationBundlePolicy(roots: .live(environment), userID: getuid(),
                                                                 probe: LiveAppBundleProbe()),
                              toolCommands: toolCommands, inUse: inUse ?? LibprocUsageSource(),
-                             userPolicy: userPolicy)
+                             userPolicy: userPolicy, userPolicyTrusted: userPolicyTrusted,
+                             guardRefresh: {
+                                 let loaded = RuleLoader(
+                                     environment: environment, bundledRulesDirectory: bundledRulesDirectory,
+                                     userRulesDirectory: userRulesDirectory,
+                                     guardFactory: ScanGuard.loaderFactory(environment: environment)).load()
+                                 return try ScanGuard(environment: environment, protectPatterns: loaded.protectPatterns).protectedPaths
+                             })
     }
 }

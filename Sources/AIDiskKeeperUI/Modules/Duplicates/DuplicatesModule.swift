@@ -13,7 +13,9 @@ enum DuplicatesModule: ModuleProvider {
     @MainActor static func model(env appEnv: AppEnvironment, suite: SuiteModel) -> DuplicatesModel {
         let env = appEnv.pathEnvironment
         return suite.state(.duplicates) {
-            DuplicatesModel(index: suite.diskIndex, finder: DuplicatesModel.liveFinder, environment: env,
+            DuplicatesModel(index: suite.diskIndex, finder: { [policy = appEnv.settings.userPolicyProvider] tree, options, progress in
+                                policy.policy.filtered(try await DuplicatesModel.liveFinder(tree, options, progress))
+                            }, environment: env,
                             guardProvider: { try Self.liveGuard(env) })
         }
     }

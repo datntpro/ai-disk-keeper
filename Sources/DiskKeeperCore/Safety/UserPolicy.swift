@@ -36,11 +36,50 @@ public struct UserPolicy: Sendable, Hashable {
         return o
     }
 
-    /// Reads the policy persisted in settings.json. Missing or unreadable settings give the empty policy.
+    /// Reads the policy persisted in settings.json. Missing or unreadable settings give the empty policy, so engines
+    /// must NOT use this (it fails open): they read ``UserPolicyProvider``, which is fed from memory. Tests only.
     public static func load(environment: PathEnvironment) -> UserPolicy {
         let (settings, _) = SettingsStore(environment: environment).load()
         return settings.userPolicy
     }
+}
+
+extension UserPolicy {
+    private static func id(_ rule: String, _ path: String) -> String {
+        ScanItem.makeID(ruleID: rule, url: URL(fileURLWithPath: path))
+    }
+    private func hides(rule: String, path: String) -> Bool {
+        disabledRuleIDs.contains(rule) || ignoredItemIDs.contains(Self.id(rule, path))
+    }
+
+    /// Large/old report without the files the user hid (same ids as ``LargeFileScanner/makeItem(_:)``).
+    public func filtered(_ report: LargeFileReport) -> LargeFileReport {
+        if isEmpty { return report }
+        var out = report
+        out.files = report.files.filter { !hides(rule: "large.\($0.kind.rawValue)", path: $0.path) }
+        return out
+    }
+
+    /// Duplicates report without any group that has a hidden member. Dropping the whole group is the cautious choice:
+    /// removing one member would change which copy is the keeper.
+    public func filtered(_ report: DuplicateReport) -> DuplicateReport {
+        if isEmpty { return report }
+        let groups = report.groups.filter { g in !g.members.contains { hides(rule: "duplicates.copy", path: $0.path) } }
+        return DuplicateReport(groups: groups, stats: report.stats, warnings: report.warnings)
+    }
+}
+
+/// The live policy, fed from the settings model's memory (never from disk). `isTrusted` is false when settings.json
+/// existed but could not be read: cleanup is then blocked until the user acknowledges the reset (fail closed).
+public final class UserPolicyProvider: @unchecked Sendable {
+    private let lock = NSLock()
+    private var _policy: UserPolicy
+    private var _trusted: Bool
+    public init(policy: UserPolicy = .empty, trusted: Bool = true) { _policy = policy; _trusted = trusted }
+    public var policy: UserPolicy { lock.lock(); defer { lock.unlock() }; return _policy }
+    public var isTrusted: Bool { lock.lock(); defer { lock.unlock() }; return _trusted }
+    public func set(policy: UserPolicy) { lock.lock(); _policy = policy; lock.unlock() }
+    public func set(trusted: Bool) { lock.lock(); _trusted = trusted; lock.unlock() }
 }
 
 /// Where user rule files live and whether they are read at all.

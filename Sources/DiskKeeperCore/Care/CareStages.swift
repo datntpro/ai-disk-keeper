@@ -29,11 +29,12 @@ public enum CareStages {
         }
     }
 
-    public static func largeOld(_ scanner: LargeFileScanner, context: ScanContext) -> CareStageSpec {
+    public static func largeOld(_ scanner: LargeFileScanner, context: ScanContext,
+                                userPolicy: @escaping @Sendable () -> UserPolicy = { .empty }) -> CareStageSpec {
         CareStageSpec(stage: .largeOld, modules: [.largeOld], needsTree: true) { input, sink in
             guard let tree = input.tree else { throw CancellationError() }
             await sink.progress(nil)
-            let report = try await scanner.report(tree: tree, context: context)
+            let report = userPolicy().filtered(try await scanner.report(tree: tree, context: context))
             for w in report.warnings { await sink.warning(w) }
             for file in report.files {
                 try Task.checkCancellation()
@@ -45,12 +46,13 @@ public enum CareStages {
 
     public static func duplicates(options: DuplicateOptions, keeper: KeeperRule,
                                   guardProvider: @escaping @Sendable () throws -> ScanGuard,
-                                  userID: uid_t) -> CareStageSpec {
+                                  userID: uid_t,
+                                  userPolicy: @escaping @Sendable () -> UserPolicy = { .empty }) -> CareStageSpec {
         CareStageSpec(stage: .duplicates, modules: [.duplicates], needsTree: true) { input, sink in
             guard let tree = input.tree else { throw CancellationError() }
             let pathGuard = try guardProvider()
             await sink.progress(nil)
-            let report = try await DuplicateFinder(options: options).find(in: tree)
+            let report = userPolicy().filtered(try await DuplicateFinder(options: options).find(in: tree))
             try Task.checkCancellation()
             for w in report.warnings { await sink.warning(w) }
             let byGroup = DuplicateScanner.items(for: report, rule: keeper, pathGuard: pathGuard, userID: userID)

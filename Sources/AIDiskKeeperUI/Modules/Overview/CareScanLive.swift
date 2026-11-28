@@ -10,6 +10,7 @@ struct CareScanLive: Sendable {
     /// The same factory ⌘R used before the Care Scan (the user's scan scope included).
     let makeScanEngine: @Sendable () throws -> any ScanEngineProtocol
     let scopeProvider: ScopeProvider
+    let userPolicy: UserPolicyProvider
     let index: DiskIndexModel
 
     struct Unavailable: Error, CustomStringConvertible { var description: String { "scan engine unavailable" } }
@@ -30,9 +31,10 @@ struct CareScanLive: Sendable {
             CareStages.largeOld(
                 LargeFileScanner(options: LargeFileOptions(environment: env), lastOpened: SpotlightLastOpenedProvider(),
                                  appNames: ApplicationsFolderNames.live(env), tree: { throw CancellationError() }),
-                context: context),
+                context: context, userPolicy: { [userPolicy] in userPolicy.policy }),
             CareStages.duplicates(options: DuplicateOptions(environment: env), keeper: .oldest,
-                                  guardProvider: { pathGuard }, userID: getuid()),
+                                  guardProvider: { pathGuard }, userID: getuid(),
+                                  userPolicy: { [userPolicy] in userPolicy.policy }),
             CareStages.apps(
                 inventory: {
                     try await AppInventoryScanner(roots: roots, signatures: SecStaticCodeSignatureReader(),
@@ -41,14 +43,14 @@ struct CareScanLive: Sendable {
                 leftovers: { inventory in
                     ScanEngine(context: context, scanners: [
                         AppLeftoverScanner(inventory: { inventory }, library: roots.library, lookup: LaunchServicesBundleLookup()),
-                    ], adjusters: [UserPolicyAdjuster(policy: UserPolicy.load(environment: env)),
+                    ], adjusters: [UserPolicyAdjuster(policy: userPolicy.policy),
                                   InUseAdjuster(source: LibprocUsageSource())])
                 }),
             CareStages.scannerRun(.startup, modules: [.startup]) {
                 ScanEngine(context: context, scanners: [
                     StartupItemScanner(roots: .live(env), signatures: SecStaticCodeSignatureReader(),
                                        loaded: LaunchctlLoadedState(), userID: getuid()),
-                ])
+                ], adjusters: [UserPolicyAdjuster(policy: userPolicy.policy)])
             },
         ]
         return CareScanCoordinator(stages: stages, history: CareHistoryStore(fileURL: CareHistoryStore.defaultFileURL(environment: env)),

@@ -109,6 +109,8 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
     case modifiedRecently
     /// The user hid this item or switched its rule off (T23).
     case ignoredByUser
+    /// The user's rules/overrides could not be read, so Keep/ignore can't be confirmed: nothing is cleaned (fail closed).
+    case userPolicyUnavailable
 
     /// Stable machine code used in audit lines and tests.
     public var code: String {
@@ -145,6 +147,7 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
         case .inUseUnknown: "inUseUnknown"
         case .modifiedRecently: "modifiedRecently"
         case .ignoredByUser: "ignoredByUser"
+        case .userPolicyUnavailable: "userPolicyUnavailable"
         }
     }
 
@@ -189,6 +192,7 @@ public enum CleanupBlocker: Codable, Sendable, Hashable {
         case .inUseUnknown: "Could not tell whether something is using this."
         case .modifiedRecently: "Modified in the last hour."
         case .ignoredByUser: "You chose to hide this item, so it was left alone."
+        case .userPolicyUnavailable: "Your rules couldn't be read, so nothing is cleaned until they are checked."
         }
     }
 }

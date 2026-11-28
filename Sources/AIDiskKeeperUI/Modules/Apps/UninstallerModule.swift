@@ -10,7 +10,7 @@ enum UninstallerModule: ModuleProvider {
     @MainActor static func model(_ ctx: ModuleContext) -> UninstallerModel {
         let env = ctx.env.pathEnvironment
         return ctx.suite.state(.uninstaller) {
-            UninstallerModel(inventory: liveInventory(env), leftovers: liveLeftovers(env),
+            UninstallerModel(inventory: liveInventory(env), leftovers: liveLeftovers(env, userPolicy: ctx.env.settings.userPolicyProvider),
                              processes: WorkspaceAppProcessController(),
                              audit: liveAudit(env), home: env.home)
         }
@@ -31,7 +31,7 @@ enum UninstallerModule: ModuleProvider {
     }
 
     /// One `ScanEngine` run of the leftover scanner over `~/Library`. The guard is built off the main actor.
-    static func liveLeftovers(_ env: PathEnvironment) -> UninstallerModel.Leftovers {
+    static func liveLeftovers(_ env: PathEnvironment, userPolicy: UserPolicyProvider) -> UninstallerModel.Leftovers {
         { inventory in
             let loaded = RuleLoader(environment: env, bundledRulesDirectory: CoreResources.rulesDirectoryURL,
                                     userRulesDirectory: UserRulesDirectory.activeURL(environment: env), guardFactory: ScanGuard.loaderFactory(environment: env)).load()
@@ -40,7 +40,7 @@ enum UninstallerModule: ModuleProvider {
             let scanner = AppLeftoverScanner(inventory: { inventory }, library: env.home + "/Library",
                                              lookup: LaunchServicesBundleLookup())
             let engine = ScanEngine(context: context, scanners: [scanner],
-                                    adjusters: [UserPolicyAdjuster(policy: UserPolicy.load(environment: env))])
+                                    adjusters: [UserPolicyAdjuster(policy: userPolicy.policy)])
             for await event in try await engine.scan() {
                 switch event {
                 case .finished(let result), .cancelled(let result): return result
