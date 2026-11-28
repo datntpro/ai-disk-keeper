@@ -21,8 +21,9 @@ public enum HostStatusCLI {
 
         """
 
+    /// `processAlive` uses getpgid, not kill: nothing here may signal a process (a lint test enforces it).
     public static func run(args: [String], statusURL: URL, now: Date,
-                           processAlive: (Int32) -> Bool = { $0 <= 0 || getpgid($0) != -1 || errno != ESRCH }   // getpgid, not kill: nothing here may signal a process) -> Output {
+                           processAlive: (Int32) -> Bool = { $0 <= 0 || getpgid($0) != -1 || errno != ESRCH }) -> Output {
         var json = false, quiet = false, worktree: String?, maxAge = defaultMaxAge
         var rest = args[...]
         guard let command = rest.popFirst() else { return Output(stdout: "", stderr: usage, exitCode: 2) }
