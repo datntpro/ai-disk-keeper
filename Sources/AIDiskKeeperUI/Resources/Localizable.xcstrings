@@ -13433,6 +13433,118 @@
         }
       }
     },
+    "rules.blocker.ignoredByUser" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You chose to hide this item or switch its rule off, so it was left alone."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bạn đã chọn ẩn mục này hoặc tắt quy tắc của nó, nên mục này được giữ nguyên."
+          }
+        }
+      }
+    },
+    "rules.markKeep" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as Keep"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đánh dấu là Giữ lại"
+          }
+        }
+      }
+    },
+    "rules.markReview" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as Review"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đánh dấu là Cần xem lại"
+          }
+        }
+      }
+    },
+    "rules.neverShow" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Never show this item"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không bao giờ hiện mục này"
+          }
+        }
+      }
+    },
+    "rules.resetOverride" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset override"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đặt lại ghi đè"
+          }
+        }
+      }
+    },
+    "rules.section" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your rules"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quy tắc của bạn"
+          }
+        }
+      }
+    },
+    "rules.warning.looserOverride" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A tier override that would make an item less strict was ignored. Overrides can only make items stricter."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Một ghi đè mức độ làm mục kém an toàn hơn đã bị bỏ qua. Ghi đè chỉ có thể làm mục nghiêm ngặt hơn."
+          }
+        }
+      }
+    },
     "schedule.notification.growth" : {
       "localizations" : {
         "en" : {
@@ -13829,6 +13941,326 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Một thông báo mỗi lần dung lượng trống xuống dưới mức này."
+          }
+        }
+      }
+    },
+    "settings.rules.bundled" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Built in"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Có sẵn"
+          }
+        }
+      }
+    },
+    "settings.rules.capNote" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your rules can add items at Review at most; Safe is only for the built-in rules, and protected folders stay protected."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quy tắc của bạn chỉ có thể thêm mục ở mức Cần xem lại; mức An toàn chỉ dành cho quy tắc có sẵn, và các thư mục được bảo vệ vẫn được bảo vệ."
+          }
+        }
+      }
+    },
+    "settings.rules.enabled" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read my own rule files"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đọc các tệp quy tắc của tôi"
+          }
+        }
+      }
+    },
+    "settings.rules.files" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rule files"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tệp quy tắc"
+          }
+        }
+      }
+    },
+    "settings.rules.folderError" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't create the rules folder: %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không thể tạo thư mục quy tắc: %@"
+          }
+        }
+      }
+    },
+    "settings.rules.ignored" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignored items"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mục đã ẩn"
+          }
+        }
+      }
+    },
+    "settings.rules.ignored.none" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing is hidden."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không có mục nào bị ẩn."
+          }
+        }
+      }
+    },
+    "settings.rules.none" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No rule files loaded yet. Press Reload rules."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chưa tải tệp quy tắc nào. Nhấn Tải lại quy tắc."
+          }
+        }
+      }
+    },
+    "settings.rules.openFolder" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open rules folder"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mở thư mục quy tắc"
+          }
+        }
+      }
+    },
+    "settings.rules.overrides" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overrides"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ghi đè"
+          }
+        }
+      }
+    },
+    "settings.rules.overrides.none" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No tier overrides."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không có ghi đè mức độ nào."
+          }
+        }
+      }
+    },
+    "settings.rules.problems" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Problems"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vấn đề"
+          }
+        }
+      }
+    },
+    "settings.rules.reload" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reload rules"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tải lại quy tắc"
+          }
+        }
+      }
+    },
+    "settings.rules.remove" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Xóa"
+          }
+        }
+      }
+    },
+    "settings.rules.reset" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Đặt lại"
+          }
+        }
+      }
+    },
+    "settings.rules.tab" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rules"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Quy tắc"
+          }
+        }
+      }
+    },
+    "settings.rules.validate" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Validate"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kiểm tra"
+          }
+        }
+      }
+    },
+    "settings.rules.validate.ok" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No problems found in your rule files."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Không tìm thấy vấn đề nào trong các tệp quy tắc của bạn."
+          }
+        }
+      }
+    },
+    "settings.rules.validate.problems" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ problem(s) found."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tìm thấy %@ vấn đề."
+          }
+        }
+      }
+    },
+    "settings.rules.yours" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yours"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Của bạn"
           }
         }
       }
