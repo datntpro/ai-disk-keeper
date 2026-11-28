@@ -61,7 +61,7 @@ final class ReclaimEstimateTests: XCTestCase {
     }
 
     private func bigTree(_ fx: FixtureHome, bytes: Int = 4 * 1_048_576) throws {
-        try fx.file("home/big/a.bin", contents: Data((0..<bytes).map { UInt8(truncatingIfNeeded: $0 &* 29) }))
+        try fx.file("home/big/a.bin", bytes: bytes)
     }
 
     private func cachedContext(_ fx: FixtureHome, cache: SizeCache) throws -> ScanContext {
