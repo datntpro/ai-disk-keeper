@@ -36,7 +36,7 @@ public struct ReclaimEstimate: Sendable, Hashable {
     ///   - items: the selection.
     ///   - trashSameVolume: whether items go to a Trash on the volume they live on (nil/false for permanent delete
     ///     or tool commands).
-    ///   - localSnapshotsPresent: `tmutil listlocalsnapshots` found snapshots on the volume.
+    ///   - localSnapshotsPresent: the volume has local snapshots (see `LocalSnapshotLister`).
     public static func make(items: [ScanItem], trashSameVolume: Bool = false,
                             localSnapshotsPresent: Bool = false) -> ReclaimEstimate {
         var shown: Int64 = 0, frees: Int64 = 0, shared: Int64 = 0, unknown = 0
