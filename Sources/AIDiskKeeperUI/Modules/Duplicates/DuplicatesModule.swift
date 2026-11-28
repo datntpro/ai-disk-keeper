@@ -13,7 +13,9 @@ enum DuplicatesModule: ModuleProvider {
     @MainActor static func model(env appEnv: AppEnvironment, suite: SuiteModel) -> DuplicatesModel {
         let env = appEnv.pathEnvironment
         return suite.state(.duplicates) {
-            DuplicatesModel(index: suite.diskIndex, finder: DuplicatesModel.liveFinder, environment: env,
+            DuplicatesModel(index: suite.diskIndex, finder: { [policy = appEnv.settings.userPolicyProvider] tree, options, progress in
+                                policy.policy.filtered(try await DuplicatesModel.liveFinder(tree, options, progress))
+                            }, environment: env,
                             guardProvider: { try Self.liveGuard(env) })
         }
     }
@@ -21,7 +23,7 @@ enum DuplicatesModule: ModuleProvider {
     /// Loading rule JSON reads disk; the model calls this off the main actor.
     private static func liveGuard(_ env: PathEnvironment) throws -> ScanGuard {
         let loaded = RuleLoader(environment: env, bundledRulesDirectory: CoreResources.rulesDirectoryURL,
-                                userRulesDirectory: nil, guardFactory: ScanGuard.loaderFactory(environment: env)).load()
+                                userRulesDirectory: UserRulesDirectory.activeURL(environment: env), guardFactory: ScanGuard.loaderFactory(environment: env)).load()
         return try ScanGuard(environment: env, protectPatterns: loaded.protectPatterns)
     }
 

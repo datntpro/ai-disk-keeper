@@ -43,6 +43,13 @@ public final class SettingsModel {
 
     @ObservationIgnored public let scopeProvider: ScopeProvider
     @ObservationIgnored public let scanCache: ScanCacheProvider
+    /// What the engines enforce: the policy in memory (the truth even when saving fails), never a re-read of the file.
+    @ObservationIgnored public let userPolicyProvider: UserPolicyProvider
+    /// settings.json existed but couldn't be read at launch, so the user's Keep/ignore choices are unknown: cleanup is
+    /// blocked until the user acknowledges the reset in Settings → Rules.
+    public private(set) var userPolicyUnreadable: Bool
+    /// The last change to the rules/overrides could not be saved (it is still enforced until quit).
+    public private(set) var userPolicySaveFailed = false
     /// Set after "Clear scan cache" finishes; the view shows a confirmation.
     public private(set) var scanCacheCleared = false
     @ObservationIgnored private let store: SettingsStore
@@ -65,6 +72,10 @@ public final class SettingsModel {
         self.loadWarning = warning
         self.availableTools = availableTools
         self.probe = probe
+        var unreadable = false
+        if case .settingsUnreadable? = warning?.code { unreadable = true }
+        self.userPolicyUnreadable = unreadable
+        self.userPolicyProvider = UserPolicyProvider(policy: loaded.userPolicy, trusted: !unreadable)
         self.scopeProvider = ScopeProvider(loaded.scanScope(environment: environment))
         self.scanCache = ScanCacheProvider(
             cache: SizeCache(fileURL: SizeCache.defaultFileURL(environment: environment)), enabled: loaded.useScanCache)
@@ -142,6 +153,28 @@ public final class SettingsModel {
     public func setWorktreeIdleHours(_ hours: Int) { mutate { $0.worktreeIdleHours = AppSettings.clampWorktreeIdleHours(hours) } }
     public func setUseGitHubCLIForPRs(_ on: Bool) { mutate { $0.useGitHubCLIForPRs = on } }
 
+    // User rules (T23)
+    public func setUserRulesEnabled(_ on: Bool) { mutate { $0.userRulesEnabled = on } }
+    public func ignoreItem(_ id: String) { mutate { $0.ignoredItemIDs.insert(id) } }
+    public func unignoreItem(_ id: String) { mutate { $0.ignoredItemIDs.remove(id) } }
+    public func isRuleDisabled(_ id: String) -> Bool { settings.disabledRuleIDs.contains(id) }
+    public func setRule(_ id: String, disabled: Bool) {
+        mutate { if disabled { $0.disabledRuleIDs.insert(id) } else { $0.disabledRuleIDs.remove(id) } }
+    }
+    /// Only a stricter tier than `item.tier` is stored (Review for Safe items; Keep for Safe/Review items).
+    public func overrideTier(of item: ScanItem, to tier: RiskTier) {
+        guard UserPolicyChoices.offered(for: item.tier).contains(tier) else { return }
+        mutate { $0.tierOverrides[item.id] = tier }
+    }
+    public func resetOverride(_ key: String) { mutate { $0.tierOverrides[key] = nil } }
+    public func hasOverride(_ item: ScanItem) -> Bool { settings.userPolicy.override(for: item) != nil }
+
+    /// "Continue with empty rules": accepts that the unreadable settings were replaced by defaults.
+    public func acknowledgeUnreadablePolicy() {
+        userPolicyUnreadable = false
+        userPolicyProvider.set(trusted: true)
+    }
+
     public func setOnboardingCompleted(_ done: Bool) { mutate { $0.hasCompletedOnboarding = done } }
 
     /// Applies `change` to a copy; on failure the settings stay unchanged and `lastError` explains why.
@@ -160,10 +193,13 @@ public final class SettingsModel {
         settings = copy
         scopeProvider.set(copy.scanScope(environment: environment))
         scanCache.set(enabled: copy.useScanCache)
+        userPolicyProvider.set(policy: copy.userPolicy)
         do {
             try store.save(copy)
             lastError = nil
+            userPolicySaveFailed = false
         } catch {
+            userPolicySaveFailed = true
             lastError = loc("settings.error.save", "Couldn't save settings: \(error.localizedDescription)")
         }
     }

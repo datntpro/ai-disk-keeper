@@ -170,6 +170,9 @@ Rules are JSON files (one per tool) loaded from the app bundle and, optionally, 
 `~/Library/Application Support/AIDiskKeeper/Rules`. Things that need logic (git state, Ollama
 manifests, Docker) are Swift `Scanner`s that still emit the same `ScanItem`s.
 
+User rules (T23) are capped at Review, cannot run commands and cannot loosen protection; the user's ignore list and
+tier overrides only move items toward Keep. See docs/rules.md, "User rules, ignore list and overrides".
+
 ```jsonc
 {
   "schemaVersion": 1,

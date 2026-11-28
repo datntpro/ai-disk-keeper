@@ -301,6 +301,7 @@ A rejected file produces a `RuleLoadError` carrying the file, the JSON path and 
 | `pathOutsideAllowedRoots` | /etc/x is outside the home directory, the temporary directory and /private/tmp |
 | `protectedPathTarget` | `<path>`: the protected-path guard refuses it. Reported as a **warning** (`RuleLoadResult.warnings`), not an error: only that path is dropped and the rest of the file loads |
 | `invalidProtectPattern` | a protect pattern such as `~/**` or `/private/tmp` that would protect a whole root |
+| `userTierCapped` | a user rule asked for Safe (its `tier` or a `tierWhen` entry); it is treated as Review. Reported as a **warning**, not an error |
 | `guardUnavailable` | the protected-path guard couldn't be built; **no rules are loaded** (fails closed) |
 
 ## Safety
@@ -314,3 +315,24 @@ A rejected file produces a `RuleLoadError` carrying the file, the JSON path and 
   resulting item is checked again by the scanner.
 - Rule files never execute anything. A `toolCommand` rule still loads (for compatibility), but the cleanup engine
   refuses it (`toolCommandNotAllowed`): only compiled-in, allowlisted tool commands run (PLAN §7, invariant 19).
+
+## User rules, ignore list and overrides
+
+- **Location:** `~/Library/Application Support/AIDiskKeeper/Rules/*.json`. The folder is never created at launch;
+  Settings → Rules → *Open rules folder* creates it (mode 0700). Settings → Rules → *Reload rules* re-reads it; the
+  folder is not watched. A switch in the same tab turns user rule files off.
+- **Review at most:** a user rule's `tier` and every `tierWhen` result is raised to Review when it says Safe
+  (the `userTierCapped` warning). Only bundled rules may produce Safe items. Keep stays Keep.
+- **No commands:** a user rule can't run a command. A `toolCommand` method loads but the cleanup engine refuses it
+  (`toolCommandNotAllowed`), and ids in the `tool.` namespace are rejected.
+- **Protected paths stay protected:** a user rule that targets one loses that path (`protectedPathTarget`), and a user
+  `protect` entry only adds protection (it guards scanning *and* cleanup). Over-broad entries such as `~/library/**`
+  or `$APP_SUPPORT/[a-z]*` are rejected (`invalidProtectPattern`). There is no "allow" list.
+- **Bundled wins:** a user rule whose id is already taken is rejected (`duplicateRuleID`). An invalid user file
+  never stops the bundled rules or the other user files.
+- **Ignore list and overrides** (Settings → Rules, and the item menu): *Never show this item* hides an item id;
+  switching a rule off hides all its items; *Mark as Review* / *Mark as Keep* override a tier, keyed by item id or rule
+  id (item id wins). Overrides can only be **stricter** (Safe→Review/Keep, Review→Keep); a looser one is ignored and
+  reported. The same settings are read again when a plan runs: an item hidden, or marked Keep, after the plan was
+  made is not cleaned (`ignoredByUser`, `keepTier`).
+- User rule titles and explanations are shown as written; they are never translated.

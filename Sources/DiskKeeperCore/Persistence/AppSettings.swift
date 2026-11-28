@@ -53,6 +53,20 @@ public struct AppSettings: Codable, Sendable, Hashable {
     /// H2: publish `status.json` for coding agents while the app runs (D10: on by default).
     public var publishHostStatus = true
 
+    // User rules (T23). Every effect is monotone toward Keep; see ``UserPolicy``.
+    /// Items the user never wants to see (ScanItem ids).
+    public var ignoredItemIDs: Set<String> = []
+    /// Rules the user switched off (ids; bundled or user).
+    public var disabledRuleIDs: Set<String> = []
+    /// Stricter-only tier overrides, keyed by rule id or item id (item id wins).
+    public var tierOverrides: [String: RiskTier] = [:]
+    /// Read rule files from the user rules folder. On by default; the folder is never created automatically.
+    public var userRulesEnabled = true
+
+    public var userPolicy: UserPolicy {
+        UserPolicy(ignoredItemIDs: ignoredItemIDs, disabledRuleIDs: disabledRuleIDs, tierOverrides: tierOverrides)
+    }
+
     public static let historyMinuteChoices = [1, 5]
 
     // Worktree inventory (H3).
@@ -88,6 +102,7 @@ public struct AppSettings: Codable, Sendable, Hashable {
         case monitorOrder, monitorDisabled, menuBarMetrics, menuBarStyle, menuBarRefreshSeconds, networkUnits
         case popoverShowsTopProcesses, popoverHistoryMinutes, useScanCache
         case publishHostStatus
+        case ignoredItemIDs, disabledRuleIDs, tierOverrides, userRulesEnabled
         case scanFrequency, scheduledSafeAlertGB, scheduledGrowthAlertGB, scheduledSkipOnBattery, autoResumeMinutes
         case worktreeIdleHours, useGitHubCLIForPRs
     }
@@ -116,6 +131,12 @@ public struct AppSettings: Codable, Sendable, Hashable {
         popoverHistoryMinutes = Self.snapHistoryMinutes(try c.decodeIfPresent(Int.self, forKey: .popoverHistoryMinutes) ?? 1)
         useScanCache = try c.decodeIfPresent(Bool.self, forKey: .useScanCache) ?? true
         publishHostStatus = try c.decodeIfPresent(Bool.self, forKey: .publishHostStatus) ?? true
+        ignoredItemIDs = Set(try c.decodeIfPresent([String].self, forKey: .ignoredItemIDs) ?? [])
+        disabledRuleIDs = Set(try c.decodeIfPresent([String].self, forKey: .disabledRuleIDs) ?? [])
+        // A hand-edited file may hold an unknown tier name: such an entry is dropped, never guessed.
+        let rawOverrides = try c.decodeIfPresent([String: String].self, forKey: .tierOverrides) ?? [:]
+        tierOverrides = rawOverrides.compactMapValues(RiskTier.init(rawValue:))
+        userRulesEnabled = try c.decodeIfPresent(Bool.self, forKey: .userRulesEnabled) ?? true
         scanFrequency = (try c.decodeIfPresent(String.self, forKey: .scanFrequency)).flatMap(ScanFrequency.init(rawValue:)) ?? .off
         scheduledSafeAlertGB = min(max(try c.decodeIfPresent(Int.self, forKey: .scheduledSafeAlertGB) ?? 5, 1), 500)
         scheduledGrowthAlertGB = min(max(try c.decodeIfPresent(Int.self, forKey: .scheduledGrowthAlertGB) ?? 2, 1), 500)

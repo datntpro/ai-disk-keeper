@@ -22,7 +22,7 @@ enum CleanupNextStep: Equatable {
         case .protectedPath, .keepTier, .notActionable, .wouldRemoveAllCopies, .appBundleRefused, .toolCommandNotAllowed: .protected
         case .toolUnavailable, .toolNotRunning, .inUse, .inUseUnknown: .tryLater
         case .methodNotSupported, .isSymlink, .notOwnedByUser, .symlinkInParentChain, .nestedInAnotherItem,
-             .duplicate, .permanentDeleteDisabled, .sizingFailed, .survivorChanged, .duplicateGroupUnknown, .toolCommandUnavailable, .auditIntentNotWritten:
+             .duplicate, .ignoredByUser, .userPolicyUnavailable, .permanentDeleteDisabled, .sizingFailed, .survivorChanged, .duplicateGroupUnknown, .toolCommandUnavailable, .auditIntentNotWritten:
             .sentenceOnly
         }
     }

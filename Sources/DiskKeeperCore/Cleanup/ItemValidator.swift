@@ -3,7 +3,7 @@ import Foundation
 
 /// All re-validation checks, kept separate from the engine so they are easy to test.
 struct ItemValidator: Sendable {
-    let pathGuard: ProtectedPaths
+    var pathGuard: ProtectedPaths
     let userID: uid_t
     let runningApps: any RunningAppChecking
     let tolerance: ChangeTolerance
@@ -35,9 +35,14 @@ struct ItemValidator: Sendable {
     }
 
     /// Policy checks that need no filesystem access.
-    func policyBlockers(_ item: ScanItem, action: CleanupAction, options: CleanupOptions) -> [CleanupBlocker] {
+    func policyBlockers(_ item: ScanItem, action: CleanupAction, options: CleanupOptions,
+                        userPolicy: UserPolicy = .empty, policyTrusted: Bool = true) -> [CleanupBlocker] {
         var out: [CleanupBlocker] = []
-        if item.tier == .keep { out.append(.keepTier) }
+        if !policyTrusted { out.append(.userPolicyUnavailable) }
+        // The user's current settings are re-read at execute time: an item hidden, a rule switched off or a stricter
+        // override set after the plan was made still stops it. Overrides only ever add Keep, never lift anything.
+        if userPolicy.hides(item) { out.append(.ignoredByUser) }
+        if item.tier == .keep || userPolicy.effectiveTier(for: item) == .keep { out.append(.keepTier) }
         switch item.cleanupMethod {
         case .none: out.append(.notActionable)
         case .trashWorktree: out.append(.methodNotSupported("trashWorktree"))

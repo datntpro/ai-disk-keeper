@@ -10,7 +10,7 @@ enum LargeOldModule: ModuleProvider {
     /// Same instance without a `ModuleContext` (the Care Scan adopts its report into it).
     @MainActor static func model(env: AppEnvironment, suite: SuiteModel) -> LargeOldModel {
         suite.state(.largeOld) {
-            LargeOldModel(index: suite.diskIndex, scanner: LargeOldModel.live(environment: env.pathEnvironment))
+            LargeOldModel(index: suite.diskIndex, scanner: LargeOldModel.live(environment: env.pathEnvironment, userPolicy: env.settings.userPolicyProvider))
         }
     }
 

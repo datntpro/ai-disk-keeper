@@ -9,7 +9,7 @@ public struct RuleLoadError: Error, Sendable, Hashable, CustomStringConvertible 
         case unreadableDirectory, unreadableFile, fileTooLarge, tooManyFiles, invalidJSON, unsupportedSchemaVersion,
              unknownKey, duplicateKey, missingKey, typeMismatch, invalidValue, invalidGlob, invalidPathTemplate,
              invalidRuleID, duplicateRuleID, pathOutsideAllowedRoots, protectedPathTarget, invalidProtectPattern,
-             guardUnavailable
+             guardUnavailable, userTierCapped
     }
 
     public let kind: Kind

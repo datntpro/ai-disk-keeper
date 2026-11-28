@@ -71,6 +71,12 @@ enum RuleFixtures {
                    guardFactory: guardFactory(env: env, recorder: recorder))
     }
 
+    /// The user-rule Safe→Review cap warning is orthogonal to most loader tests; this drops it from a result.
+    static func withoutCapWarnings(_ r: RuleLoadResult) -> RuleLoadResult {
+        RuleLoadResult(ruleSets: r.ruleSets, errors: r.errors, warnings: r.warnings.filter { $0.kind != .userTierCapped },
+                       protectPatterns: r.protectPatterns)
+    }
+
     static let fileURL = URL(fileURLWithPath: "/virtual/test.json")
 
     /// A complete, valid one-rule file for tool `t`, with overridable pieces.

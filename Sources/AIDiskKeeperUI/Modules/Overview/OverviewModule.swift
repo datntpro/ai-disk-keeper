@@ -11,7 +11,8 @@ enum OverviewModule: ModuleProvider {
     @MainActor static func careModel(env: AppEnvironment, scan: ScanViewModel, suite: SuiteModel) -> CareScanModel {
         suite.state(.overview) {
             let live = CareScanLive(environment: env.pathEnvironment, makeScanEngine: env.makeScanEngine,
-                                    scopeProvider: env.settings.scopeProvider, index: suite.diskIndex)
+                                    scopeProvider: env.settings.scopeProvider,
+                                    userPolicy: env.settings.userPolicyProvider, index: suite.diskIndex)
             return CareScanModel(
                 makeCoordinator: { try live.makeCoordinator(indexScope: $0) },
                 scan: scan, index: suite.diskIndex,

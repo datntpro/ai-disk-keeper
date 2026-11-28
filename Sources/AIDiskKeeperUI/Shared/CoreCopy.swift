@@ -74,6 +74,8 @@ extension ScanWarning {
             return loc("inuse.unknown.warning", "Couldn't check which apps are using files. Items were not marked in use.")
         case .adjusterRejected:
             return loc("inuse.adjusterRejected.warning", "A safety check returned an invalid result and was ignored.")
+        case .looserOverrideIgnored:
+            return loc("rules.warning.looserOverride", "A tier override that would make an item less strict was ignored. Overrides can only make items stricter.")
         case .settingsUnreadable(let backup):
             if let backup {
                 return loc("warning.code.settingsBackedUp",

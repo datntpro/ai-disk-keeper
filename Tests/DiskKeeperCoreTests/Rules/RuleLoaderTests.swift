@@ -53,7 +53,7 @@ final class RuleLoaderTests: XCTestCase {
         let good = RuleFixtures.rule(id: "a.good", paths: #"["~/.a/x"]"#)
         let bad = RuleFixtures.rule(id: "a.bad", paths: #"["~/.ssh"]"#)
         try write("user", "a.json", RuleFixtures.file(tool: "a", rules: [good, bad]))
-        let r = loader().load()
+        let r = RuleFixtures.withoutCapWarnings(loader().load())
         XCTAssertEqual(r.errors, [])
         XCTAssertEqual(r.ruleSets.count, 1)
         XCTAssertEqual(r.allRules.map(\.rule.id), ["a.good", "a.bad"])

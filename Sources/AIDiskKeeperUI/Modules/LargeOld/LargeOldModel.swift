@@ -185,15 +185,16 @@ final class LargeOldModel {
 extension LargeOldModel {
     /// The scanner behind the live app: builds the path guard off the main actor (it loads rule JSON), then runs the
     /// same guard and owner filter Care Scan uses.
-    static func live(environment env: PathEnvironment) -> Scanning {
+    static func live(environment env: PathEnvironment, userPolicy: UserPolicyProvider = UserPolicyProvider()) -> Scanning {
         { tree in
             let loaded = RuleLoader(
-                environment: env, bundledRulesDirectory: CoreResources.rulesDirectoryURL, userRulesDirectory: nil,
+                environment: env, bundledRulesDirectory: CoreResources.rulesDirectoryURL, userRulesDirectory: UserRulesDirectory.activeURL(environment: env),
                 guardFactory: ScanGuard.loaderFactory(environment: env)).load()
             let pathGuard = try ScanGuard(environment: env, protectPatterns: loaded.protectPatterns)
             let scanner = LargeFileScanner(options: LargeFileOptions(environment: env), lastOpened: SpotlightLastOpenedProvider(),
                                            appNames: ApplicationsFolderNames.live(env), tree: { tree })
-            return try await scanner.report(tree: tree, context: ScanContext(environment: env, pathGuard: pathGuard))
+            let report = try await scanner.report(tree: tree, context: ScanContext(environment: env, pathGuard: pathGuard))
+            return userPolicy.policy.filtered(report)
         }
     }
 }

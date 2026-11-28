@@ -75,3 +75,48 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertEqual(s.scanScope(environment: env).projectRoots, ["/Users/tester/ok"])
     }
 }
+
+final class AppSettingsUserRulesTests: XCTestCase {
+    func testOldJSONWithoutNewKeysDecodesToDefaults() throws {
+        let s = try JSONDecoder().decode(AppSettings.self, from: Data(#"{"schemaVersion":1,"language":"vi"}"#.utf8))
+        XCTAssertTrue(s.ignoredItemIDs.isEmpty)
+        XCTAssertTrue(s.disabledRuleIDs.isEmpty)
+        XCTAssertTrue(s.tierOverrides.isEmpty)
+        XCTAssertTrue(s.userRulesEnabled)
+    }
+
+    func testRoundTrip() throws {
+        var s = AppSettings.defaults
+        s.ignoredItemIDs = ["a|/x"]
+        s.disabledRuleIDs = ["t.r"]
+        s.tierOverrides = ["t.r": .keep, "a|/x": .review]
+        s.userRulesEnabled = false
+        let back = try JSONDecoder().decode(AppSettings.self, from: DiskKeeperJSON.makeEncoder(pretty: false).encode(s))
+        XCTAssertEqual(back, s)
+        XCTAssertEqual(back.userPolicy.tierOverrides["t.r"], .keep)
+    }
+
+    func testUnknownTierNameInHandEditedFileIsDropped() throws {
+        let s = try JSONDecoder().decode(AppSettings.self, from: Data(#"{"tierOverrides":{"a":"keep","b":"bogus"}}"#.utf8))
+        XCTAssertEqual(s.tierOverrides, ["a": .keep])
+    }
+
+    func testUserRulesDirectoryIsNotCreatedByActiveURL() throws {
+        let tmp = try TemporaryDirectory()
+        let env = PathEnvironment(home: tmp.path("home"), temporaryDirectory: tmp.path("tmp"))
+        let url = UserRulesDirectory.activeURL(environment: env)
+        XCTAssertEqual(url, env.userRulesDirectory)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: env.userRulesDirectory.path))
+        _ = try UserRulesDirectory.ensureExists(environment: env)
+        var st = stat(); XCTAssertEqual(lstat(env.userRulesDirectory.path, &st), 0)
+        XCTAssertEqual(st.st_mode & 0o777, 0o700)
+    }
+
+    func testUserRulesSwitchedOffGivesNoDirectory() throws {
+        let tmp = try TemporaryDirectory()
+        let env = PathEnvironment(home: tmp.path("home"), temporaryDirectory: tmp.path("tmp"))
+        var s = AppSettings.defaults; s.userRulesEnabled = false
+        try SettingsStore(environment: env).save(s)
+        XCTAssertNil(UserRulesDirectory.activeURL(environment: env))
+    }
+}

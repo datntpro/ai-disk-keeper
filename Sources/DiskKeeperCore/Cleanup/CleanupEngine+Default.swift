@@ -1,16 +1,20 @@
 import Foundation
 
 extension CleanupEngine {
-    /// Same protected set as scanning: built-in table + bundled rules' protect patterns. Audit log at
+    /// Same protected set as scanning: built-in table + every rule file's protect patterns (bundled and, when given, the user's: a user `protect` entry guards execution too). Audit log at
     /// `AuditLog.defaultURL(environment:)`. Throws if the guard can't be built (never runs without one).
     /// Permanent delete is not exposed: `options` keeps its defaults.
     public static func makeDefault(environment: PathEnvironment,
                                    bundledRulesDirectory: URL? = CoreResources.rulesDirectoryURL,
+                                   userRulesDirectory: URL? = nil,
                                    runningApps: any RunningAppChecking,
                                    toolCommands: ToolCommandPerformer? = nil,
-                                   inUse: (any ProcessUsageSource)? = nil) throws -> CleanupEngine {
+                                   inUse: (any ProcessUsageSource)? = nil,
+                                   userPolicy: @escaping @Sendable () -> UserPolicy = { .empty },
+                                   userPolicyTrusted: @escaping @Sendable () -> Bool = { true }) throws -> CleanupEngine {
         let loaded = RuleLoader(
             environment: environment, bundledRulesDirectory: bundledRulesDirectory,
+            userRulesDirectory: userRulesDirectory,
             guardFactory: ScanGuard.loaderFactory(environment: environment)).load()
         let pathGuard = try ScanGuard(environment: environment, protectPatterns: loaded.protectPatterns)
         return CleanupEngine(pathGuard: pathGuard.protectedPaths,
@@ -18,6 +22,14 @@ extension CleanupEngine {
                              runningApps: runningApps,
                              appPolicy: ApplicationBundlePolicy(roots: .live(environment), userID: getuid(),
                                                                 probe: LiveAppBundleProbe()),
-                             toolCommands: toolCommands, inUse: inUse ?? LibprocUsageSource())
+                             toolCommands: toolCommands, inUse: inUse ?? LibprocUsageSource(),
+                             userPolicy: userPolicy, userPolicyTrusted: userPolicyTrusted,
+                             guardRefresh: {
+                                 let loaded = RuleLoader(
+                                     environment: environment, bundledRulesDirectory: bundledRulesDirectory,
+                                     userRulesDirectory: userRulesDirectory,
+                                     guardFactory: ScanGuard.loaderFactory(environment: environment)).load()
+                                 return try ScanGuard(environment: environment, protectPatterns: loaded.protectPatterns).protectedPaths
+                             })
     }
 }

@@ -205,6 +205,13 @@ public struct RuleLoader: Sendable {
                         expanded.append(path)
                     }
                 }
+                var rule = rule
+                if entry.source == .user, let capped = rule.cappedAtReview() {
+                    rule = capped
+                    warnings.append(RuleLoadError(
+                        kind: .userTierCapped, file: entry.file, source: .user, jsonPath: "rules[\(i)].tier",
+                        message: "\(rule.id): Safe is not allowed in user rules; treated as Review"))
+                }
                 resolved.append(ResolvedRule(
                     rule: rule, tool: entry.rules.tool.id, expandedPaths: expanded, unavailablePaths: unavailable))
             }

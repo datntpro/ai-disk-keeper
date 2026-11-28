@@ -50,7 +50,7 @@ public final class AppEnvironment {
         // The tool list comes from the loaded rules; loading reads disk, so keep it off the main actor.
         Task.detached {
             let loaded = RuleLoader(
-                environment: env, bundledRulesDirectory: CoreResources.rulesDirectoryURL, userRulesDirectory: nil,
+                environment: env, bundledRulesDirectory: CoreResources.rulesDirectoryURL, userRulesDirectory: UserRulesDirectory.activeURL(environment: env),
                 guardFactory: ScanGuard.loaderFactory(environment: env)).load()
             var seen = Set<ToolID>()
             let tools = loaded.ruleSets.map(\.tool).filter { seen.insert($0.id).inserted }
@@ -59,10 +59,13 @@ public final class AppEnvironment {
             await MainActor.run { settings.availableTools = tools }
         }
         let cleanup = CleanupEngineHolder()
+        let policyProvider = settings.userPolicyProvider
         // Rule loading reads disk: build the one cleanup engine off the main actor.
         Task.detached {
             let result = Result { try CleanupEngine.makeDefault(
-                environment: env, runningApps: WorkspaceRunningApps(), toolCommands: ToolCommandPerformer.live(environment: env)) }
+                environment: env, userRulesDirectory: UserRulesDirectory.defaultURL(environment: env),   // read again at every plan
+                runningApps: WorkspaceRunningApps(), toolCommands: ToolCommandPerformer.live(environment: env),
+                userPolicy: { policyProvider.policy }, userPolicyTrusted: { policyProvider.isTrusted }) }
             await MainActor.run {
                 switch result {
                 case .success(let engine): cleanup.install(engine)
@@ -73,13 +76,14 @@ public final class AppEnvironment {
         let provider = settings.scopeProvider   // current scope is read when each scan starts
         let cacheProvider = settings.scanCache  // nil while the user has the scan cache off
         return AppEnvironment(pathEnvironment: env, settings: settings, makeScanEngine: {
-            try ScanEngine.makeDefault(environment: env, userRulesDirectory: nil,
+            try ScanEngine.makeDefault(environment: env, userRulesDirectory: UserRulesDirectory.activeURL(environment: env),
                                        extraScanners: BuiltInScanners.live(environment: env), scope: provider.current,
                                        sizeCache: cacheProvider.current,
-                                       adjusters: [InUseAdjuster(source: LibprocUsageSource())])
+                                       adjusters: [UserPolicyAdjuster(policy: policyProvider.policy),   // monotone; before in-use
+                                                   InUseAdjuster(source: LibprocUsageSource())])
         }, cleanup: cleanup, makeDiskIndexer: {
             let loaded = RuleLoader(
-                environment: env, bundledRulesDirectory: CoreResources.rulesDirectoryURL, userRulesDirectory: nil,
+                environment: env, bundledRulesDirectory: CoreResources.rulesDirectoryURL, userRulesDirectory: UserRulesDirectory.activeURL(environment: env),
                 guardFactory: ScanGuard.loaderFactory(environment: env)).load()
             let pathGuard = try ScanGuard(environment: env, protectPatterns: loaded.protectPatterns).protectedPaths
             return DiskIndexer(environment: env, pathGuard: pathGuard)
