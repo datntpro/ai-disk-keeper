@@ -19,12 +19,15 @@ public final class AppEnvironment {
 
     /// H5: lower priority / pause. Does nothing until the user confirms an action.
     let processControl: ProcessControlModel
+    /// H3: builds the read-only worktree inventory for the current settings (nil when git is missing). Off the main actor.
+    public var makeWorktreeInventory: @Sendable (AppSettings) -> WorktreeInventory?
 
     public init(pathEnvironment: PathEnvironment,
                 settings: SettingsModel? = nil,
                 makeScanEngine: @escaping @Sendable () throws -> any ScanEngineProtocol,
                 cleanup: CleanupEngineHolder = CleanupEngineHolder(),
-                makeDiskIndexer: @escaping @Sendable () throws -> any DiskIndexing = { throw DiskIndexUnavailable() }) {
+                makeDiskIndexer: @escaping @Sendable () throws -> any DiskIndexing = { throw DiskIndexUnavailable() },
+                makeWorktreeInventory: @escaping @Sendable (AppSettings) -> WorktreeInventory? = { _ in nil }) {
         self.pathEnvironment = pathEnvironment
         self.makeScanEngine = makeScanEngine
         self.settings = settings ?? SettingsModel(
@@ -32,6 +35,7 @@ public final class AppEnvironment {
         self.cleanup = cleanup
         self.makeDiskIndexer = makeDiskIndexer
         self.processControl = ProcessControlModel.live(environment: pathEnvironment, settings: self.settings)
+        self.makeWorktreeInventory = makeWorktreeInventory
     }
 
     public static func live() -> AppEnvironment {
@@ -79,6 +83,6 @@ public final class AppEnvironment {
                 guardFactory: ScanGuard.loaderFactory(environment: env)).load()
             let pathGuard = try ScanGuard(environment: env, protectPatterns: loaded.protectPatterns).protectedPaths
             return DiskIndexer(environment: env, pathGuard: pathGuard)
-        })
+        }, makeWorktreeInventory: WorktreeInventoryFactory.live(environment: env, github: GHCLIPRStatusSource(home: env.home)))
     }
 }
