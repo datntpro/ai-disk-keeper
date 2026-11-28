@@ -55,6 +55,17 @@ public struct AppSettings: Codable, Sendable, Hashable {
 
     public static let historyMinuteChoices = [1, 5]
 
+    // Worktree inventory (H3).
+    /// Hours without activity before a worktree can count as idle (1-72).
+    public var worktreeIdleHours = AppSettings.defaultWorktreeIdleHours
+    /// Opt-in: ask GitHub (`gh pr list`) for pull request state. Off by default; this is the only network use.
+    public var useGitHubCLIForPRs = false
+    public static let worktreeIdleHoursRange = 1...72
+    public static let defaultWorktreeIdleHours = 3
+    public static func clampWorktreeIdleHours(_ h: Int) -> Int {
+        min(max(h, worktreeIdleHoursRange.lowerBound), worktreeIdleHoursRange.upperBound)
+    }
+
     public static let lowSpaceThresholdRange = 5...30
     public static let defaultLowSpaceThresholdPercent = 15
 
@@ -78,6 +89,7 @@ public struct AppSettings: Codable, Sendable, Hashable {
         case popoverShowsTopProcesses, popoverHistoryMinutes, useScanCache
         case publishHostStatus
         case scanFrequency, scheduledSafeAlertGB, scheduledGrowthAlertGB, scheduledSkipOnBattery, autoResumeMinutes
+        case worktreeIdleHours, useGitHubCLIForPRs
     }
 
     /// Lenient: unknown keys are ignored and missing keys take defaults.
@@ -109,6 +121,8 @@ public struct AppSettings: Codable, Sendable, Hashable {
         scheduledGrowthAlertGB = min(max(try c.decodeIfPresent(Int.self, forKey: .scheduledGrowthAlertGB) ?? 2, 1), 500)
         scheduledSkipOnBattery = try c.decodeIfPresent(Bool.self, forKey: .scheduledSkipOnBattery) ?? true
         autoResumeMinutes = Self.clampAutoResume(try c.decodeIfPresent(Int.self, forKey: .autoResumeMinutes) ?? Self.defaultAutoResumeMinutes)
+        worktreeIdleHours = Self.clampWorktreeIdleHours(try c.decodeIfPresent(Int.self, forKey: .worktreeIdleHours) ?? Self.defaultWorktreeIdleHours)
+        useGitHubCLIForPRs = try c.decodeIfPresent(Bool.self, forKey: .useGitHubCLIForPRs) ?? false
     }
 
     /// Unknown and duplicate ids are dropped; missing ones are appended in the default order.

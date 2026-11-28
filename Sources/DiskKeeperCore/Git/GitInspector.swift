@@ -726,3 +726,92 @@ public final class GitInspector: Sendable {
         return .init(value: h, failure: failure)
     }
 }
+
+// MARK: - Worktree inventory probes (H3)
+
+/// Local-only proofs that a branch's work already lives in the default branch. Every call goes through `runGit`
+/// (`GIT_OPTIONAL_LOCKS=0`, no network, no fetch). `nil` means "could not be determined", never "no".
+extension GitInspector {
+    /// `git cherry <base> HEAD`: true iff every line starts with `-` (each commit has an equivalent in `base`).
+    /// An empty output (no commits beyond `base`) is also true.
+    public func cherryAllApplied(head: String = "HEAD", base: String, in path: URL) async throws -> Bool? {
+        guard let r = try await optionalRun(["cherry", base, head], in: path), r.exitStatus == 0, !r.stdoutTruncated else { return nil }
+        let lines = r.stdoutString.split(separator: "\n").filter { !$0.isEmpty }
+        return lines.allSatisfy { $0.hasPrefix("-") }
+    }
+
+    /// True when everything the branch changed relative to its merge-base is already, byte for byte, in `base`
+    /// (the squash-merge case). Path by path: `diff --raw` of merge-base..head names the changed paths with their
+    /// blob ids; `diff --raw` of base..head must not list any of them. Read-only by construction: `merge-tree
+    /// --write-tree` would write tree objects (and `git` also touches the mtime of existing objects it finds in
+    /// alternates), and an inventory must leave `.git` exactly as it found it. Stricter than a real merge: a path
+    /// that differs from `base` at all is "no", which only ever turns Safe into Review.
+    public func mergeTreeMatchesBase(head: String = "HEAD", base: String, in path: URL) async throws -> Bool? {
+        guard let mb = try await optionalRun(["merge-base", base, head], in: path), mb.exitStatus == 0 else { return nil }
+        let mergeBase = mb.stdoutString.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !mergeBase.isEmpty,
+              let branch = try await optionalRun(["diff", "--raw", "-z", "--no-renames", "--no-ext-diff", mergeBase, head], in: path),
+              branch.exitStatus == 0, !branch.stdoutTruncated,
+              let against = try await optionalRun(["diff", "--raw", "-z", "--no-renames", "--no-ext-diff", base, head], in: path),
+              against.exitStatus == 0, !against.stdoutTruncated
+        else { return nil }
+        let changedByBranch = Self.rawDiffPaths(branch.stdout)
+        let differsFromBase = Self.rawDiffPaths(against.stdout)
+        return changedByBranch.isDisjoint(with: differsFromBase)
+    }
+
+    /// Paths from `git diff --raw -z` output (`:meta\0path\0` pairs).
+    static func rawDiffPaths(_ data: Data) -> Set<String> {
+        var out = Set<String>()
+        let parts = data.split(separator: 0, omittingEmptySubsequences: false).map { String(decoding: $0, as: UTF8.self) }
+        var i = 0
+        while i < parts.count {
+            if parts[i].hasPrefix(":"), i + 1 < parts.count { out.insert(parts[i + 1]); i += 2 } else { i += 1 }
+        }
+        return out
+    }
+
+    /// `git rev-list --count <head> --not --branches --remotes`: commits only a detached HEAD holds.
+    public func commitsNotOnAnyRef(head: String = "HEAD", in path: URL) async throws -> Int? {
+        guard let r = try await optionalRun(["rev-list", "--count", head, "--not", "--branches", "--remotes"], in: path),
+              r.exitStatus == 0
+        else { return nil }
+        return Int(r.stdoutString.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    /// `git merge-base --is-ancestor <ancestor> <descendant>`; nil when either object is unknown locally.
+    public func isAncestor(_ ancestor: String, of descendant: String, in path: URL) async throws -> Bool? {
+        guard let r = try await optionalRun(["merge-base", "--is-ancestor", ancestor, descendant], in: path) else { return nil }
+        switch r.exitStatus {
+        case 0: return true
+        case 1: return false
+        default: return nil
+        }
+    }
+
+    /// `git rev-parse --verify -q <rev>^{commit}`.
+    public func resolveCommit(_ rev: String, in path: URL) async throws -> String? {
+        guard let r = try await optionalRun(["rev-parse", "--verify", "-q", rev + "^{commit}"], in: path), r.exitStatus == 0
+        else { return nil }
+        let s = r.stdoutString.trimmingCharacters(in: .whitespacesAndNewlines)
+        return s.isEmpty ? nil : s
+    }
+
+    /// `git remote get-url origin` (local config only; nothing is contacted).
+    public func originURL(in path: URL) async throws -> String? {
+        guard let r = try await optionalRun(["remote", "get-url", "origin"], in: path), r.exitStatus == 0 else { return nil }
+        let s = r.stdoutString.trimmingCharacters(in: .whitespacesAndNewlines)
+        return s.isEmpty ? nil : s
+    }
+
+    /// Runs git; a timeout or launch problem becomes nil, only cancellation escapes.
+    private func optionalRun(_ args: [String], in path: URL) async throws -> ProcessResult? {
+        do {
+            return try await runGit(args, in: path)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            return nil
+        }
+    }
+}

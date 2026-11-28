@@ -34,7 +34,8 @@ to remove — especially for worktrees, where deleting the wrong one loses uncom
    credentials/config/auth, re-validate right before acting, git-state-aware for worktrees.
 4. **Break down** usage per tool and per project (a repo's worktrees + artifacts + sessions).
 5. **Stay on top of it**: optional scheduled scan + notification, menu bar summary.
-6. Native, fast, private: no network, no telemetry, no helper daemons with root.
+6. Native, fast, private: no network, no telemetry, no helper daemons with root. (One opt-in exception: the Worktrees
+   inventory can run `gh pr list`; it is off by default and shows a consent sheet. See `docs/worktrees.md`.)
    (H2: no daemon at all. The running app writes `status.json` itself and `adk` only reads it; see `docs/host-status.md`.)
 7. **See and manage the whole disk** (M4): disk map, large & old files, duplicates, app uninstall with
    leftovers, startup items, wider system junk, storage overview, one-click Care Scan that only *finds*.
@@ -250,7 +251,8 @@ paths intersect protected paths. Full reference: `docs/rules.md` (T03).
    Models/Docker: the tool's own CLI so its index stays consistent.
 9. **Audit log** — every action appended to `~/Library/Application Support/AIDiskKeeper/audit.jsonl`
    (time, path, bytes, method, trash location, rule id, result). Viewer in T24.
-10. **No privilege escalation, no network, no telemetry.**
+10. **No privilege escalation, no network, no telemetry.** (Exception: the opt-in `gh pr list` check of the Worktrees
+    inventory, off by default; nothing else.)
 11. **Distribution** — Developer ID signed + notarized, hardened runtime, non-sandboxed in v1
     (needs `~` and Trash access across tools); Full Disk Access optional and explained.
 

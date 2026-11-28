@@ -139,6 +139,8 @@ public final class SettingsModel {
     public func setScheduledSafeAlertGB(_ gb: Int) { mutate { $0.scheduledSafeAlertGB = min(max(gb, 1), 500) } }
     public func setScheduledGrowthAlertGB(_ gb: Int) { mutate { $0.scheduledGrowthAlertGB = min(max(gb, 1), 500) } }
     public func setScheduledSkipOnBattery(_ on: Bool) { mutate { $0.scheduledSkipOnBattery = on } }
+    public func setWorktreeIdleHours(_ hours: Int) { mutate { $0.worktreeIdleHours = AppSettings.clampWorktreeIdleHours(hours) } }
+    public func setUseGitHubCLIForPRs(_ on: Bool) { mutate { $0.useGitHubCLIForPRs = on } }
 
     public func setOnboardingCompleted(_ done: Bool) { mutate { $0.hasCompletedOnboarding = done } }
 
