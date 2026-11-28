@@ -16,7 +16,8 @@ public enum FileSizerError: Error, Sendable, Equatable {
 /// - **Hardlinks** are deduplicated per call only (no cross-call dedupe). A hardlink whose other name
 ///   lives outside the tree is still counted once here; deleting it frees nothing.
 /// - **APFS clones** are overcounted: shared extents are invisible to `stat`, so `allocatedBytes` is an
-///   upper bound on reclaimable space when clones exist.
+///   upper bound on reclaimable space when clones exist. With `measurePrivateBytes`, `SizeReport.privateBytes`
+///   is the lower, honest number (see docs/reclaimable.md).
 /// - **Mount points** on other devices are not crossed unless `Options.crossVolumes` is set.
 /// - **Dataless** (iCloud / File Provider) directories are not materialized or descended.
 /// - `progress` is called on a background (walker) thread.
@@ -30,25 +31,39 @@ public struct FileSizer: Sendable {
         public var progressInterval: Int
         /// Dispatch QoS of the walker thread for the async API. Default .utility.
         public var qos: DispatchQoS.QoSClass
+        /// H6: also measure how many bytes deleting the tree would really free on APFS (one `getattrlist` per file of
+        /// at least ``privateProbeMinFileSize``; never reads contents). Default false.
+        public var measurePrivateBytes: Bool
+        /// Files smaller than this count as private without a probe. Default 1 MiB.
+        public var privateProbeMinFileSize: Int64
         /// TEST-ONLY hook invoked once per entry on the walker thread.
         var _entryHook: (@Sendable () -> Void)?
+        /// TEST-ONLY replacement for the clone probe (e.g. to simulate a non-APFS volume).
+        var _cloneProbe: (@Sendable (String) -> CloneInfo)?
 
         public init(
             crossVolumes: Bool = false,
             maxRecordedIssues: Int = 100,
             progressInterval: Int = 10_000,
-            qos: DispatchQoS.QoSClass = .utility
+            qos: DispatchQoS.QoSClass = .utility,
+            measurePrivateBytes: Bool = false,
+            privateProbeMinFileSize: Int64 = FileSizer.defaultPrivateProbeMinFileSize
         ) {
             self.crossVolumes = crossVolumes
             self.maxRecordedIssues = maxRecordedIssues
             self.progressInterval = max(1, progressInterval)
             self.qos = qos
+            self.measurePrivateBytes = measurePrivateBytes
+            self.privateProbeMinFileSize = max(1, privateProbeMinFileSize)
             self._entryHook = nil
+            self._cloneProbe = nil
         }
 
         public static func == (lhs: Options, rhs: Options) -> Bool {
             lhs.crossVolumes == rhs.crossVolumes && lhs.maxRecordedIssues == rhs.maxRecordedIssues
                 && lhs.progressInterval == rhs.progressInterval && lhs.qos == rhs.qos
+                && lhs.measurePrivateBytes == rhs.measurePrivateBytes
+                && lhs.privateProbeMinFileSize == rhs.privateProbeMinFileSize
         }
 
         public func hash(into hasher: inout Hasher) {
@@ -56,8 +71,13 @@ public struct FileSizer: Sendable {
             hasher.combine(maxRecordedIssues)
             hasher.combine(progressInterval)
             hasher.combine(qos)
+            hasher.combine(measurePrivateBytes)
+            hasher.combine(privateProbeMinFileSize)
         }
     }
+
+    /// D11: files below 1 MiB count as private (allocated) without a probe.
+    public static let defaultPrivateProbeMinFileSize: Int64 = 1 << 20
 
     public let options: Options
 

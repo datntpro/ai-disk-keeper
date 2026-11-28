@@ -266,7 +266,9 @@ M4 amendments (items 1–11 above are unchanged; numbering continues):
     group with `wouldRemoveAllCopies` when no unselected member survives; `execute` re-checks that a
     survivor still exists and still matches (size, mtime, head/tail digest) right before each trash.
     Members that share storage with another member (hard link, APFS clone) count **0 reclaimable
-    bytes** and are report-only.
+    bytes** and are report-only. (H6 generalizes this to every item: `ScanItem.reclaimableBytes`
+    / "frees about" subtracts shared clones and hard links with outside links, information only; see
+    `docs/reclaimable.md`.)
 14. **No content reads of dataless files.** No scanner opens a file with `SF_DATALESS`, and every
     content-reading thread sets `IOPOL_TYPE_VFS_MATERIALIZE_DATALESS_FILES = OFF`. Metadata only.
 15. **Narrow application-bundle exception** (the only exception to "outside `~` is protected"):

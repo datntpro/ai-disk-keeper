@@ -16,6 +16,14 @@ struct ItemDetailView: View {
                     section(loc("detail.why", "Why this tier")) { Text(item.uiExplanation()) }
                     section(loc("detail.size", "Size")) {
                         Text(Formatting.bytes(item.sizeAllocated)).font(.title3)
+                        if let line = ReclaimCopy.line(for: ReclaimEstimate.make(items: [item])) {
+                            Text(line).font(.callout.weight(.medium))
+                            if item.reclaimIsEstimate {
+                                Text(ReclaimCopy.mayFreeLess).font(.caption).foregroundStyle(.secondary)
+                            } else if item.reclaimableBytes.map({ $0 < item.sizeAllocated }) == true {
+                                Text(ReclaimCopy.sharedWithClones).font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
                         Text(loc("detail.sizeDetail", "\(Formatting.bytes(item.sizeLogical)) apparent · \(item.fileCount) files · modified \(Formatting.absolute(item.lastModified))"))
                             .font(.caption).foregroundStyle(.secondary)
                     }

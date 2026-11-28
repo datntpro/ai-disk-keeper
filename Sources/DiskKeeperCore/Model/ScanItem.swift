@@ -35,6 +35,11 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
     /// The UI words the sentence; no English is stored in `explanation`.
     public var inUseBy: String?
     public var inUsePID: Int32?
+    /// H6: bytes that deleting this item would really free on APFS (nil = unknown / not measured). Never above
+    /// `sizeAllocated`. Information only: it changes no tier and blocks nothing.
+    public var reclaimableBytes: Int64?
+    /// H6: `reclaimableBytes` includes files that could not be probed, so the real number may be lower.
+    public var reclaimIsEstimate: Bool
 
     public init(id: ID? = nil,
                 url: URL,
@@ -54,7 +59,9 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
                 flags: Set<ItemFlag> = [],
                 groupID: String? = nil,
                 inUseBy: String? = nil,
-                inUsePID: Int32? = nil) {
+                inUsePID: Int32? = nil,
+                reclaimableBytes: Int64? = nil,
+                reclaimIsEstimate: Bool = false) {
         precondition(url.isFileURL, "ScanItem requires a file URL")
         let normalized = URL(fileURLWithPath: PathNormalization.lexical(url.absoluteURL.path))
         self.url = normalized
@@ -76,6 +83,14 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
         self.groupID = groupID
         self.inUseBy = inUseBy
         self.inUsePID = inUsePID
+        self.reclaimableBytes = reclaimableBytes.map { max(0, min($0, sizeAllocated)) }
+        self.reclaimIsEstimate = reclaimIsEstimate
+    }
+
+    /// H6: the item's `reclaimableBytes` from a measured size report (nil when the report was not probed).
+    public static func reclaim(from report: SizeReport) -> (bytes: Int64?, estimate: Bool) {
+        guard let p = report.privateBytes else { return (nil, false) }
+        return (max(0, min(p, report.allocatedBytes)), report.privateIsEstimate)
     }
 
     /// "<ruleID>|<lexically normalized absolute path>"
@@ -98,6 +113,7 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
     private enum CodingKeys: String, CodingKey {
         case id, path, displayName, tool, category, project, sizeAllocated, sizeLogical
         case fileCount, lastModified, tier, explanation, ruleID, cleanup, requiresAppQuit, flags, groupID, inUseBy, inUsePID
+        case reclaimableBytes, reclaimIsEstimate
     }
 
     public init(from decoder: Decoder) throws {
@@ -142,7 +158,9 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
             flags: Set(flagStrings.compactMap(ItemFlag.init(rawValue:))),
             groupID: try c.decodeIfPresent(String.self, forKey: .groupID),
             inUseBy: try c.decodeIfPresent(String.self, forKey: .inUseBy),
-            inUsePID: try c.decodeIfPresent(Int32.self, forKey: .inUsePID)
+            inUsePID: try c.decodeIfPresent(Int32.self, forKey: .inUsePID),
+            reclaimableBytes: try c.decodeIfPresent(Int64.self, forKey: .reclaimableBytes),
+            reclaimIsEstimate: try c.decodeIfPresent(Bool.self, forKey: .reclaimIsEstimate) ?? false
         )
     }
 
@@ -167,5 +185,7 @@ public struct ScanItem: Identifiable, Codable, Sendable, Hashable {
         try c.encodeIfPresent(groupID, forKey: .groupID)
         try c.encodeIfPresent(inUseBy, forKey: .inUseBy)
         try c.encodeIfPresent(inUsePID, forKey: .inUsePID)
+        try c.encodeIfPresent(reclaimableBytes, forKey: .reclaimableBytes)
+        if reclaimIsEstimate { try c.encode(true, forKey: .reclaimIsEstimate) }
     }
 }

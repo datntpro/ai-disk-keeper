@@ -16,11 +16,16 @@ public struct ScanContext: Sendable {
     /// Incremental size cache (T25). nil = every item is walked. Only the scan pipeline sets it: the cleanup engine,
     /// the item validator and the disk indexer never use it.
     public let sizeCache: SizeCache?
+    /// H6 (D11): items whose first walk finds at least this many allocated bytes are walked again with the clone
+    /// probe on, to learn what deleting them would really free. nil = never probe. Small items are never probed.
+    public let reclaimProbeMinItemBytes: Int64?
+    public static let defaultReclaimProbeMinItemBytes: Int64 = 100_000_000
 
     public init(environment: PathEnvironment, pathGuard: ScanGuard, now: Date = Date(),
                 userID: uid_t = getuid(), sizerOptions: FileSizer.Options = .init(),
                 maxConcurrentSizing: Int = ScanContext.defaultConcurrentSizing,
-                sizeCache: SizeCache? = nil) {
+                sizeCache: SizeCache? = nil,
+                reclaimProbeMinItemBytes: Int64? = ScanContext.defaultReclaimProbeMinItemBytes) {
         self.environment = environment
         self.pathGuard = pathGuard
         self.now = now
@@ -29,6 +34,7 @@ public struct ScanContext: Sendable {
         self.maxConcurrentSizing = max(1, maxConcurrentSizing)
         self.sizingLimiter = AsyncLimiter(limit: max(1, maxConcurrentSizing))
         self.sizeCache = sizeCache
+        self.reclaimProbeMinItemBytes = reclaimProbeMinItemBytes
     }
 
     /// Sizes one root under the shared limiter.
@@ -38,7 +44,15 @@ public struct ScanContext: Sendable {
         let stamp = await sizeCache?.stamp(url)
         try await sizingLimiter.acquire()
         do {
-            let report = try await FileSizer(options: sizerOptions).size(of: url, progress: progress)
+            var report = try await FileSizer(options: sizerOptions).size(of: url, progress: progress)
+            if let minBytes = reclaimProbeMinItemBytes, !sizerOptions.measurePrivateBytes,
+               report.allocatedBytes >= minBytes {
+                // Size first, then re-walk only the big ones with the probe on (metadata only). A failure here only
+                // costs the "frees about" number, never the size, so the first report is kept.
+                var probing = sizerOptions
+                probing.measurePrivateBytes = true
+                if let measured = try? await FileSizer(options: probing).size(of: url) { report = measured }
+            }
             await sizingLimiter.release()
             if let stamp { await sizeCache?.store(report, for: url, stamp: stamp) }
             return report

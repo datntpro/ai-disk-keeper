@@ -93,13 +93,15 @@ public struct AppLeftoverScanner: Scanner {
             prefix = m.entry.name
             explanation = "Left behind by an app that no longer seems to be installed anywhere on this Mac, and untouched for over 30 days. Review before removing."
         }
+        let reclaim = ScanItem.reclaim(from: report)
         return ScanItem(
             url: URL(fileURLWithPath: m.entry.path), displayName: "\(prefix) · \(place)", tool: .apps,
             category: .appLeftover, sizeAllocated: report.allocatedBytes, sizeLogical: report.logicalBytes,
             fileCount: report.fileCount, lastModified: report.newestModification, tier: .review,
             explanation: explanation, ruleID: m.ruleID, cleanupMethod: .trash,
             requiresAppQuit: m.owner?.bundleID, flags: flags,
-            groupID: m.owner.map { "app:\($0.bundleID)" })
+            groupID: m.owner.map { "app:\($0.bundleID)" },
+            reclaimableBytes: reclaim.bytes, reclaimIsEstimate: reclaim.estimate)
     }
 
     private static func joined(_ names: [String]) -> String {

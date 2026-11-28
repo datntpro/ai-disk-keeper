@@ -34,6 +34,17 @@ public struct SizeReport: Sendable, Hashable, Codable {
     public var issueCount: Int
     /// Entries returned by fts (excluding post-order dir visits). Used for progress and benchmarks.
     public var entriesVisited: Int
+    /// H6: bytes that deleting the tree would really free (nil = not measured). Allocated bytes minus blocks
+    /// shared with clones elsewhere, and without files that have hard links outside the tree. Never above
+    /// `allocatedBytes`.
+    public var privateBytes: Int64?
+    /// H6: allocated bytes of multi-link files that also have names outside the tree (they free nothing).
+    public var sharedOutsideBytes: Int64
+    /// H6: bytes of the files that were really probed (≥ the probe threshold).
+    public var probedBytes: Int64
+    /// H6: some files could not be probed (non-APFS volume, error); they count at their allocated size, so
+    /// `privateBytes` is an upper bound for them: say "may free less".
+    public var privateIsEstimate: Bool
 
     public var isComplete: Bool { issueCount == 0 }
 
@@ -52,7 +63,11 @@ public struct SizeReport: Sendable, Hashable, Codable {
         skippedMountPoints: [String] = [],
         issues: [SizingIssue] = [],
         issueCount: Int = 0,
-        entriesVisited: Int = 0
+        entriesVisited: Int = 0,
+        privateBytes: Int64? = nil,
+        sharedOutsideBytes: Int64 = 0,
+        probedBytes: Int64 = 0,
+        privateIsEstimate: Bool = false
     ) {
         self.rootKind = rootKind
         self.allocatedBytes = allocatedBytes
@@ -69,6 +84,10 @@ public struct SizeReport: Sendable, Hashable, Codable {
         self.issues = issues
         self.issueCount = issueCount
         self.entriesVisited = entriesVisited
+        self.privateBytes = privateBytes
+        self.sharedOutsideBytes = sharedOutsideBytes
+        self.probedBytes = probedBytes
+        self.privateIsEstimate = privateIsEstimate
     }
 
     public static let empty = SizeReport()
