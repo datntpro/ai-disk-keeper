@@ -4,7 +4,8 @@ import Foundation
 /// The drive's own health report (NVMe SMART / Health page). Read-only; the serial number is not part of it and is never read.
 public struct SSDHealth: Sendable, Equatable {
     public let criticalWarning: UInt8
-    public let temperatureCelsius: Int
+    /// nil when the page reports 0 K (unknown) or a value outside 1...1000 K.
+    public let temperatureCelsius: Int?
     public let availableSparePercent: Int
     public let spareThresholdPercent: Int
     /// The controller's own endurance estimate ("Percentage Used"). Whole percent; may exceed 100.
@@ -28,7 +29,7 @@ public struct SSDHealth: Sendable, Equatable {
     /// True when `bytesWritten` hit the 64-bit ceiling (the page's 128-bit counter was larger than that).
     public var bytesWrittenSaturated: Bool { bytesWritten == UInt64.max }
 
-    public init(criticalWarning: UInt8, temperatureCelsius: Int, availableSparePercent: Int, spareThresholdPercent: Int,
+    public init(criticalWarning: UInt8, temperatureCelsius: Int?, availableSparePercent: Int, spareThresholdPercent: Int,
                 percentageUsed: Int, bytesWritten: UInt64, bytesRead: UInt64, powerCycles: UInt64, powerOnHours: UInt64,
                 unsafeShutdowns: UInt64, mediaErrors: UInt64) {
         self.criticalWarning = criticalWarning; self.temperatureCelsius = temperatureCelsius
@@ -51,7 +52,8 @@ public struct SSDHealth: Sendable, Equatable {
             return overflow ? .max : product
         }
         let kelvin = Int(page[1]) | Int(page[2]) << 8
-        self.init(criticalWarning: page[0], temperatureCelsius: kelvin - 273, availableSparePercent: Int(page[3]),
+        let celsius: Int? = (1...1000).contains(kelvin) ? Int((Double(kelvin) - 273.15).rounded()) : nil
+        self.init(criticalWarning: page[0], temperatureCelsius: celsius, availableSparePercent: Int(page[3]),
                   spareThresholdPercent: Int(page[4]), percentageUsed: Int(page[5]),
                   bytesWritten: bytes(counter(48)), bytesRead: bytes(counter(32)),
                   powerCycles: counter(112), powerOnHours: counter(128), unsafeShutdowns: counter(144), mediaErrors: counter(160))

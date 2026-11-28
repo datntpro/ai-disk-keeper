@@ -37,6 +37,16 @@ final class SSDHealthTests: XCTestCase {
         XCTAssertFalse(h.bytesWrittenSaturated)
     }
 
+    func testZeroOrAbsurdTemperatureIsUnknown() throws {
+        var page = Self.fixture
+        page[1] = 0; page[2] = 0
+        XCTAssertNil(try XCTUnwrap(SSDHealth(page: page)).temperatureCelsius)
+        page[1] = 0xff; page[2] = 0xff
+        XCTAssertNil(try XCTUnwrap(SSDHealth(page: page)).temperatureCelsius)
+        page[1] = 0x2e; page[2] = 0x01  // 302 K = 28.85 °C
+        XCTAssertEqual(try XCTUnwrap(SSDHealth(page: page)).temperatureCelsius, 29)
+    }
+
     func testWrongSizeIsRejected() {
         XCTAssertNil(SSDHealth(page: Array(Self.fixture.prefix(511))))
         XCTAssertNil(SSDHealth(page: []))

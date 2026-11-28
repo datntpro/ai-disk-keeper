@@ -32,7 +32,7 @@ struct StorageSSDCard: View {
             row(loc("ssd.written", "Data written"), written(h))
             row(loc("ssd.wear", "Wear"), "\(h.percentageUsed)%")
             row(loc("ssd.spare", "Spare"), "\(h.availableSparePercent)%")
-            row(loc("ssd.temperature", "Temperature"), "\(h.temperatureCelsius) °C")
+            if let t = h.temperatureCelsius { row(loc("ssd.temperature", "Temperature"), "\(t) °C") }
             if let since {
                 row(loc("ssd.sinceStartup", "Written since startup"), Formatting.bytes(Int64(clamping: since)))
             }

@@ -12,6 +12,8 @@ final class StorageModel {
     /// The last good value: kept while refreshing and after a failure.
     private(set) var overview: StorageOverview?
     private(set) var lastRefreshed: Date?
+    /// The SSD health card's model lives here so its 10-minute cache survives leaving the Storage screen.
+    let ssdHealth: SSDHealthModel
 
     @ObservationIgnored private let load: @Sendable () async throws -> StorageOverview
     @ObservationIgnored private let clock: () -> Date
@@ -21,7 +23,8 @@ final class StorageModel {
     @ObservationIgnored private var rerunForced = false
 
     init(load: @escaping @Sendable () async throws -> StorageOverview, clock: @escaping () -> Date = Date.init,
-         minInterval: TimeInterval = 60) {
+         minInterval: TimeInterval = 60, ssdHealth: SSDHealthModel? = nil) {
+        self.ssdHealth = ssdHealth ?? SSDHealthModel()
         self.load = load
         self.clock = clock
         self.minInterval = minInterval

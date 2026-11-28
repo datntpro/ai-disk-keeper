@@ -45,3 +45,28 @@ final class SSDHealthModelTests: XCTestCase {
         XCTAssertEqual(reader.reads, 2)
     }
 }
+
+@MainActor
+final class SSDHealthSuiteStateTests: XCTestCase {
+    func testCachedReadingSurvivesSwitchingModules() async {
+        let env = AppEnvironment(pathEnvironment: PathEnvironment(home: "/Users/tester", temporaryDirectory: "/tmp"),
+                                 makeScanEngine: { FakeScanEngine(.scripted([])) })
+        let suite = SuiteModel(env: env)
+        let health = SSDHealth(criticalWarning: 0, temperatureCelsius: 29, availableSparePercent: 100, spareThresholdPercent: 99,
+                               percentageUsed: 1, bytesWritten: 1, bytesRead: 1, powerCycles: 1, powerOnHours: 1,
+                               unsafeShutdowns: 0, mediaErrors: 0)
+        let reader = FakeReader(health)
+        let first = suite.state(.storage) {
+            StorageModel(load: { StorageFix.overview() }, ssdHealth: SSDHealthModel(reader: reader, statistics: FakeStats()))
+        }
+        first.ssdHealth.refreshIfNeeded()
+        await first.ssdHealth.settle()
+        // Leaving Storage and coming back rebuilds the view; the module's model comes from suite state again.
+        let again = StorageModule.model(env: env, suite: suite)
+        XCTAssertTrue(again === first)
+        again.ssdHealth.refreshIfNeeded()
+        await again.ssdHealth.settle()
+        XCTAssertEqual(reader.reads, 1, "no second device read within the TTL")
+        XCTAssertEqual(again.ssdHealth.state, .ready(health, writtenSinceBoot: 2_100))
+    }
+}

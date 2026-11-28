@@ -34,3 +34,11 @@ and in the Tart VM).
 
 Owner's Mac, read-only: open Storage and compare with `smartctl`-style values (wear ~1 %, spare 100 %). In the VM the card
 must say "Health data isn't available for this disk". See `scripts/qa/H9.sh`.
+
+## Screenshots
+
+Rendered from the recorded fixture by `SSDCardRenderTests` (set `ADK_SNAPSHOT_DIR` to regenerate); a VM has no NVMe SMART, so the ready card can't be shown there.
+
+![Ready card, light](img/ssd-card-ready-light.png)
+![Ready card, dark](img/ssd-card-ready-dark.png)
+![Warning card (wear 85 %), light](img/ssd-card-warning-light.png)
