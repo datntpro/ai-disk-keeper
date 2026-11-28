@@ -20,7 +20,7 @@ public protocol ProcessUsageSource: Sendable {
     func snapshot(userID: uid_t) -> [ProcessHold]?
 }
 
-/// Built on `ProcessTable` (cwd) plus ``LibprocOpenFiles`` (open fds). Own uid only; pid <= 1 and this process are skipped. Every path is kept (not only under `$HOME`): a filter would let an
+/// Built on `ProcessTable` (cwd, executable image) plus ``LibprocOpenFiles`` (open fds, memory mappings). Own uid only; pid <= 1 and this process are skipped. Every path is kept (not only under `$HOME`): a filter would let an
 /// item on another volume look free.
 public struct LibprocUsageSource: ProcessUsageSource {
     private let table: any ProcessTableReading
@@ -38,8 +38,14 @@ public struct LibprocUsageSource: ProcessUsageSource {
         guard let snap = table.snapshot() else { return nil }
         var out: [ProcessHold] = []
         for r in snap.records where r.pid > 1 && r.pid != selfPID && r.uid == userID {
-            out.append(ProcessHold(pid: r.pid, name: r.name, uid: r.uid, cwd: r.cwd,
-                                   openPaths: files.openPaths(of: r.pid) ?? []))
+            switch files.read(pid: r.pid) {
+            case .gone: continue
+            case .denied: return nil   // this process may hold files we cannot see: fail closed
+            case .files(let f):
+                // The running image counts too: a directory holding a live executable is in use.
+                out.append(ProcessHold(pid: r.pid, name: r.name, uid: r.uid, cwd: r.cwd,
+                                       openPaths: f.open + f.mapped + [r.executablePath].compactMap { $0 }))
+            }
         }
         return out
     }

@@ -2,7 +2,7 @@
 # T20 QA fixtures (In-use detection). Run in the Tart VM only, never on the owner's Mac.
 # Creates files ONLY under ~/ADKQA-T20 and ~/.claude/projects/-ADKQA-T20; teardown removes exactly those.
 #   setup     an old (2020) Safe log directory under a seeded Claude Code path
-#   hold      start `tail -f` on a file inside it (PID in ~/ADKQA-T20/hold.pid)
+#   hold      start `tail -f` on $SEED/old.jsonl, the file inside the scanned item (PID in ~/ADKQA-T20/hold.pid)
 #   release   stop the holder
 #   fresh     touch a file in the directory (expect "Modified in the last hour")
 #   teardown  release + remove both folders
@@ -25,10 +25,10 @@ case "${1:-}" in
     ;;
   hold)
     guard
-    [ -f "$LOGDIR/a.log" ] || { echo "run setup first" >&2; exit 1; }
-    nohup tail -f "$LOGDIR/a.log" >/dev/null 2>&1 &
+    [ -f "$SEED/old.jsonl" ] || { echo "run setup first" >&2; exit 1; }
+    nohup tail -f "$SEED/old.jsonl" >/dev/null 2>&1 &
     echo $! > "$ROOT/hold.pid"
-    echo "tail holds $LOGDIR/a.log (pid $(cat "$ROOT/hold.pid")); rescan: expect Keep, 'In use by tail'"
+    echo "tail holds $SEED/old.jsonl (inside the scanned item) (pid $(cat "$ROOT/hold.pid")); rescan: expect Keep, 'In use by tail'"
     ;;
   release)
     [ -f "$ROOT/hold.pid" ] && { kill "$(cat "$ROOT/hold.pid")" 2>/dev/null || true; rm -f "$ROOT/hold.pid"; }
@@ -36,8 +36,8 @@ case "${1:-}" in
     ;;
   fresh)
     guard
-    touch "$LOGDIR/b.log"
-    echo "touched b.log; rescan: expect Keep, 'Modified in the last hour'"
+    touch "$SEED/old.jsonl"
+    echo "touched old.jsonl; rescan: expect Keep, 'Modified in the last hour'"
     ;;
   teardown)
     guard

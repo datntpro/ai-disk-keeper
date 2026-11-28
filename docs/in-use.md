@@ -11,6 +11,8 @@ One snapshot of the user's processes, libproc only (no `lsof`, no subprocess, no
 |---|---|
 | Process list, uid, name, **working directory** | `LibprocProcessTable` (`PROC_PIDTBSDINFO`, `PROC_PIDVNODEPATHINFO`), the same walker the host monitor uses |
 | **Open files** | `Safety/OpenFileIndex.swift`: `PROC_PIDLISTFDS` + `PROC_PIDFDVNODEPATHINFO` (vnode descriptors only) |
+| **Memory-mapped files** | `PROC_PIDREGIONPATHINFO` walk, file-backed regions only (a mapping outlives its closed fd; this also covers loaded dylibs) |
+| **Running executable** | `ProcessRecord.executablePath` (`proc_pidpath`): a directory holding a live binary is in use |
 | Newest modification time | the scan's `lastModified` / the execute-time re-size |
 
 Scope: **own uid only**. Processes of other users fail with `EPERM` and are skipped, as are pid ≤ 1 and this app.
@@ -54,6 +56,9 @@ One snapshot is a `proc_listallpids` walk plus one fd-table read per process. Me
 `ADK_BENCH=1 swift test --filter InUseDetectorBenchmarkTests` (budget: under 2 s).
 
 ## Limits
+
+An fd or region table the kernel refuses to read (`EPERM`) makes the whole snapshot unreadable: scan time adds the
+`.inUseUnknown` warning, cleanup time blocks with `inUseUnknown`. A process that exited meanwhile (`ESRCH`) is skipped.
 
 A process that is not running yet cannot be seen, a file opened and closed between snapshots is invisible, and
 processes of other users or system daemons are out of scope. The 1 h rule covers the usual "tool wrote to it a moment

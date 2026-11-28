@@ -64,9 +64,27 @@ final class LibprocUsageSourceTests: XCTestCase {
                 ])
             }
         }
-        struct NoFiles: OpenFileReading { func openPaths(of pid: pid_t) -> [String]? { nil } }
+        struct NoFiles: OpenFileReading { func read(pid: pid_t) -> FileReadResult { .files(ProcessFiles()) } }
         let got = LibprocUsageSource(table: Table(), files: NoFiles(), selfPID: 999).snapshot(userID: 501)
         XCTAssertEqual(got?.map(\.name), ["mine"])
+    }
+
+    func testDeniedFdTableFailsClosedAndGoneProcessIsSkipped() {
+        struct Table: ProcessTableReading {
+            func snapshot() -> ProcessTableSnapshot? {
+                ProcessTableSnapshot(at: .now, wall: Date(), records: [
+                    ProcessRecord(pid: 60, ppid: 1, uid: 501, name: "a", executablePath: "/x/bin/a"),
+                    ProcessRecord(pid: 61, ppid: 1, uid: 501, name: "b")])
+            }
+        }
+        struct Files: OpenFileReading {
+            let r61: FileReadResult
+            func read(pid: pid_t) -> FileReadResult { pid == 61 ? r61 : .files(ProcessFiles(open: ["/o"], mapped: ["/m"])) }
+        }
+        XCTAssertNil(LibprocUsageSource(table: Table(), files: Files(r61: .denied), selfPID: 999).snapshot(userID: 501))
+        let got = LibprocUsageSource(table: Table(), files: Files(r61: .gone), selfPID: 999).snapshot(userID: 501)
+        XCTAssertEqual(got?.map(\.pid), [60])
+        XCTAssertEqual(Set(got?.first?.openPaths ?? []), ["/o", "/m", "/x/bin/a"], "fds, mappings and the executable image")
     }
 
     func testUnreadableTableIsNil() {
