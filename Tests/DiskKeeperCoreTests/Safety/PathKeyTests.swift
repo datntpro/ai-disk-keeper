@@ -20,6 +20,17 @@ final class PathKeyTests: XCTestCase {
         XCTAssertEqual(PathCanonicalizer.key("/x/Caf\u{E9}"), PathCanonicalizer.key("/x/CAFE\u{301}"))
     }
 
+    /// APFS (case-insensitive) uses full case folding: `ß` is `ss`, ligatures expand (verified on a real volume).
+    func testFoldingFollowsApfsFullCaseFolding() {
+        XCTAssertEqual(PathCanonicalizer.fold("Straße"), PathCanonicalizer.fold("STRASSE"))
+        XCTAssertEqual(PathCanonicalizer.fold("Stra\u{1E9E}e"), PathCanonicalizer.fold("Straße"))
+        XCTAssertEqual(PathCanonicalizer.fold("\u{FB00}"), PathCanonicalizer.fold("ff"))
+        XCTAssertEqual(PathCanonicalizer.fold("\u{FB05}"), PathCanonicalizer.fold("ST"))
+        XCTAssertEqual(PathCanonicalizer.fold("\u{149}"), PathCanonicalizer.fold("\u{2BC}N"))
+        XCTAssertEqual(PathCanonicalizer.fold("ÄB"), PathCanonicalizer.fold("a\u{308}b"))
+        XCTAssertEqual(PathCanonicalizer.key("/Users/Straße").components, PathCanonicalizer.key("/users/strasse").components)
+    }
+
     func testGlob() {
         func m(_ p: String, _ c: String) -> Bool { GlobMatcher.matches(pattern: p, component: c) }
         XCTAssertTrue(m("*.pem", "a.pem"))

@@ -19,6 +19,9 @@ enum PathCanonicalizer {
         return PathKey(components: comps)
     }
 
+    /// Case/Unicode folding the way a case-insensitive APFS volume compares names: *full* case folding plus
+    /// canonical equivalence. Verified on a real APFS volume: `Straße` and `STRASSE` are the same file (`ß` -> `ss`),
+    /// as are `ﬀ`/`ff`, `ﬅ`/`ST` and `ŉ`/`ʼN`. Under-folding would let a case variant slip past a protect pattern.
     static func fold(_ s: String) -> String {
         s.folding(options: [.caseInsensitive], locale: nil).precomposedStringWithCanonicalMapping
     }
