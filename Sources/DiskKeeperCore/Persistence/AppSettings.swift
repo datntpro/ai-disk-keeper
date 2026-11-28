@@ -72,11 +72,8 @@ public struct AppSettings: Codable, Sendable, Hashable {
         case showMenuBarItem, menuBarShowsFreeSpace, lowSpaceAlertEnabled, lowSpaceThresholdPercent
         case monitorOrder, monitorDisabled, menuBarMetrics, menuBarStyle, menuBarRefreshSeconds, networkUnits
         case popoverShowsTopProcesses, popoverHistoryMinutes, useScanCache
-<<<<<<< HEAD
         case publishHostStatus
-=======
         case scanFrequency, scheduledSafeAlertGB, scheduledGrowthAlertGB, scheduledSkipOnBattery
->>>>>>> 16d29e9 ([T22] Scheduled scans and notifications)
     }
 
     /// Lenient: unknown keys are ignored and missing keys take defaults.
@@ -102,14 +99,11 @@ public struct AppSettings: Codable, Sendable, Hashable {
         popoverShowsTopProcesses = try c.decodeIfPresent(Bool.self, forKey: .popoverShowsTopProcesses) ?? false
         popoverHistoryMinutes = Self.snapHistoryMinutes(try c.decodeIfPresent(Int.self, forKey: .popoverHistoryMinutes) ?? 1)
         useScanCache = try c.decodeIfPresent(Bool.self, forKey: .useScanCache) ?? true
-<<<<<<< HEAD
         publishHostStatus = try c.decodeIfPresent(Bool.self, forKey: .publishHostStatus) ?? true
-=======
         scanFrequency = (try c.decodeIfPresent(String.self, forKey: .scanFrequency)).flatMap(ScanFrequency.init(rawValue:)) ?? .off
         scheduledSafeAlertGB = min(max(try c.decodeIfPresent(Int.self, forKey: .scheduledSafeAlertGB) ?? 5, 1), 500)
         scheduledGrowthAlertGB = min(max(try c.decodeIfPresent(Int.self, forKey: .scheduledGrowthAlertGB) ?? 2, 1), 500)
         scheduledSkipOnBattery = try c.decodeIfPresent(Bool.self, forKey: .scheduledSkipOnBattery) ?? true
->>>>>>> 16d29e9 ([T22] Scheduled scans and notifications)
     }
 
     /// Unknown and duplicate ids are dropped; missing ones are appended in the default order.
