@@ -45,6 +45,9 @@ public struct SizeReport: Sendable, Hashable, Codable {
     /// H6: some files could not be probed (non-APFS volume, error); they count at their allocated size, so
     /// `privateBytes` is an upper bound for them: say "may free less".
     public var privateIsEstimate: Bool
+    /// H6: what a cache hit needs to refresh the probe fields cheaply (see ``ReclaimPlan``). Holds nothing that
+    /// depends on state outside the root; nil when the tree has too many probed or multi-link files.
+    public var reclaimPlan: ReclaimPlan?
 
     public var isComplete: Bool { issueCount == 0 }
 
@@ -67,7 +70,8 @@ public struct SizeReport: Sendable, Hashable, Codable {
         privateBytes: Int64? = nil,
         sharedOutsideBytes: Int64 = 0,
         probedBytes: Int64 = 0,
-        privateIsEstimate: Bool = false
+        privateIsEstimate: Bool = false,
+        reclaimPlan: ReclaimPlan? = nil
     ) {
         self.rootKind = rootKind
         self.allocatedBytes = allocatedBytes
@@ -88,6 +92,7 @@ public struct SizeReport: Sendable, Hashable, Codable {
         self.sharedOutsideBytes = sharedOutsideBytes
         self.probedBytes = probedBytes
         self.privateIsEstimate = privateIsEstimate
+        self.reclaimPlan = reclaimPlan
     }
 
     public static let empty = SizeReport()
@@ -137,4 +142,26 @@ public struct SizeProgress: Sendable, Hashable {
         self.entriesVisited = entriesVisited
         self.allocatedBytesSoFar = allocatedBytesSoFar
     }
+}
+
+/// H6: the files whose "private bytes" can change without anything changing inside the item: files probed for clone
+/// sharing (>= 1 MiB) and files with more than one hard link. A cache hit re-checks only these (`lstat` +
+/// `getattrlist`) instead of walking the tree again; everything else is the fixed `baseBytes`.
+public struct ReclaimPlan: Sendable, Hashable, Codable {
+    public struct Entry: Sendable, Hashable, Codable {
+        public var path: String
+        public var device: Int32
+        public var inode: UInt64
+        /// Links seen inside the tree.
+        public var seenInside: Int
+        public var allocated: Int64
+        public var size: Int64
+        /// Probed for clone sharing (otherwise only its link count matters).
+        public var probed: Bool
+    }
+    /// Directories, small single-link files and other entries: private at their allocated size.
+    public var baseBytes: Int64
+    public var entries: [Entry]
+    /// More entries than this: no plan, a hit walks again.
+    public static let maxEntries = 4000
 }

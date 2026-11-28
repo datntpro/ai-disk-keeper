@@ -21,15 +21,20 @@ public struct ReclaimEstimate: Sendable, Hashable {
     /// Σ `reclaimableBytes` (items not probed count at their shown size). ≤ `shownBytes`.
     public let freesAboutBytes: Int64
     public let caveats: [Caveat]
+    /// How many items were really measured (probed without a fallback). With 0, "frees about" is just the shown size
+    /// and must not be presented as a finding.
+    public let measuredCount: Int
+    public var hasMeasured: Bool { measuredCount > 0 }
 
-    public init(shownBytes: Int64, freesAboutBytes: Int64, caveats: [Caveat]) {
+    public init(shownBytes: Int64, freesAboutBytes: Int64, caveats: [Caveat], measuredCount: Int = 1) {
+        self.measuredCount = measuredCount
         self.shownBytes = max(0, shownBytes)
         self.freesAboutBytes = max(0, min(freesAboutBytes, shownBytes))
         self.caveats = caveats
     }
 
     /// True when frees-about is under half of what is shown: the review sheet highlights it.
-    public var isMuchSmaller: Bool { Double(freesAboutBytes) < 0.5 * Double(shownBytes) }
+    public var isMuchSmaller: Bool { hasMeasured && Double(freesAboutBytes) < 0.5 * Double(shownBytes) }
 
     public var hasUnknown: Bool { caveats.contains { if case .unknownForSome = $0 { true } else { false } } }
 
@@ -58,22 +63,25 @@ public struct ReclaimEstimate: Sendable, Hashable {
     ///   - localSnapshotsPresent: the volume has local snapshots (see `LocalSnapshotLister`).
     public static func make(items: [ScanItem], trashSameVolume: Bool = false,
                             localSnapshotsPresent: Bool = false) -> ReclaimEstimate {
-        var shown: Int64 = 0, frees: Int64 = 0, shared: Int64 = 0, unknown = 0
+        var shown: Int64 = 0, frees: Int64 = 0, shared: Int64 = 0, unknown = 0, measured = 0
         for item in items {
             shown += item.sizeAllocated
             guard let r = item.reclaimableBytes else {
-                frees += item.sizeAllocated          // not probed (small item): nothing to subtract
+                frees += item.sizeAllocated          // not measured: counts at its shown size
+                // A big item that no probe ever looked at (another scanner, a cache older than H6): unknown.
+                // Small items are never probed by design (D11) and stay silent.
+                if item.sizeAllocated >= ScanContext.defaultReclaimProbeMinItemBytes { unknown += 1 }
                 continue
             }
             frees += min(r, item.sizeAllocated)
             shared += max(0, item.sizeAllocated - r)
-            if item.reclaimIsEstimate { unknown += 1 }
+            if item.reclaimIsEstimate { unknown += 1 } else { measured += 1 }
         }
         var caveats: [Caveat] = []
         if trashSameVolume { caveats.append(.trashSameVolume) }
         if localSnapshotsPresent { caveats.append(.localSnapshotsPresent) }
         if shared > 0 { caveats.append(.clonesShared(bytes: shared)) }
         if unknown > 0 { caveats.append(.unknownForSome(count: unknown)) }
-        return ReclaimEstimate(shownBytes: shown, freesAboutBytes: frees, caveats: caveats)
+        return ReclaimEstimate(shownBytes: shown, freesAboutBytes: frees, caveats: caveats, measuredCount: measured)
     }
 }

@@ -38,21 +38,26 @@ struct FileTreeWalker {
         let probe: @Sendable (String) -> CloneInfo = options._cloneProbe ?? { CloneProbe.probe($0) }
         var privateSum: Int64 = 0
         var estimate = false
+        var planBase: Int64 = 0
+        var planEntries: [ReclaimPlan.Entry] = []
+        var planOverflow = false
+        var multiIndex: [InodeKey: Int] = [:]
         /// What deleting this regular file frees, assuming all its hard links are inside the tree.
-        func privateBytes(path: UnsafePointer<CChar>?, allocated: Int64, size: Int64) -> Int64 {
+        func privateBytes(path: UnsafePointer<CChar>?, allocated: Int64, size: Int64, flags: UInt32 = 0) -> Int64 {
             guard let path, size >= probeMin, allocated > 0 else { return allocated }
-            switch probe(String(cString: path)) {
-            case .known(_, _, let priv, _, _):
-                report.probedBytes += allocated
-                return min(max(0, priv), allocated)    // never more than the file occupies
-            case .unknown:
-                estimate = true                          // counted at its allocated size: an upper bound
-                return allocated
-            }
+            let r = FileSizer.privateBytes(probe(String(cString: path)), allocated: allocated, flags: flags)
+            if r.probed { report.probedBytes += allocated }
+            if r.estimate { estimate = true }
+            return r.bytes
         }
         func finish() -> SizeReport {
             if let n = newest { report.newestModification = Date(timeIntervalSince1970: n) }
-            if measure { report.privateBytes = max(0, privateSum); report.privateIsEstimate = estimate }
+            if measure {
+                report.privateBytes = max(0, privateSum); report.privateIsEstimate = estimate
+                if !planOverflow, report.rootKind == .directory {
+                        report.reclaimPlan = ReclaimPlan(baseBytes: planBase, entries: planEntries)
+                }
+            }
             return report
         }
 
@@ -144,33 +149,52 @@ struct FileTreeWalker {
                     report.datalessSkippedCount += 1
                     report.allocatedBytes += Int64(st.pointee.st_blocks) * 512
                     privateSum += Int64(st.pointee.st_blocks) * 512
+                    planBase += Int64(st.pointee.st_blocks) * 512
                     touch(st.pointee.st_mtimespec)
                 } else {
                     report.directoryCount += 1
                     report.allocatedBytes += Int64(st.pointee.st_blocks) * 512
                     privateSum += Int64(st.pointee.st_blocks) * 512
+                    planBase += Int64(st.pointee.st_blocks) * 512
                     touch(st.pointee.st_mtimespec)
                 }
             case FTS_F, FTS_DEFAULT:
                 guard let st else { break }
                 touch(st.pointee.st_mtimespec)
                 let allocated = Int64(st.pointee.st_blocks) * 512
+                let isReg = (st.pointee.st_mode & S_IFMT) == S_IFREG
+                let probeIt = measure && isReg && Int64(st.pointee.st_size) >= probeMin && allocated > 0
                 func priv() -> Int64 {   // probed at most once per inode, and only when measuring
-                    measure && (st.pointee.st_mode & S_IFMT) == S_IFREG
-                        ? privateBytes(path: ent.pointee.fts_path, allocated: allocated, size: Int64(st.pointee.st_size))
+                    measure && isReg
+                        ? privateBytes(path: ent.pointee.fts_path, allocated: allocated, size: Int64(st.pointee.st_size),
+                                       flags: st.pointee.st_flags)
                         : allocated
+                }
+                func record(seen: Int) {
+                    guard measure else { return }
+                    if planEntries.count >= ReclaimPlan.maxEntries { planOverflow = true; return }
+                    planEntries.append(ReclaimPlan.Entry(
+                        path: String(cString: ent.pointee.fts_path), device: st.pointee.st_dev, inode: st.pointee.st_ino,
+                        seenInside: seen, allocated: allocated, size: Int64(st.pointee.st_size), probed: probeIt))
                 }
                 if st.pointee.st_nlink > 1 {
                     let key = InodeKey(device: st.pointee.st_dev, inode: st.pointee.st_ino)
                     if var e = seen[key] {
                         e.seen += 1
                         seen[key] = e
+                        if let i = multiIndex[key], i < planEntries.count { planEntries[i].seenInside += 1 }
                         report.hardlinkDuplicateCount += 1
                         break
                     }
                     seen[key] = (1, Int(st.pointee.st_nlink), allocated, priv())
-                } else {
+                    multiIndex[key] = planEntries.count
+                    record(seen: 1)
+                } else if probeIt {
                     privateSum += priv()
+                    record(seen: 1)
+                } else {
+                    privateSum += allocated
+                    planBase += allocated
                 }
                 report.fileCount += 1
                 report.allocatedBytes += Int64(st.pointee.st_blocks) * 512

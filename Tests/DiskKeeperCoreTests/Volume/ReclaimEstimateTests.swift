@@ -155,4 +155,129 @@ final class ReclaimEstimateTests: XCTestCase {
         let e = ReclaimEstimate.make(items: [item("a", allocated: 100, reclaim: 100, estimate: true)])
         XCTAssertEqual(e.caveats, [.unknownForSome(count: 1)])
     }
+
+    // MARK: F1: unmeasured items are not findings
+
+    func testUnprobedBigItemIsUnknownAndNotMeasured() {
+        let big = item("derived", allocated: 300_000_000)
+        let e = ReclaimEstimate.make(items: [big])
+        XCTAssertFalse(e.hasMeasured)
+        XCTAssertFalse(e.isMuchSmaller)
+        XCTAssertEqual(e.caveats, [.unknownForSome(count: 1)])
+        let small = ReclaimEstimate.make(items: [item("tiny", allocated: 5_000_000)])
+        XCTAssertFalse(small.hasMeasured)
+        XCTAssertTrue(small.caveats.isEmpty)
+    }
+
+    func testEstimateItemsAreNotMeasured() {
+        let e = ReclaimEstimate.make(items: [item("a", allocated: 100, reclaim: 100, estimate: true),
+                                             item("b", allocated: 100, reclaim: 10)])
+        XCTAssertEqual(e.measuredCount, 1)
+        XCTAssertTrue(e.hasMeasured)
+    }
+
+    // MARK: F2: compressed files
+
+    func testCompressedAndRefcountZeroAreConservative() {
+        let zero = CloneInfo.known(cloneID: 0, refCount: 0, privateBytes: 0, sharesAllBlocks: false, maySharesBlocks: false)
+        var r = FileSizer.privateBytes(zero, allocated: 5000, flags: 0)
+        XCTAssertEqual(r.bytes, 5000); XCTAssertTrue(r.estimate)
+        r = FileSizer.privateBytes(.known(cloneID: 7, refCount: 2, privateBytes: 0, sharesAllBlocks: true, maySharesBlocks: true),
+                                   allocated: 5000, flags: 0)
+        XCTAssertEqual(r.bytes, 0); XCTAssertFalse(r.estimate)        // a real fully shared clone really frees 0
+        r = FileSizer.privateBytes(.known(cloneID: 7, refCount: 1, privateBytes: 10, sharesAllBlocks: false, maySharesBlocks: false),
+                                   allocated: 5000, flags: FileSizer.ufCompressed)
+        XCTAssertEqual(r.bytes, 5000); XCTAssertTrue(r.estimate)
+    }
+
+    func testRealCompressedFileIsAnEstimateNotZero() throws {
+        let tmp = try TemporaryDirectory()
+        defer { tmp.cleanup() }
+        let src = try tmp.file("src.txt", contents: Data(repeating: 0x41, count: 4 * 1_048_576))
+        let dst = tmp.url.appendingPathComponent("tree/c.txt")
+        try FileManager.default.createDirectory(at: dst.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
+        p.arguments = ["--hfsCompression", "--noclone", src.path, dst.path]
+        try p.run(); p.waitUntilExit()
+        var st = stat()
+        guard lstat(dst.path, &st) == 0, st.st_flags & FileSizer.ufCompressed != 0, st.st_blocks > 0 else {
+            throw XCTSkip("could not make a compressed file here")
+        }
+        var o = FileSizer.Options(measurePrivateBytes: true, privateProbeMinFileSize: 1)
+        o._cloneProbe = nil
+        let r = try FileSizer(options: o).sizeBlocking(of: tmp.url.appendingPathComponent("tree"))
+        XCTAssertGreaterThan(r.privateBytes ?? 0, 0)
+        XCTAssertTrue(r.privateIsEstimate)
+    }
+
+    // MARK: F3: cheap refresh on a cache hit
+
+    func testPlanRefreshSeesOutsideCloneAndLinkWithoutWalking() throws {
+        let tmp = try TemporaryDirectory()
+        defer { tmp.cleanup() }
+        try tmp.file("tree/big.bin", bytes: 3 * 1_048_576)
+        try tmp.file("tree/small.bin", bytes: 100)
+        try tmp.hardlink("tree/small2.bin", to: "tree/small.bin")   // both names inside: a plan entry
+        let walked = try FileSizer(options: .init(measurePrivateBytes: true)).sizeBlocking(of: tmp.url.appendingPathComponent("tree"))
+        guard case .known = CloneProbe.probe(tmp.path("tree/big.bin")) else { throw XCTSkip("no clone info here") }
+        XCTAssertNotNil(walked.reclaimPlan)
+        let cached = ScanContext.cacheable(walked)
+        XCTAssertNil(cached.privateBytes)
+        XCTAssertNotNil(cached.reclaimPlan)
+        let same = FileSizer.refreshReclaim(cached)
+        XCTAssertEqual(same?.privateBytes, walked.privateBytes)
+
+        // A clone and a hard link made outside the item after the walk.
+        XCTAssertEqual(clonefile(tmp.path("tree/big.bin"), tmp.path("outside-clone.bin"), 0), 0)
+        XCTAssertEqual(link(tmp.path("tree/small.bin"), tmp.path("outside-link.bin")), 0)
+        let after = FileSizer.refreshReclaim(cached)
+        XCTAssertNotNil(after)
+        XCTAssertLessThan(after!.privateBytes!, walked.privateBytes! - Int64(2 * 1_048_576))
+        XCTAssertEqual(after!.externallyLinkedFileCount, 1)
+        XCTAssertGreaterThan(after!.sharedOutsideBytes, 0)
+    }
+
+    func testPlanRefreshGivesUpWhenAFileWasReplaced() throws {
+        let tmp = try TemporaryDirectory()
+        defer { tmp.cleanup() }
+        try tmp.file("tree/big.bin", bytes: 2 * 1_048_576)
+        let walked = try FileSizer(options: .init(measurePrivateBytes: true)).sizeBlocking(of: tmp.url.appendingPathComponent("tree"))
+        try FileManager.default.removeItem(atPath: tmp.path("tree/big.bin"))
+        try tmp.file("tree/big.bin", bytes: 2 * 1_048_576)
+        XCTAssertNil(FileSizer.refreshReclaim(ScanContext.cacheable(walked)))
+    }
+
+    func testSmallFilesAreBaseBytesNotPlanEntries() throws {
+        let tmp = try TemporaryDirectory()
+        defer { tmp.cleanup() }
+        for i in 0..<300 { try tmp.file("tree/f\(i).bin", bytes: 10) }
+        // Every file is multi-link-free and tiny: they are base bytes, no entries, so a plan exists.
+        let r = try FileSizer(options: .init(measurePrivateBytes: true)).sizeBlocking(of: tmp.url.appendingPathComponent("tree"))
+        XCTAssertEqual(r.reclaimPlan?.entries.count, 0)
+        XCTAssertGreaterThan(r.reclaimPlan?.baseBytes ?? 0, 0)
+    }
+
+    /// `ADK_BENCH=1`: cold scan without the probe, cold with it, and a warm cache hit (plan refresh).
+    func testBenchmarkColdAndWarm() async throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["ADK_BENCH"] == "1", "benchmark: set ADK_BENCH=1")
+        let fx = try FixtureHome()
+        for d in 0..<50 { for f in 0..<400 { _ = try fx.file("home/bench/d\(d)/f\(f).bin", bytes: 4096) } }
+        for b in 0..<3 { _ = try fx.file("home/bench/big\(b).bin", bytes: 40 * 1_048_576) }
+        let url = URL(fileURLWithPath: fx.abs("home/bench"))
+        let guardd = try ScanGuard(environment: fx.env, protectPatterns: [])
+        func time(_ f: () async throws -> Void) async rethrows -> Double {
+            let t = Date(); try await f(); return Date().timeIntervalSince(t)
+        }
+        let plain = ScanContext(environment: fx.env, pathGuard: guardd, reclaimProbeMinItemBytes: nil)
+        let coldPlain = try await time { _ = try await plain.size(url) }
+        let cache = SizeCache(fileURL: nil, journal: FakeJournal())
+        let probing = ScanContext(environment: fx.env, pathGuard: guardd, sizeCache: cache, reclaimProbeMinItemBytes: 1_000_000)
+        await cache.beginScan(options: probing.sizerOptions)
+        let coldProbe = try await time { _ = try await probing.size(url) }
+        let warm = try await time { _ = try await probing.size(url) }
+        let hits = await cache.hits
+        print("H6 BENCH files=20003 cold-no-probe=\(coldPlain)s cold-probe=\(coldProbe)s warm-hit=\(warm)s hits=\(hits)")
+        XCTAssertEqual(hits, 1)
+    }
 }

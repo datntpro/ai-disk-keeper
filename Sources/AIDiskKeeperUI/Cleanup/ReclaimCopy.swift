@@ -25,8 +25,14 @@ enum ReclaimCopy {
     /// "Shown 87 GB · Frees about 1.2 GB", or nil when there is nothing to add (equal and nothing uncertain).
     /// Caveats (including "May free less") are listed separately, once each.
     static func line(for e: ReclaimEstimate) -> String? {
-        guard e.freesAboutBytes < e.shownBytes || !e.caveats.isEmpty else { return nil }
+        guard e.hasMeasured, e.freesAboutBytes < e.shownBytes || !e.caveats.isEmpty else { return nil }
         return "\(shown(e.shownBytes)) · \(freesAbout(e.freesAboutBytes))"
+    }
+
+    /// The caveats to list: all of them when something was measured, otherwise only "May free less" (a number that
+    /// was never measured is not presented as a finding).
+    static func visibleCaveats(_ e: ReclaimEstimate) -> [ReclaimEstimate.Caveat] {
+        e.hasMeasured ? e.caveats : e.caveats.filter { if case .unknownForSome = $0 { true } else { false } }
     }
 
     /// The compact "frees ≈ Y" for a table row or module header; nil unless it is clearly smaller than shown.
@@ -59,13 +65,17 @@ struct ReclaimLine: View {
     var body: some View {
         let estimate = ReclaimEstimate.make(items: items, trashSameVolume: trashes, localSnapshotsPresent: snapshots)
         let linked = items.contains { $0.flags.contains(.sharedStorage) }
+        let caveats = ReclaimCopy.visibleCaveats(estimate)
+        let line = ReclaimCopy.line(for: estimate)
         Group {
-            if let line = ReclaimCopy.line(for: estimate) {
+            if line != nil || !caveats.isEmpty {
                 VStack(alignment: .leading, spacing: 2) {
-                    Label(line, systemImage: estimate.isMuchSmaller ? "exclamationmark.circle" : "info.circle")
-                        .font(estimate.isMuchSmaller ? .callout.weight(.semibold) : .callout)
-                        .foregroundStyle(estimate.isMuchSmaller ? Color.adkAccent : Color.adkText2)
-                    ForEach(Array(estimate.caveats.enumerated()), id: \.offset) { _, c in
+                    if let line {
+                        Label(line, systemImage: estimate.isMuchSmaller ? "exclamationmark.circle" : "info.circle")
+                            .font(estimate.isMuchSmaller ? .callout.weight(.semibold) : .callout)
+                            .foregroundStyle(estimate.isMuchSmaller ? Color.adkAccent : Color.adkText2)
+                    }
+                    ForEach(Array(caveats.enumerated()), id: \.offset) { _, c in
                         Text(ReclaimCopy.caveatText(c, linkedOutside: linked)).font(.caption).foregroundStyle(.adkText3)
                     }
                 }

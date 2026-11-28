@@ -56,7 +56,7 @@ struct ItemTableView: View {
                     VStack(alignment: .trailing, spacing: 0) {
                         Text(Formatting.bytes(item.sizeAllocated)).monospacedDigit()
                         if let r = ReclaimCopy.compact(for: ReclaimEstimate.make(items: [item])) {
-                            Text(r).font(.caption2).foregroundStyle(.secondary)
+                            Text(r).font(.caption2).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.6)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .trailing)

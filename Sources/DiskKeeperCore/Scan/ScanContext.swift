@@ -39,11 +39,20 @@ public struct ScanContext: Sendable {
 
     /// Sizes one root under the shared limiter.
     ///
-    /// The cache only ever holds the plain report. The "frees about" fields depend on state OUTSIDE the root (a clone
-    /// or hard link made elsewhere later writes nothing inside it, so FSEvents cannot invalidate them), hence they
-    /// are never cached: a big item is probed again on every scan, hit or miss (D11 keeps that to items >= 100 MB).
+    /// The cache holds the plain report plus a ``ReclaimPlan`` (which files to re-check) but never the numbers that
+    /// depend on state OUTSIDE the root: a clone or hard link made elsewhere later writes nothing inside it, so FSEvents
+    /// cannot invalidate them. On a hit, a big item's probe fields are refreshed from the plan with one `lstat` (+
+    /// `getattrlist`) per probed or multi-link file: no tree walk. Without a plan it is probed again by a walk.
     public func size(_ url: URL, progress: (@Sendable (SizeProgress) -> Void)? = nil) async throws -> SizeReport {
-        if let hit = await sizeCache?.valid(url) { return try await withReclaim(hit, url) }
+        if let hit = await sizeCache?.valid(url) {
+            if let minBytes = reclaimProbeMinItemBytes, !sizerOptions.measurePrivateBytes,
+               hit.allocatedBytes >= minBytes, hit.rootKind != .symlink {
+                if let fresh = FileSizer.refreshReclaim(hit) { return fresh }
+                let measured = try await withReclaim(Self.withoutReclaim(hit), url)
+                return measured
+            }
+            return hit
+        }
         // The root is stamped BEFORE the walk: a change during the walk makes the next lookup miss.
         let stamp = await sizeCache?.stamp(url)
         try await sizingLimiter.acquire()
@@ -55,8 +64,16 @@ public struct ScanContext: Sendable {
             await sizingLimiter.release()
             throw error
         }
-        if let stamp { await sizeCache?.store(Self.withoutReclaim(report), for: url, stamp: stamp) }
-        return try await withReclaim(report, url)
+        let result = try await withReclaim(report, url)
+        if let stamp { await sizeCache?.store(Self.cacheable(result), for: url, stamp: stamp) }
+        return result
+    }
+
+    /// What the cache keeps: sizes and the plan, no probe numbers.
+    static func cacheable(_ r: SizeReport) -> SizeReport {
+        var c = withoutReclaim(r)
+        c.reclaimPlan = r.reclaimPlan
+        return c
     }
 
     /// The "frees about" fallback when the probe walk could not run: everything counts, flagged "may free less".
@@ -70,6 +87,7 @@ public struct ScanContext: Sendable {
     static func withoutReclaim(_ r: SizeReport) -> SizeReport {
         var c = r
         c.privateBytes = nil; c.sharedOutsideBytes = 0; c.probedBytes = 0; c.privateIsEstimate = false
+        c.reclaimPlan = nil
         return c
     }
 

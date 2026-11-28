@@ -19,10 +19,17 @@ the volume's purgeable space to a selection.
   - Metadata only: no content is read; dataless files are fine.
 - `SizeReport.privateBytes` = that sum (nil = not measured); `probedBytes` = bytes of the probed files.
 - `ScanContext` (D11) walks first without the probe; only items ≥ 100 MB (`reclaimProbeMinItemBytes`) are walked again
-  with it. **The cache never holds the probe fields**: clones and hard links made later *outside* an item write
-  nothing inside it, so FSEvents cannot invalidate them. `SizeCache` stores the plain report (schema 2 rejects old
-  files) and a big item is probed again on every scan, cache hit or not. If the probe walk fails, the item falls back
-  to its allocated size flagged "may free less". Small items stay unprobed.
+  with it. **The cache never holds the probe numbers**: clones and hard links made later *outside* an item write
+  nothing inside it, so FSEvents cannot invalidate them. `SizeCache` stores the plain report plus a `ReclaimPlan`
+  (the probed and multi-link files, with the links seen inside, and the fixed bytes of everything else). On a cache
+  hit the numbers are refreshed from the plan with one `lstat` (+ `getattrlist` for probed files) per entry: no tree
+  walk (a 20k-file tree: warm hit ≈ 2 ms, cold probe walk ≈ 0.5 s). A changed inode or a plan over 4000 entries falls
+  back to a probe walk. A hard link added outside to a small single-link file is not seen (small files count as
+  private, D11). If the probe walk fails, the item falls back to its allocated size flagged "may free less".
+- Compressed files (`UF_COMPRESSED`, or PRIVATESIZE 0 with clone refcount 0) report no private bytes: they count at
+  allocated and mark the item an estimate. A fully shared clone (refcount ≥ 2) really frees 0.
+- Items that no probe measured (other scanners, anything ≥ 100 MB with `reclaimableBytes == nil`) are "unknown": the
+  UI shows only "May free less", never a "Frees about" number. DerivedData and Tart tmp go through the probe.
 - `ScanItem.reclaimableBytes` (nil = unknown / not measured) and `reclaimIsEstimate`.
 
 ## What the UI says

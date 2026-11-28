@@ -50,11 +50,13 @@ public struct TartTmpScanner: Scanner {
                   let size = try? await context.size(URL(fileURLWithPath: path)) else { continue }
             let fresh = size.newestModification.map { context.now.timeIntervalSince($0) < 86_400 } ?? true
             let variant: TartTmpVariant = fresh ? .active : .old
+            let reclaim = ScanItem.reclaim(from: size)
             await sink.item(ScanItem(
                 url: URL(fileURLWithPath: path), displayName: name, tool: DerivedDataScanner.toolID, category: .systemJunk,
                 sizeAllocated: size.allocatedBytes, sizeLogical: size.logicalBytes, fileCount: size.fileCount,
                 lastModified: size.newestModification, tier: fresh ? .keep : .safe, explanation: variant.explanation,
-                ruleID: Self.ruleID, cleanupMethod: .trash))
+                ruleID: Self.ruleID, cleanupMethod: .trash,
+                reclaimableBytes: reclaim.bytes, reclaimIsEstimate: reclaim.estimate))
         }
     }
 }
