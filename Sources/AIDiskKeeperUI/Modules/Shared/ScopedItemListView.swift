@@ -35,6 +35,12 @@ struct ScopedItemListView: View {
                     BreakdownHeader(ctx: ctx, moduleKey: breakdown.key, categories: breakdown.categories, showTool: breakdown.showTool)
                         .id(breakdown.key)
                 }
+                let reclaim = ReclaimEstimate.make(items: ctx.list.rows.filter(\.isSelectable))
+                if reclaim.isMuchSmaller, let line = ReclaimCopy.line(for: reclaim) {
+                    Text(line).font(.caption).foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, ADKTheme.Spacing.lg).padding(.vertical, 4)
+                }
                 ItemTableView(rows: ctx.list.rows, tierCounts: ctx.list.tierCounts, query: ctx.query,
                               inspectedID: ctx.inspectedID, selection: ctx.scanSelection, scopeName: scopeName,
                               filteredEmpty: Self.filteredEmpty(state, scanning: scan.isScanning))

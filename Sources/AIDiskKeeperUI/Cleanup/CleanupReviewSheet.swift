@@ -49,9 +49,9 @@ public struct CleanupReviewSheet: View {
         return CleanupCopy.several
     }
 
-    /// Items moved to the home Trash sit on the same volume unless they live on another one.
-    private var trashesOnSameVolume: Bool {
-        executable.contains { !$0.isToolCommand && !$0.item.flags.contains(.otherVolume) }
+    /// Any item that goes to a Trash (home or an external volume's): its space returns only when emptied.
+    private var trashesAnything: Bool {
+        executable.contains { ReclaimEstimate.goesToTrash($0.action, $0.item) }
     }
 
     private var toolEntries: [CleanupPlanEntry] { executable.filter(\.isToolCommand) }
@@ -85,7 +85,7 @@ public struct CleanupReviewSheet: View {
                     .padding(8).background(.adkReviewSoft, in: RoundedRectangle(cornerRadius: 6))
             }
             CleanupSummaryTrio(plan: plan)
-            ReclaimLine(estimate: ReclaimEstimate.make(items: executable.map(\.item), trashSameVolume: trashesOnSameVolume))
+            ReclaimLine(items: executable.map(\.item), trashes: trashesAnything)
             planList
             Divider()
             Text(CleanupCopy.footerNote).font(.caption).foregroundStyle(.adkText3)

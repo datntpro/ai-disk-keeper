@@ -19,7 +19,10 @@ the volume's purgeable space to a selection.
   - Metadata only: no content is read; dataless files are fine.
 - `SizeReport.privateBytes` = that sum (nil = not measured); `probedBytes` = bytes of the probed files.
 - `ScanContext` (D11) walks first without the probe; only items ≥ 100 MB (`reclaimProbeMinItemBytes`) are walked again
-  with it. The probed report is what `SizeCache` stores (schema 2); small items stay unprobed.
+  with it. **The cache never holds the probe fields**: clones and hard links made later *outside* an item write
+  nothing inside it, so FSEvents cannot invalidate them. `SizeCache` stores the plain report (schema 2 rejects old
+  files) and a big item is probed again on every scan, cache hit or not. If the probe walk fails, the item falls back
+  to its allocated size flagged "may free less". Small items stay unprobed.
 - `ScanItem.reclaimableBytes` (nil = unknown / not measured) and `reclaimIsEstimate`.
 
 ## What the UI says
@@ -27,10 +30,13 @@ the volume's purgeable space to a selection.
 `trashSameVolume` (space returns when the Trash is emptied), `localSnapshotsPresent` (macOS may keep the blocks until
 it thins snapshots), `clonesShared(bytes)`, `unknownForSome(count)` ("May free less"). The item detail and the cleanup
 review sheet show "Shown X · Frees about Y"; the line is highlighted when frees-about is under half of shown.
-Module badges keep the shown size. The review sheet does not yet query snapshots (`localSnapshotsPresent` is wired in
-the estimate for a later caller).
+Module badges keep the shown size; the table row and the module header add a compact "Frees about" line only when it
+is under half of shown. Caveats: the Trash one applies to any item that goes to a Trash (home or an external volume's)
+and not to permanent deletes or tool commands; the snapshot one comes from `LocalSnapshotLister` on the Data volume
+(cached for 5 minutes; an unreadable listing counts as "may hold space"). "May free less" is listed once.
 
 ## Limits
 Snapshots and clones whose other side is in a different volume are invisible to `getattrlist`; the estimate is
 per-item, so two items sharing blocks with each other are each shown as if the other stayed.
-Items below 100 MB are not probed and show their allocated size without a "frees about" line.
+Items below 100 MB are not probed and show their allocated size without a "frees about" line; files under 1 MiB
+are never probed, so a tree of many small cloned files (for example `cp -c -R` of a project) can be overclaimed.

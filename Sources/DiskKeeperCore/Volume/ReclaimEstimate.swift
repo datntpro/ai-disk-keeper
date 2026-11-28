@@ -2,10 +2,11 @@ import Foundation
 
 /// H6: "Shown X · frees about Y" for a selection. Shown is what we sum everywhere (allocated bytes); frees-about is
 /// the honest, lower number. Information only: it never blocks, deselects or re-tiers anything, and it never adds
-/// the volume's purgeable space. When unsure it reports LESS, not more.
+/// the volume's purgeable space. Shared blocks and outside hard links are subtracted; an item that could not be
+/// probed counts at its allocated size (an upper bound) and carries the "may free less" caveat.
 public struct ReclaimEstimate: Sendable, Hashable {
     public enum Caveat: Sendable, Hashable {
-        /// The Trash is on the same volume: the space returns only when the Trash is emptied.
+        /// The items go to a Trash: the space returns only when the Trash is emptied.
         case trashSameVolume
         /// Local snapshots exist: macOS may keep the blocks used until it thins them.
         case localSnapshotsPresent
@@ -32,10 +33,28 @@ public struct ReclaimEstimate: Sendable, Hashable {
 
     public var hasUnknown: Bool { caveats.contains { if case .unknownForSome = $0 { true } else { false } } }
 
+    /// Whether local snapshots may be holding blocks. A listing that could not be read counts as "may be present":
+    /// the caveat is the conservative answer.
+    public static func snapshotsMayHoldSpace(_ listing: SnapshotListing) -> Bool {
+        switch listing {
+        case .listed(let snaps): !snaps.isEmpty
+        case .unavailable: true
+        }
+    }
+
+    /// Whether the trash caveat applies to a plan: any item that goes to a Trash (the home Trash or an external
+    /// volume's own) frees nothing until that Trash is emptied. Permanent deletes and tool commands do not.
+    public static func goesToTrash(_ action: CleanupAction, _ item: ScanItem) -> Bool {
+        guard action == .trash else { return false }
+        switch item.cleanupMethod {
+        case .trash, .trashWorktree, .trashApplication: return true
+        case .toolCommand, .none: return false
+        }
+    }
+
     /// - Parameters:
     ///   - items: the selection.
-    ///   - trashSameVolume: whether items go to a Trash on the volume they live on (nil/false for permanent delete
-    ///     or tool commands).
+    ///   - trashSameVolume: whether any item goes to a Trash (false for permanent delete or tool commands).
     ///   - localSnapshotsPresent: the volume has local snapshots (see `LocalSnapshotLister`).
     public static func make(items: [ScanItem], trashSameVolume: Bool = false,
                             localSnapshotsPresent: Bool = false) -> ReclaimEstimate {

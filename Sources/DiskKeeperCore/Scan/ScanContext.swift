@@ -38,27 +38,61 @@ public struct ScanContext: Sendable {
     }
 
     /// Sizes one root under the shared limiter.
+    ///
+    /// The cache only ever holds the plain report. The "frees about" fields depend on state OUTSIDE the root (a clone
+    /// or hard link made elsewhere later writes nothing inside it, so FSEvents cannot invalidate them), hence they
+    /// are never cached: a big item is probed again on every scan, hit or miss (D11 keeps that to items >= 100 MB).
     public func size(_ url: URL, progress: (@Sendable (SizeProgress) -> Void)? = nil) async throws -> SizeReport {
-        if let hit = await sizeCache?.valid(url) { return hit }
+        if let hit = await sizeCache?.valid(url) { return try await withReclaim(hit, url) }
         // The root is stamped BEFORE the walk: a change during the walk makes the next lookup miss.
         let stamp = await sizeCache?.stamp(url)
         try await sizingLimiter.acquire()
+        let report: SizeReport
         do {
-            var report = try await FileSizer(options: sizerOptions).size(of: url, progress: progress)
-            if let minBytes = reclaimProbeMinItemBytes, !sizerOptions.measurePrivateBytes,
-               report.allocatedBytes >= minBytes {
-                // Size first, then re-walk only the big ones with the probe on (metadata only). A failure here only
-                // costs the "frees about" number, never the size, so the first report is kept.
-                var probing = sizerOptions
-                probing.measurePrivateBytes = true
-                if let measured = try? await FileSizer(options: probing).size(of: url) { report = measured }
-            }
+            report = try await FileSizer(options: sizerOptions).size(of: url, progress: progress)
             await sizingLimiter.release()
-            if let stamp { await sizeCache?.store(report, for: url, stamp: stamp) }
-            return report
         } catch {
             await sizingLimiter.release()
             throw error
+        }
+        if let stamp { await sizeCache?.store(Self.withoutReclaim(report), for: url, stamp: stamp) }
+        return try await withReclaim(report, url)
+    }
+
+    /// The "frees about" fallback when the probe walk could not run: everything counts, flagged "may free less".
+    static func conservative(_ r: SizeReport) -> SizeReport {
+        var c = r
+        c.privateBytes = r.allocatedBytes
+        c.privateIsEstimate = true
+        return c
+    }
+
+    static func withoutReclaim(_ r: SizeReport) -> SizeReport {
+        var c = r
+        c.privateBytes = nil; c.sharedOutsideBytes = 0; c.probedBytes = 0; c.privateIsEstimate = false
+        return c
+    }
+
+    /// Size first, then walk again with the probe on, only for big items (metadata only). If that walk fails the
+    /// number falls back to the conservative one: allocated bytes, marked an estimate ("may free less"); the size
+    /// itself is unaffected.
+    private func withReclaim(_ report: SizeReport, _ url: URL) async throws -> SizeReport {
+        guard let minBytes = reclaimProbeMinItemBytes, !sizerOptions.measurePrivateBytes,
+              report.allocatedBytes >= minBytes, report.rootKind != .symlink else { return report }
+        var probing = sizerOptions
+        probing.measurePrivateBytes = true
+        try await sizingLimiter.acquire()
+        do {
+            var measured = try await FileSizer(options: probing).size(of: url)
+            await sizingLimiter.release()
+            if measured.issueCount > 0 { measured.privateIsEstimate = true }   // unreadable parts: may free less
+            return measured
+        } catch is CancellationError {
+            await sizingLimiter.release()
+            throw CancellationError()
+        } catch {
+            await sizingLimiter.release()
+            return Self.conservative(report)
         }
     }
 }
