@@ -8,6 +8,8 @@ let package = Package(
     products: [
         .executable(name: "AIDiskKeeper", targets: ["AIDiskKeeper"]),
         .library(name: "DiskKeeperCore", targets: ["DiskKeeperCore"]),
+        // Machine status for coding agents (`adk status`); shipped at Contents/MacOS/adk. Reads one file, no app launch.
+        .executable(name: "adk", targets: ["adk"]),
     ],
     targets: [
         // Scan engine, scanner rules, safety policy, cleanup engine. No UI code.
@@ -27,6 +29,12 @@ let package = Package(
         .executableTarget(
             name: "AIDiskKeeper",
             dependencies: ["DiskKeeperCore", "AIDiskKeeperUI"],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
+        ),
+        .executableTarget(
+            name: "adk",
+            dependencies: ["DiskKeeperCore"],
+            path: "Sources/adk",
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
         // Developer-only read-only scan CLI (`swift run adk-scan`). Not a product; never shipped in the app.

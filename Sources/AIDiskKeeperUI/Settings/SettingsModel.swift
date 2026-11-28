@@ -46,7 +46,7 @@ public final class SettingsModel {
     /// Set after "Clear scan cache" finishes; the view shows a confirmation.
     public private(set) var scanCacheCleared = false
     @ObservationIgnored private let store: SettingsStore
-    @ObservationIgnored private let environment: PathEnvironment
+    @ObservationIgnored let environment: PathEnvironment
     @ObservationIgnored private let probe: @Sendable () -> FullDiskAccessStatus
 
     public init(store: SettingsStore, environment: PathEnvironment, availableTools: [ToolChoice] = [],
@@ -117,6 +117,8 @@ public final class SettingsModel {
     public func setLowSpaceAlertEnabled(_ on: Bool) { mutate { $0.lowSpaceAlertEnabled = on } }
     /// Clamped to 1…50.
     public func setLowSpaceThresholdPercent(_ percent: Int) { mutate { $0.setLowSpaceThreshold(percent: percent) } }
+
+    public func setPublishHostStatus(_ on: Bool) { mutate { $0.publishHostStatus = on } }
 
     // System monitor (T50)
     public func setMetric(_ m: MetricID, monitored: Bool) { mutate { $0.setMetric(m, monitored: monitored) } }

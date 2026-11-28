@@ -36,7 +36,9 @@ jobs:
           restore-keys: spm-${{ runner.os }}-
 
       - name: Build
-        run: swift build --build-system swiftbuild -c debug
+        run: |
+          swift build --build-system swiftbuild -c debug
+          swift build --build-system swiftbuild -c debug --product adk
 
       - name: Localization lint (catalog vs code, vi/en complete)
         run: python3 -I scripts/l10n-extract.py --check
@@ -88,12 +90,10 @@ jobs:
         with: { fetch-depth: 0 }          # build number from commit count
       - name: Select Xcode (String Catalog compilation needs the Swift Build engine, Swift 6.2+)
         run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
-      - name: Cache SwiftPM build (release)
-        uses: actions/cache@v4
-        with:
-          path: .build
-          key: spm-release-${{ runner.os }}-${{ hashFiles('Package.swift', 'Package.resolved') }}
-          restore-keys: spm-release-${{ runner.os }}-
+      # No build cache here on purpose: packaging must build every shipped product from a clean tree, so a
+      # missing product (e.g. a wrong --product list in make-app.sh) fails CI instead of passing off a warm cache.
+      - name: Clean build directory
+        run: rm -rf .build
       - name: Lint scripts and packaging
         run: |
           for f in scripts/*.sh; do bash -n "$f"; done

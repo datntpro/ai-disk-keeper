@@ -16,6 +16,7 @@ public final class AppModels {
     let monitor: SystemMonitorModel
     let scheduler: MonitorScheduler
     let hostLoad: DiskActivityModel
+    let hostStatus: HostStatusPublisher
 
     /// Used by `RootView(env:)` (tests): nothing is posted and nothing polls.
     public convenience init(env: AppEnvironment) {
@@ -37,6 +38,7 @@ public final class AppModels {
         self.monitor = SystemMonitorModel(settings: env.settings, menuBar: menuBar)
         self.hostLoad = DiskActivityModule.model(env: env, suite: suite)
         self.scheduler = MonitorScheduler(monitor: monitor, menuBar: menuBar, settings: env.settings, hostLoad: hostLoad)
+        self.hostStatus = HostStatusPublisher.make(env: env)
     }
 
     /// The real app: live environment, real notifications, and the one monitor scheduler running (it also drives the 60 s volume poll).
@@ -48,6 +50,7 @@ public final class AppModels {
             NSApp.activate()
         }
         models.scheduler.start()
+        models.hostStatus.start()
         return models
     }
 }
