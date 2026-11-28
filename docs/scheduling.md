@@ -7,3 +7,4 @@ A scheduled scan is the **read-only Care Scan** run in the background. It never 
 - **Gating**: a run is deferred while a user scan runs, on battery (if the toggle is on) and in Low Power Mode.
 - **Notifications**: permission is requested when the user turns the schedule on, never at launch or at the first alert. At most one alert per run (Safe wins over growth). Clicking it opens Overview. T47's low-space alert is unchanged.
 - **Menu bar**: the popover's "Next Care Scan" row shows the next due time while the schedule is on.
+- **Deferral has no limit**: a scheduled run keeps deferring while items are selected or a cleanup is open (starting a scan would clear the selection); it runs at the first check after both are clear.
